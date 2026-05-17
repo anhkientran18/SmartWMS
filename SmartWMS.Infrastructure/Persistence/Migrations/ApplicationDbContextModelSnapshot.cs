@@ -64,108 +64,57 @@ namespace SmartWMS.Infrastructure.Migrations
                     b.HasIndex("ZoneId");
 
                     b.ToTable("Bins");
+                });
 
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("c1000000-0000-0000-0000-000000000001"),
-                            Code = "C-Z1-R1-L1",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "SystemAdmin",
-                            CurrentOccupancy = 0.0,
-                            MaxCapacity = 100.0,
-                            ZoneId = new Guid("f2e96440-1996-4e5b-9d41-3b7c0604b087")
-                        },
-                        new
-                        {
-                            Id = new Guid("c1000000-0000-0000-0000-000000000002"),
-                            Code = "C-Z1-R2-L1",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "SystemAdmin",
-                            CurrentOccupancy = 0.0,
-                            MaxCapacity = 100.0,
-                            ZoneId = new Guid("f2e96440-1996-4e5b-9d41-3b7c0604b087")
-                        },
-                        new
-                        {
-                            Id = new Guid("c1000000-0000-0000-0000-000000000003"),
-                            Code = "C-Z1-R3-L1",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "SystemAdmin",
-                            CurrentOccupancy = 0.0,
-                            MaxCapacity = 100.0,
-                            ZoneId = new Guid("f2e96440-1996-4e5b-9d41-3b7c0604b087")
-                        },
-                        new
-                        {
-                            Id = new Guid("c1000000-0000-0000-0000-000000000004"),
-                            Code = "C-Z1-R4-L1",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "SystemAdmin",
-                            CurrentOccupancy = 0.0,
-                            MaxCapacity = 100.0,
-                            ZoneId = new Guid("f2e96440-1996-4e5b-9d41-3b7c0604b087")
-                        },
-                        new
-                        {
-                            Id = new Guid("c1000000-0000-0000-0000-000000000005"),
-                            Code = "C-Z1-R5-L1",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "SystemAdmin",
-                            CurrentOccupancy = 0.0,
-                            MaxCapacity = 100.0,
-                            ZoneId = new Guid("f2e96440-1996-4e5b-9d41-3b7c0604b087")
-                        },
-                        new
-                        {
-                            Id = new Guid("d2000000-0000-0000-0000-000000000001"),
-                            Code = "D-Z2-R1-L1",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "SystemAdmin",
-                            CurrentOccupancy = 0.0,
-                            MaxCapacity = 500.0,
-                            ZoneId = new Guid("e84988e0-087e-40f4-904d-771804d9c02a")
-                        },
-                        new
-                        {
-                            Id = new Guid("d2000000-0000-0000-0000-000000000002"),
-                            Code = "D-Z2-R2-L1",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "SystemAdmin",
-                            CurrentOccupancy = 0.0,
-                            MaxCapacity = 500.0,
-                            ZoneId = new Guid("e84988e0-087e-40f4-904d-771804d9c02a")
-                        },
-                        new
-                        {
-                            Id = new Guid("d2000000-0000-0000-0000-000000000003"),
-                            Code = "D-Z2-R3-L1",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "SystemAdmin",
-                            CurrentOccupancy = 0.0,
-                            MaxCapacity = 500.0,
-                            ZoneId = new Guid("e84988e0-087e-40f4-904d-771804d9c02a")
-                        },
-                        new
-                        {
-                            Id = new Guid("d2000000-0000-0000-0000-000000000004"),
-                            Code = "D-Z2-R4-L1",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "SystemAdmin",
-                            CurrentOccupancy = 0.0,
-                            MaxCapacity = 500.0,
-                            ZoneId = new Guid("e84988e0-087e-40f4-904d-771804d9c02a")
-                        },
-                        new
-                        {
-                            Id = new Guid("d2000000-0000-0000-0000-000000000005"),
-                            Code = "D-Z2-R5-L1",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "SystemAdmin",
-                            CurrentOccupancy = 0.0,
-                            MaxCapacity = 500.0,
-                            ZoneId = new Guid("e84988e0-087e-40f4-904d-771804d9c02a")
-                        });
+            modelBuilder.Entity("SmartWMS.Domain.Entities.AuditLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AffectedColumns")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("DateTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("IpAddress")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NewValues")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OldValues")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TableName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AuditLogs");
                 });
 
             modelBuilder.Entity("SmartWMS.Domain.Entities.Product", b =>
@@ -249,16 +198,6 @@ namespace SmartWMS.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Warehouses");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("7a9089f2-2b22-4211-912b-28562d2925a1"),
-                            Address = "Khu Công Nghệ Cao, Quận 9, TP. Thủ Đức",
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "SystemAdmin",
-                            Name = "Kho Tổng Thông Minh - SmartWMS Center"
-                        });
                 });
 
             modelBuilder.Entity("Zone", b =>
@@ -292,24 +231,6 @@ namespace SmartWMS.Infrastructure.Migrations
                     b.HasIndex("WarehouseId");
 
                     b.ToTable("Zones");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("f2e96440-1996-4e5b-9d41-3b7c0604b087"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "SystemAdmin",
-                            Name = "Khu Mát (Cold Zone)",
-                            WarehouseId = new Guid("7a9089f2-2b22-4211-912b-28562d2925a1")
-                        },
-                        new
-                        {
-                            Id = new Guid("e84988e0-087e-40f4-904d-771804d9c02a"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "SystemAdmin",
-                            Name = "Khu Khô (Dry Zone)",
-                            WarehouseId = new Guid("7a9089f2-2b22-4211-912b-28562d2925a1")
-                        });
                 });
 
             modelBuilder.Entity("Bin", b =>

@@ -1,97 +1,114 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SmartWMS.Application.Common.Interfaces;
 using SmartWMS.Domain.Entities;
+using System.Text.Json;
 
 namespace SmartWMS.Infrastructure.Persistence;
 
 public class ApplicationDbContext : DbContext, IApplicationDbContext
 {
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
+    private readonly ICurrentUserService _currentUserService;
+    public ApplicationDbContext(
+        DbContextOptions<ApplicationDbContext> options,
+        ICurrentUserService currentUserService) : base(options)
+    {
+        _currentUserService = currentUserService;
+    }
 
     public DbSet<Product> Products => Set<Product>();
     public DbSet<Warehouse> Warehouses => Set<Warehouse>();
     public DbSet<Zone> Zones => Set<Zone>();
     public DbSet<Bin> Bins => Set<Bin>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>(); // Thực thi Interface
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // Tự động áp dụng các Fluent API Configurations đã viết ở bước trước
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
-
-        // Khởi tạo Seed Data 
-        SeedWarehouseData(modelBuilder);
-
         base.OnModelCreating(modelBuilder);
     }
 
-    private void SeedWarehouseData(ModelBuilder modelBuilder)
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        // Khởi tạo một mốc thời gian cố định thay vì dùng DateTime.UtcNow
-        var fixedDate = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        // 1. Phân tích các thay đổi trước khi ghi vào Database
+        var auditEntries = OnBeforeSaveChanges();
 
-        // 1. Khởi tạo Kho hàng (Warehouse)
-        var warehouseId = Guid.Parse("7a9089f2-2b22-4211-912b-28562d2925a1");
-        modelBuilder.Entity<Warehouse>().HasData(new Warehouse
+        // 2. Lưu dữ liệu chính (Sản phẩm, Vị trí kho, Kệ hàng...)
+        var result = await base.SaveChangesAsync(cancellationToken);
+
+        // 3. Nếu có thay đổi, ghi các bản ghi nhật ký Audit Log vào hệ thống
+        if (auditEntries.Any())
         {
-            Id = warehouseId,
-            Name = "Kho Tổng Thông Minh - SmartWMS Center",
-            Address = "Khu Công Nghệ Cao, Quận 9, TP. Thủ Đức",
-            CreatedBy = "SystemAdmin",
-            CreatedAt = fixedDate // Phải override giá trị mặc định của BaseEntity
-        });
-
-        // 2. Khởi tạo 2 Khu vực (Zones)
-        var coldZoneId = Guid.Parse("f2e96440-1996-4e5b-9d41-3b7c0604b087");
-        var dryZoneId = Guid.Parse("e84988e0-087e-40f4-904d-771804d9c02a");
-
-        modelBuilder.Entity<Zone>().HasData(
-            new Zone { Id = coldZoneId, Name = "Khu Mát (Cold Zone)", WarehouseId = warehouseId, CreatedBy = "SystemAdmin", CreatedAt = fixedDate },
-            new Zone { Id = dryZoneId, Name = "Khu Khô (Dry Zone)", WarehouseId = warehouseId, CreatedBy = "SystemAdmin", CreatedAt = fixedDate }
-        );
-
-        // 3. Khởi tạo 10 Vị trí kệ (Bins) với các GUID tĩnh
-        var coldBinIds = new[] {
-            Guid.Parse("c1000000-0000-0000-0000-000000000001"),
-            Guid.Parse("c1000000-0000-0000-0000-000000000002"),
-            Guid.Parse("c1000000-0000-0000-0000-000000000003"),
-            Guid.Parse("c1000000-0000-0000-0000-000000000004"),
-            Guid.Parse("c1000000-0000-0000-0000-000000000005")
-        };
-
-        for (int i = 0; i < 5; i++)
-        {
-            modelBuilder.Entity<Bin>().HasData(new Bin
-            {
-                Id = coldBinIds[i],
-                Code = $"C-Z1-R{i + 1}-L1",
-                ZoneId = coldZoneId,
-                MaxCapacity = 100,
-                CurrentOccupancy = 0,
-                CreatedBy = "SystemAdmin",
-                CreatedAt = fixedDate
-            });
+            AuditLogs.AddRange(auditEntries);
+            await base.SaveChangesAsync(cancellationToken);
         }
 
-        var dryBinIds = new[] {
-            Guid.Parse("d2000000-0000-0000-0000-000000000001"),
-            Guid.Parse("d2000000-0000-0000-0000-000000000002"),
-            Guid.Parse("d2000000-0000-0000-0000-000000000003"),
-            Guid.Parse("d2000000-0000-0000-0000-000000000004"),
-            Guid.Parse("d2000000-0000-0000-0000-000000000005")
-        };
+        return result;
+    }
 
-        for (int i = 0; i < 5; i++)
+    private List<AuditLog> OnBeforeSaveChanges()
+    {
+        ChangeTracker.DetectChanges();
+        var auditEntries = new List<AuditLog>();
+
+        foreach (var entry in ChangeTracker.Entries())
         {
-            modelBuilder.Entity<Bin>().HasData(new Bin
+            // Không log chính bảng AuditLog hoặc các thực thể không thay đổi
+            if (entry.Entity is AuditLog || entry.State == EntityState.Detached || entry.State == EntityState.Unchanged)
+                continue;
+
+            var auditEntry = new AuditLog
             {
-                Id = dryBinIds[i],
-                Code = $"D-Z2-R{i + 1}-L1",
-                ZoneId = dryZoneId,
-                MaxCapacity = 500,
-                CurrentOccupancy = 0,
-                CreatedBy = "SystemAdmin",
-                CreatedAt = fixedDate
-            });
+                Id = Guid.NewGuid(),
+                DateTime = DateTime.UtcNow,
+                TableName = entry.Metadata.GetTableName() ?? entry.Metadata.Name,
+                UserId = "System_User" // Tạm thời để cứng, bước sau ta sẽ tiêm CurrentUserService lấy từ JWT
+            };
+
+            auditEntries.Add(auditEntry);
+
+            var oldValues = new Dictionary<string, object>();
+            var newValues = new Dictionary<string, object>();
+            var changedColumns = new List<string>();
+
+            switch (entry.State)
+            {
+                case EntityState.Added:
+                    auditEntry.Type = "Create";
+                    foreach (var property in entry.Properties)
+                    {
+                        if (property.Metadata.IsPrimaryKey()) continue;
+                        newValues[property.Metadata.Name] = property.CurrentValue ?? string.Empty;
+                    }
+                    auditEntry.NewValues = JsonSerializer.Serialize(newValues);
+                    break;
+
+                case EntityState.Deleted:
+                    auditEntry.Type = "Delete";
+                    foreach (var property in entry.Properties)
+                    {
+                        oldValues[property.Metadata.Name] = property.OriginalValue ?? string.Empty;
+                    }
+                    auditEntry.OldValues = JsonSerializer.Serialize(oldValues);
+                    break;
+
+                case EntityState.Modified:
+                    auditEntry.Type = "Update";
+                    foreach (var property in entry.Properties)
+                    {
+                        if (property.IsModified)
+                        {
+                            changedColumns.Add(property.Metadata.Name);
+                            oldValues[property.Metadata.Name] = property.OriginalValue ?? string.Empty;
+                            newValues[property.Metadata.Name] = property.CurrentValue ?? string.Empty;
+                        }
+                    }
+                    auditEntry.OldValues = JsonSerializer.Serialize(oldValues);
+                    auditEntry.NewValues = JsonSerializer.Serialize(newValues);
+                    auditEntry.AffectedColumns = string.Join(", ", changedColumns);
+                    break;
+            }
         }
+
+        return auditEntries;
     }
 }

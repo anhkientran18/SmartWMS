@@ -11,11 +11,13 @@ public class CreateInboundReceiptCommandHandler : IRequestHandler<CreateInboundR
 {
     private readonly IApplicationDbContext _context; // Thay đổi kiểu dữ liệu thành Interface
     private readonly IStringLocalizer<SharedResource> _localizer;
+    private readonly IInventoryNotificationService _notificationService;
 
-    public CreateInboundReceiptCommandHandler(IApplicationDbContext context, IStringLocalizer<SharedResource> localizer)
+    public CreateInboundReceiptCommandHandler(IApplicationDbContext context, IStringLocalizer<SharedResource> localizer, IInventoryNotificationService notificationService)
     {
         _context = context;
         _localizer = localizer;
+        _notificationService = notificationService;
     }
 
     public async Task<Result<Guid>> Handle(CreateInboundReceiptCommand request, CancellationToken cancellationToken)
@@ -41,6 +43,7 @@ public class CreateInboundReceiptCommandHandler : IRequestHandler<CreateInboundR
         bin.CurrentOccupancy += request.Quantity;
 
         await _context.SaveChangesAsync(cancellationToken);
+        await _notificationService.NotifyStockUpdateAsync(bin.Id, request.Quantity, "NHẬP KHO");
 
         return Result<Guid>.Success(bin.Id, _localizer["Inbound_Success"]);
     }

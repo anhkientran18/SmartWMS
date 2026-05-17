@@ -9,6 +9,7 @@ public interface IApplicationDbContext
     DbSet<Warehouse> Warehouses { get; }
     DbSet<Zone> Zones { get; }
     DbSet<Bin> Bins { get; }
+    DbSet<AuditLog> AuditLogs { get; } // <-- Thêm dòng này
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }

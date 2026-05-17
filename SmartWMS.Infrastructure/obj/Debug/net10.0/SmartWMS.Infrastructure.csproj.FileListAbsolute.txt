@@ -17,3 +17,25 @@ C:\Users\Tak18\OneDrive\Desktop\CNTT\Lập trình nâng cao\BaiTapQuanLySinhVien
 C:\Users\Tak18\OneDrive\Desktop\CNTT\Lập trình nâng cao\BaiTapQuanLySinhVien\BaiTapQuanLySinhVien\WMS\WMS.Infrastructure\obj\Debug\net10.0\ref\SmartWMS.Infrastructure.dll
 C:\Users\Tak18\OneDrive\Desktop\CNTT\Lập trình nâng cao\BaiTapQuanLySinhVien\BaiTapQuanLySinhVien\WMS\WMS.Infrastructure\bin\Debug\net10.0\SmartWMS.Infrastructure.runtimeconfig.json
 C:\Users\Tak18\OneDrive\Desktop\CNTT\Lập trình nâng cao\BaiTapQuanLySinhVien\BaiTapQuanLySinhVien\WMS\WMS.Infrastructure\obj\Debug\net10.0\SmartWMS.Infrastructure.genruntimeconfig.cache
+C:\Users\Tak18\OneDrive\Desktop\CNTT\LapTrinhNangCao\SmartWMS\SmartWMS.Infrastructure\bin\Debug\net10.0\SmartWMS.Infrastructure.deps.json
+C:\Users\Tak18\OneDrive\Desktop\CNTT\LapTrinhNangCao\SmartWMS\SmartWMS.Infrastructure\bin\Debug\net10.0\SmartWMS.Infrastructure.runtimeconfig.json
+C:\Users\Tak18\OneDrive\Desktop\CNTT\LapTrinhNangCao\SmartWMS\SmartWMS.Infrastructure\bin\Debug\net10.0\SmartWMS.Infrastructure.dll
+C:\Users\Tak18\OneDrive\Desktop\CNTT\LapTrinhNangCao\SmartWMS\SmartWMS.Infrastructure\bin\Debug\net10.0\SmartWMS.Infrastructure.pdb
+C:\Users\Tak18\OneDrive\Desktop\CNTT\LapTrinhNangCao\SmartWMS\SmartWMS.Infrastructure\bin\Debug\net10.0\SmartWMS.Application.dll
+C:\Users\Tak18\OneDrive\Desktop\CNTT\LapTrinhNangCao\SmartWMS\SmartWMS.Infrastructure\bin\Debug\net10.0\SmartWMS.Domain.dll
+C:\Users\Tak18\OneDrive\Desktop\CNTT\LapTrinhNangCao\SmartWMS\SmartWMS.Infrastructure\bin\Debug\net10.0\SmartWMS.Application.pdb
+C:\Users\Tak18\OneDrive\Desktop\CNTT\LapTrinhNangCao\SmartWMS\SmartWMS.Infrastructure\bin\Debug\net10.0\SmartWMS.Domain.pdb
+C:\Users\Tak18\OneDrive\Desktop\CNTT\LapTrinhNangCao\SmartWMS\SmartWMS.Infrastructure\bin\Debug\net10.0\en-US\SmartWMS.Domain.resources.dll
+C:\Users\Tak18\OneDrive\Desktop\CNTT\LapTrinhNangCao\SmartWMS\SmartWMS.Infrastructure\bin\Debug\net10.0\vi-VN\SmartWMS.Domain.resources.dll
+C:\Users\Tak18\OneDrive\Desktop\CNTT\LapTrinhNangCao\SmartWMS\SmartWMS.Infrastructure\obj\Debug\net10.0\SmartWMS.Infrastructure.csproj.AssemblyReference.cache
+C:\Users\Tak18\OneDrive\Desktop\CNTT\LapTrinhNangCao\SmartWMS\SmartWMS.Infrastructure\obj\Debug\net10.0\SmartWMS.Infrastructure.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Tak18\OneDrive\Desktop\CNTT\LapTrinhNangCao\SmartWMS\SmartWMS.Infrastructure\obj\Debug\net10.0\SmartWMS.Infrastructure.AssemblyInfoInputs.cache
+C:\Users\Tak18\OneDrive\Desktop\CNTT\LapTrinhNangCao\SmartWMS\SmartWMS.Infrastructure\obj\Debug\net10.0\SmartWMS.Infrastructure.AssemblyInfo.cs
+C:\Users\Tak18\OneDrive\Desktop\CNTT\LapTrinhNangCao\SmartWMS\SmartWMS.Infrastructure\obj\Debug\net10.0\SmartWMS.Infrastructure.csproj.CoreCompileInputs.cache
+C:\Users\Tak18\OneDrive\Desktop\CNTT\LapTrinhNangCao\SmartWMS\SmartWMS.Infrastructure\obj\Debug\net10.0\SmartWMS.Infrastructure.sourcelink.json
+C:\Users\Tak18\OneDrive\Desktop\CNTT\LapTrinhNangCao\SmartWMS\SmartWMS.Infrastructure\obj\Debug\net10.0\SmartWMS.A2921CBB.Up2Date
+C:\Users\Tak18\OneDrive\Desktop\CNTT\LapTrinhNangCao\SmartWMS\SmartWMS.Infrastructure\obj\Debug\net10.0\SmartWMS.Infrastructure.dll
+C:\Users\Tak18\OneDrive\Desktop\CNTT\LapTrinhNangCao\SmartWMS\SmartWMS.Infrastructure\obj\Debug\net10.0\refint\SmartWMS.Infrastructure.dll
+C:\Users\Tak18\OneDrive\Desktop\CNTT\LapTrinhNangCao\SmartWMS\SmartWMS.Infrastructure\obj\Debug\net10.0\SmartWMS.Infrastructure.pdb
+C:\Users\Tak18\OneDrive\Desktop\CNTT\LapTrinhNangCao\SmartWMS\SmartWMS.Infrastructure\obj\Debug\net10.0\SmartWMS.Infrastructure.genruntimeconfig.cache
+C:\Users\Tak18\OneDrive\Desktop\CNTT\LapTrinhNangCao\SmartWMS\SmartWMS.Infrastructure\obj\Debug\net10.0\ref\SmartWMS.Infrastructure.dll
