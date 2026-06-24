@@ -5,7 +5,7 @@ using SmartWMS.Application.Common.Interfaces;
 using SmartWMS.Application.Common.Utils;
 using SmartWMS.Domain.Entities;
 
-namespace SmartWMS.Infrastructure.Persistence
+namespace SmartWMS.Infrastructure.Persistence.Initializers
 {
     public static class DbInitializer
     {

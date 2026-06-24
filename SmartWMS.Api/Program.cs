@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using SmartWMS.Application;
 using SmartWMS.Infrastructure;
-using SmartWMS.Infrastructure.Persistence;
 using System.Text;
 using SmartWMS.Infrastructure.SignalR;
 using SmartWMS.Application.Common.Interfaces;
@@ -13,6 +12,7 @@ using SmartWMS.Domain.Entities;
 using Hangfire;
 using Serilog;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using SmartWMS.Infrastructure.Persistence.Initializers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -148,7 +148,7 @@ using (var scope = app.Services.CreateScope())
         context.Database.Migrate(); 
 
         // 🌟 BỔ SUNG: Khởi tạo tài khoản Admin hệ thống (Dùng file DbInitializer của bạn)
-        await SmartWMS.Infrastructure.Persistence.DbInitializer.SeedAsync(context);
+        await DbInitializer.SeedAsync(context);
         Console.WriteLine("---> [SmartWMS] Kiểm tra/Khởi tạo tài khoản Admin hệ thống thành công!");
 
         // 2. Tự động tạo dữ liệu mẫu cho Kho bãi và Ô kệ (Bins) nếu trống

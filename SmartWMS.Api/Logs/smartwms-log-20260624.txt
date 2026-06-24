@@ -5520,3 +5520,406 @@ WHERE [o].[OrderId] IN (@request_OrderIds1, @request_OrderIds2) AND [o].[Status]
 2026-06-24 08:36:08.200 +07:00 [INF] HTTP POST /api/v1/outboundorders/create-wave-pick responded 400 in 102.5455 ms {"SourceContext":"Serilog.AspNetCore.RequestLoggingMiddleware","RequestId":"0HNMHHGFK8R6N:00000001","ConnectionId":"0HNMHHGFK8R6N"}
 2026-06-24 08:36:08.205 +07:00 [INF] Request finished HTTP/1.1 POST http://localhost:5215/api/v1/outboundorders/create-wave-pick - 400 null application/json; charset=utf-8 118.8607ms {"EventId":{"Id":2},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNMHHGFK8R6N:00000001","RequestPath":"/api/v1/outboundorders/create-wave-pick","ConnectionId":"0HNMHHGFK8R6N"}
 2026-06-24 08:39:09.467 +07:00 [INF] Start installing Hangfire SQL objects... {"SourceContext":"Hangfire.SqlServer.SqlServerObjectsInstaller"}
+2026-06-24 08:39:16.326 +07:00 [INF] Start installing Hangfire SQL objects... {"SourceContext":"Hangfire.SqlServer.SqlServerObjectsInstaller"}
+2026-06-24 08:39:17.077 +07:00 [INF] Hangfire SQL objects installed. {"SourceContext":"Hangfire.SqlServer.SqlServerObjectsInstaller"}
+2026-06-24 08:39:19.095 +07:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1 {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 08:39:19.111 +07:00 [INF] Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long. {"EventId":{"Id":20411,"Name":"Microsoft.EntityFrameworkCore.Migrations.AcquiringMigrationLock"},"SourceContext":"Microsoft.EntityFrameworkCore.Migrations"}
+2026-06-24 08:39:19.119 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @result int;
+EXEC @result = sp_getapplock @Resource = '__EFMigrationsLock', @LockOwner = 'Session', @LockMode = 'Exclusive';
+SELECT @result {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 08:39:19.251 +07:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+IF OBJECT_ID(N'[__EFMigrationsHistory]') IS NULL
+BEGIN
+    CREATE TABLE [__EFMigrationsHistory] (
+        [MigrationId] nvarchar(150) NOT NULL,
+        [ProductVersion] nvarchar(32) NOT NULL,
+        CONSTRAINT [PK___EFMigrationsHistory] PRIMARY KEY ([MigrationId])
+    );
+END; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 08:39:19.276 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1 {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 08:39:19.282 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]'); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 08:39:19.295 +07:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [MigrationId], [ProductVersion]
+FROM [__EFMigrationsHistory]
+ORDER BY [MigrationId]; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 08:39:19.314 +07:00 [INF] No migrations were applied. The database is already up to date. {"EventId":{"Id":20405,"Name":"Microsoft.EntityFrameworkCore.Migrations.MigrationsNotApplied"},"SourceContext":"Microsoft.EntityFrameworkCore.Migrations"}
+2026-06-24 08:39:19.319 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @result int;
+EXEC @result = sp_releaseapplock @Resource = '__EFMigrationsLock', @LockOwner = 'Session';
+SELECT @result {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 08:39:19.684 +07:00 [INF] Executed DbCommand (11ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 08:39:19.703 +07:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Warehouses] AS [w]) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 08:39:19.782 +07:00 [INF] Executed DbCommand (19ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1 {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 08:39:19.795 +07:00 [INF] Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long. {"EventId":{"Id":20411,"Name":"Microsoft.EntityFrameworkCore.Migrations.AcquiringMigrationLock"},"SourceContext":"Microsoft.EntityFrameworkCore.Migrations"}
+2026-06-24 08:39:19.819 +07:00 [INF] Executed DbCommand (18ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @result int;
+EXEC @result = sp_getapplock @Resource = '__EFMigrationsLock', @LockOwner = 'Session', @LockMode = 'Exclusive';
+SELECT @result {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 08:39:19.844 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+IF OBJECT_ID(N'[__EFMigrationsHistory]') IS NULL
+BEGIN
+    CREATE TABLE [__EFMigrationsHistory] (
+        [MigrationId] nvarchar(150) NOT NULL,
+        [ProductVersion] nvarchar(32) NOT NULL,
+        CONSTRAINT [PK___EFMigrationsHistory] PRIMARY KEY ([MigrationId])
+    );
+END; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 08:39:19.881 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1 {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 08:39:19.888 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]'); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 08:39:19.901 +07:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [MigrationId], [ProductVersion]
+FROM [__EFMigrationsHistory]
+ORDER BY [MigrationId]; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 08:39:19.916 +07:00 [INF] No migrations were applied. The database is already up to date. {"EventId":{"Id":20405,"Name":"Microsoft.EntityFrameworkCore.Migrations.MigrationsNotApplied"},"SourceContext":"Microsoft.EntityFrameworkCore.Migrations"}
+2026-06-24 08:39:19.919 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @result int;
+EXEC @result = sp_releaseapplock @Resource = '__EFMigrationsLock', @LockOwner = 'Session';
+SELECT @result {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 08:39:19.954 +07:00 [INF] Executed DbCommand (10ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Products] AS [p]) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 08:39:20.131 +07:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[ABCClass], [p].[Barcode], [p].[CreatedAt], [p].[CreatedBy], [p].[Description], [p].[DescriptionEmbeddingJson], [p].[LastModifiedAt], [p].[LastModifiedBy], [p].[Name], [p].[SKU], [p].[Unit], [p].[Weight]
+FROM [Products] AS [p]
+WHERE [p].[DescriptionEmbeddingJson] IS NULL OR [p].[DescriptionEmbeddingJson] = N'' {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 08:39:20.415 +07:00 [INF] 🚀 Đang khởi động máy chủ Web API SmartWMS Center... {}
+2026-06-24 08:39:20.446 +07:00 [INF] User profile is available. Using 'C:\Users\Tak18\AppData\Local\ASP.NET\DataProtection-Keys' as key repository and Windows DPAPI to encrypt keys at rest. {"EventId":{"Id":63,"Name":"UsingProfileAsKeyRepositoryWithDPAPI"},"SourceContext":"Microsoft.AspNetCore.DataProtection.KeyManagement.XmlKeyManager"}
+2026-06-24 08:39:20.581 +07:00 [INF] Now listening on: http://localhost:5215 {"EventId":{"Id":14,"Name":"ListeningOnAddress"},"SourceContext":"Microsoft.Hosting.Lifetime"}
+2026-06-24 08:39:20.672 +07:00 [INF] Starting Hangfire Server using job storage: 'SQL Server: (localdb)\mssqllocaldb@SmartWMS_DB' {"SourceContext":"Hangfire.BackgroundJobServer"}
+2026-06-24 08:39:20.675 +07:00 [INF] Using the following options for SQL Server job storage: Queue poll interval: 00:00:00. {"SourceContext":"Hangfire.BackgroundJobServer"}
+2026-06-24 08:39:20.677 +07:00 [INF] Using the following options for Hangfire Server:
+    Worker count: 20
+    Listening queues: 'default'
+    Shutdown timeout: 00:00:15
+    Schedule polling interval: 00:00:15 {"SourceContext":"Hangfire.BackgroundJobServer"}
+2026-06-24 08:39:20.700 +07:00 [INF] Application started. Press Ctrl+C to shut down. {"SourceContext":"Microsoft.Hosting.Lifetime"}
+2026-06-24 08:39:20.703 +07:00 [INF] Hosting environment: Development {"SourceContext":"Microsoft.Hosting.Lifetime"}
+2026-06-24 08:39:20.706 +07:00 [INF] Content root path: C:\Users\Tak18\OneDrive\Desktop\CNTT\LapTrinhNangCao\SmartWMS\SmartWMS.Api {"SourceContext":"Microsoft.Hosting.Lifetime"}
+2026-06-24 08:39:20.729 +07:00 [INF] Server desktop-2al4ncg:20128:7c3792ce successfully announced in 27.5412 ms {"SourceContext":"Hangfire.Server.BackgroundServerProcess"}
+2026-06-24 08:39:20.736 +07:00 [INF] Server desktop-2al4ncg:20128:7c3792ce is starting the registered dispatchers: ServerWatchdog, ServerJobCancellationWatcher, SqlServerHeartbeatProcess, ExpirationManager, CountersAggregator, Worker, DelayedJobScheduler, RecurringJobScheduler... {"SourceContext":"Hangfire.Server.BackgroundServerProcess"}
+2026-06-24 08:39:20.753 +07:00 [INF] Server desktop-2al4ncg:20128:7c3792ce all the dispatchers started {"SourceContext":"Hangfire.Server.BackgroundServerProcess"}
+2026-06-24 08:51:05.270 +07:00 [INF] Start installing Hangfire SQL objects... {"SourceContext":"Hangfire.SqlServer.SqlServerObjectsInstaller"}
+2026-06-24 08:51:07.348 +07:00 [INF] Hangfire SQL objects installed. {"SourceContext":"Hangfire.SqlServer.SqlServerObjectsInstaller"}
+2026-06-24 08:51:09.367 +07:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1 {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 08:51:09.386 +07:00 [INF] Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long. {"EventId":{"Id":20411,"Name":"Microsoft.EntityFrameworkCore.Migrations.AcquiringMigrationLock"},"SourceContext":"Microsoft.EntityFrameworkCore.Migrations"}
+2026-06-24 08:51:09.395 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @result int;
+EXEC @result = sp_getapplock @Resource = '__EFMigrationsLock', @LockOwner = 'Session', @LockMode = 'Exclusive';
+SELECT @result {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 08:51:09.523 +07:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+IF OBJECT_ID(N'[__EFMigrationsHistory]') IS NULL
+BEGIN
+    CREATE TABLE [__EFMigrationsHistory] (
+        [MigrationId] nvarchar(150) NOT NULL,
+        [ProductVersion] nvarchar(32) NOT NULL,
+        CONSTRAINT [PK___EFMigrationsHistory] PRIMARY KEY ([MigrationId])
+    );
+END; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 08:51:09.545 +07:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1 {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 08:51:09.555 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]'); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 08:51:09.573 +07:00 [INF] Executed DbCommand (10ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [MigrationId], [ProductVersion]
+FROM [__EFMigrationsHistory]
+ORDER BY [MigrationId]; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 08:51:09.594 +07:00 [INF] No migrations were applied. The database is already up to date. {"EventId":{"Id":20405,"Name":"Microsoft.EntityFrameworkCore.Migrations.MigrationsNotApplied"},"SourceContext":"Microsoft.EntityFrameworkCore.Migrations"}
+2026-06-24 08:51:09.600 +07:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @result int;
+EXEC @result = sp_releaseapplock @Resource = '__EFMigrationsLock', @LockOwner = 'Session';
+SELECT @result {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 08:51:09.981 +07:00 [INF] Executed DbCommand (11ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 08:51:10.011 +07:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Warehouses] AS [w]) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 08:51:10.093 +07:00 [INF] Executed DbCommand (20ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1 {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 08:51:10.107 +07:00 [INF] Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long. {"EventId":{"Id":20411,"Name":"Microsoft.EntityFrameworkCore.Migrations.AcquiringMigrationLock"},"SourceContext":"Microsoft.EntityFrameworkCore.Migrations"}
+2026-06-24 08:51:10.136 +07:00 [INF] Executed DbCommand (22ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @result int;
+EXEC @result = sp_getapplock @Resource = '__EFMigrationsLock', @LockOwner = 'Session', @LockMode = 'Exclusive';
+SELECT @result {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 08:51:10.163 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+IF OBJECT_ID(N'[__EFMigrationsHistory]') IS NULL
+BEGIN
+    CREATE TABLE [__EFMigrationsHistory] (
+        [MigrationId] nvarchar(150) NOT NULL,
+        [ProductVersion] nvarchar(32) NOT NULL,
+        CONSTRAINT [PK___EFMigrationsHistory] PRIMARY KEY ([MigrationId])
+    );
+END; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 08:51:10.198 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1 {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 08:51:10.208 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]'); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 08:51:10.222 +07:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [MigrationId], [ProductVersion]
+FROM [__EFMigrationsHistory]
+ORDER BY [MigrationId]; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 08:51:10.240 +07:00 [INF] No migrations were applied. The database is already up to date. {"EventId":{"Id":20405,"Name":"Microsoft.EntityFrameworkCore.Migrations.MigrationsNotApplied"},"SourceContext":"Microsoft.EntityFrameworkCore.Migrations"}
+2026-06-24 08:51:10.243 +07:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @result int;
+EXEC @result = sp_releaseapplock @Resource = '__EFMigrationsLock', @LockOwner = 'Session';
+SELECT @result {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 08:51:10.275 +07:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Products] AS [p]) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 08:51:10.431 +07:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[ABCClass], [p].[Barcode], [p].[CreatedAt], [p].[CreatedBy], [p].[Description], [p].[DescriptionEmbeddingJson], [p].[LastModifiedAt], [p].[LastModifiedBy], [p].[Name], [p].[SKU], [p].[Unit], [p].[Weight]
+FROM [Products] AS [p]
+WHERE [p].[DescriptionEmbeddingJson] IS NULL OR [p].[DescriptionEmbeddingJson] = N'' {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 08:51:10.723 +07:00 [INF] 🚀 Đang khởi động máy chủ Web API SmartWMS Center... {}
+2026-06-24 08:51:10.742 +07:00 [INF] User profile is available. Using 'C:\Users\Tak18\AppData\Local\ASP.NET\DataProtection-Keys' as key repository and Windows DPAPI to encrypt keys at rest. {"EventId":{"Id":63,"Name":"UsingProfileAsKeyRepositoryWithDPAPI"},"SourceContext":"Microsoft.AspNetCore.DataProtection.KeyManagement.XmlKeyManager"}
+2026-06-24 08:51:10.852 +07:00 [INF] Now listening on: http://localhost:5215 {"EventId":{"Id":14,"Name":"ListeningOnAddress"},"SourceContext":"Microsoft.Hosting.Lifetime"}
+2026-06-24 08:51:10.945 +07:00 [INF] Starting Hangfire Server using job storage: 'SQL Server: (localdb)\mssqllocaldb@SmartWMS_DB' {"SourceContext":"Hangfire.BackgroundJobServer"}
+2026-06-24 08:51:10.948 +07:00 [INF] Using the following options for SQL Server job storage: Queue poll interval: 00:00:00. {"SourceContext":"Hangfire.BackgroundJobServer"}
+2026-06-24 08:51:10.951 +07:00 [INF] Using the following options for Hangfire Server:
+    Worker count: 20
+    Listening queues: 'default'
+    Shutdown timeout: 00:00:15
+    Schedule polling interval: 00:00:15 {"SourceContext":"Hangfire.BackgroundJobServer"}
+2026-06-24 08:51:10.974 +07:00 [INF] Application started. Press Ctrl+C to shut down. {"SourceContext":"Microsoft.Hosting.Lifetime"}
+2026-06-24 08:51:10.978 +07:00 [INF] Hosting environment: Development {"SourceContext":"Microsoft.Hosting.Lifetime"}
+2026-06-24 08:51:10.982 +07:00 [INF] Content root path: C:\Users\Tak18\OneDrive\Desktop\CNTT\LapTrinhNangCao\SmartWMS\SmartWMS.Api {"SourceContext":"Microsoft.Hosting.Lifetime"}
+2026-06-24 08:51:11.001 +07:00 [INF] Server desktop-2al4ncg:9432:9eed0a50 successfully announced in 25.312 ms {"SourceContext":"Hangfire.Server.BackgroundServerProcess"}
+2026-06-24 08:51:11.008 +07:00 [INF] Server desktop-2al4ncg:9432:9eed0a50 is starting the registered dispatchers: ServerWatchdog, ServerJobCancellationWatcher, SqlServerHeartbeatProcess, ExpirationManager, CountersAggregator, Worker, DelayedJobScheduler, RecurringJobScheduler... {"SourceContext":"Hangfire.Server.BackgroundServerProcess"}
+2026-06-24 08:51:11.022 +07:00 [INF] 2 servers were removed due to timeout {"SourceContext":"Hangfire.Server.ServerWatchdog"}
+2026-06-24 08:51:11.026 +07:00 [INF] Server desktop-2al4ncg:9432:9eed0a50 all the dispatchers started {"SourceContext":"Hangfire.Server.BackgroundServerProcess"}
+2026-06-24 08:51:19.765 +07:00 [INF] Request starting HTTP/1.1 GET http://localhost:5215/api/v1/api/Product/a1023456-bbbb-cccc-dddd-eeeeffff0000/qrcode - null null {"EventId":{"Id":1},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNMHICB46H2I:00000001","RequestPath":"/api/v1/api/Product/a1023456-bbbb-cccc-dddd-eeeeffff0000/qrcode","ConnectionId":"0HNMHICB46H2I"}
+2026-06-24 08:51:19.882 +07:00 [WRN] Failed to determine the https port for redirect. {"EventId":{"Id":3,"Name":"FailedToDeterminePort"},"SourceContext":"Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionMiddleware","RequestId":"0HNMHICB46H2I:00000001","RequestPath":"/api/v1/api/Product/a1023456-bbbb-cccc-dddd-eeeeffff0000/qrcode","ConnectionId":"0HNMHICB46H2I"}
+2026-06-24 08:51:20.136 +07:00 [INF] HTTP GET /api/v1/api/Product/a1023456-bbbb-cccc-dddd-eeeeffff0000/qrcode responded 404 in 255.7120 ms {"SourceContext":"Serilog.AspNetCore.RequestLoggingMiddleware","RequestId":"0HNMHICB46H2I:00000001","ConnectionId":"0HNMHICB46H2I"}
+2026-06-24 08:51:20.147 +07:00 [INF] Request finished HTTP/1.1 GET http://localhost:5215/api/v1/api/Product/a1023456-bbbb-cccc-dddd-eeeeffff0000/qrcode - 404 0 null 382.4751ms {"EventId":{"Id":2},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNMHICB46H2I:00000001","RequestPath":"/api/v1/api/Product/a1023456-bbbb-cccc-dddd-eeeeffff0000/qrcode","ConnectionId":"0HNMHICB46H2I"}
+2026-06-24 08:51:20.168 +07:00 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5215/api/v1/api/Product/a1023456-bbbb-cccc-dddd-eeeeffff0000/qrcode, Response status code: 404 {"EventId":{"Id":16},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNMHICB46H2I:00000001","RequestPath":"/api/v1/api/Product/a1023456-bbbb-cccc-dddd-eeeeffff0000/qrcode","ConnectionId":"0HNMHICB46H2I"}
+2026-06-24 08:51:51.064 +07:00 [INF] Request starting HTTP/1.1 GET http://localhost:5215/api/v1/api/Product/a1023456-bbbb-cccc-dddd-eeeeffff0000/qrcode - application/json 252 {"EventId":{"Id":1},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNMHICB46H2I:00000002","RequestPath":"/api/v1/api/Product/a1023456-bbbb-cccc-dddd-eeeeffff0000/qrcode","ConnectionId":"0HNMHICB46H2I"}
+2026-06-24 08:51:51.084 +07:00 [INF] HTTP GET /api/v1/api/Product/a1023456-bbbb-cccc-dddd-eeeeffff0000/qrcode responded 404 in 3.6680 ms {"SourceContext":"Serilog.AspNetCore.RequestLoggingMiddleware","RequestId":"0HNMHICB46H2I:00000002","ConnectionId":"0HNMHICB46H2I"}
+2026-06-24 08:51:51.090 +07:00 [INF] Request finished HTTP/1.1 GET http://localhost:5215/api/v1/api/Product/a1023456-bbbb-cccc-dddd-eeeeffff0000/qrcode - 404 0 null 25.3111ms {"EventId":{"Id":2},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNMHICB46H2I:00000002","RequestPath":"/api/v1/api/Product/a1023456-bbbb-cccc-dddd-eeeeffff0000/qrcode","ConnectionId":"0HNMHICB46H2I"}
+2026-06-24 08:51:51.103 +07:00 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5215/api/v1/api/Product/a1023456-bbbb-cccc-dddd-eeeeffff0000/qrcode, Response status code: 404 {"EventId":{"Id":16},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNMHICB46H2I:00000002","RequestPath":"/api/v1/api/Product/a1023456-bbbb-cccc-dddd-eeeeffff0000/qrcode","ConnectionId":"0HNMHICB46H2I"}
+2026-06-24 08:54:49.343 +07:00 [INF] Request starting HTTP/1.1 GET http://localhost:5215/api/v1/api/v1/products/qr-code?sku=LAP-LENOVO-001 - null null {"EventId":{"Id":1},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNMHICB46H2K:00000001","RequestPath":"/api/v1/api/v1/products/qr-code","ConnectionId":"0HNMHICB46H2K"}
+2026-06-24 08:54:49.362 +07:00 [INF] HTTP GET /api/v1/api/v1/products/qr-code responded 404 in 8.4121 ms {"SourceContext":"Serilog.AspNetCore.RequestLoggingMiddleware","RequestId":"0HNMHICB46H2K:00000001","ConnectionId":"0HNMHICB46H2K"}
+2026-06-24 08:54:49.370 +07:00 [INF] Request finished HTTP/1.1 GET http://localhost:5215/api/v1/api/v1/products/qr-code?sku=LAP-LENOVO-001 - 404 0 null 26.9294ms {"EventId":{"Id":2},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNMHICB46H2K:00000001","RequestPath":"/api/v1/api/v1/products/qr-code","ConnectionId":"0HNMHICB46H2K"}
+2026-06-24 08:54:49.380 +07:00 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5215/api/v1/api/v1/products/qr-code, Response status code: 404 {"EventId":{"Id":16},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNMHICB46H2K:00000001","RequestPath":"/api/v1/api/v1/products/qr-code","ConnectionId":"0HNMHICB46H2K"}
+2026-06-24 08:55:13.421 +07:00 [INF] Request starting HTTP/1.1 GET http://localhost:5215/api/v1/api/v1/products/qr-code?sku=LAP-LENOVO-001 - application/json 173 {"EventId":{"Id":1},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNMHICB46H2K:00000002","RequestPath":"/api/v1/api/v1/products/qr-code","ConnectionId":"0HNMHICB46H2K"}
+2026-06-24 08:55:13.435 +07:00 [INF] HTTP GET /api/v1/api/v1/products/qr-code responded 404 in 0.5053 ms {"SourceContext":"Serilog.AspNetCore.RequestLoggingMiddleware","RequestId":"0HNMHICB46H2K:00000002","ConnectionId":"0HNMHICB46H2K"}
+2026-06-24 08:55:13.443 +07:00 [INF] Request finished HTTP/1.1 GET http://localhost:5215/api/v1/api/v1/products/qr-code?sku=LAP-LENOVO-001 - 404 0 null 22.0187ms {"EventId":{"Id":2},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNMHICB46H2K:00000002","RequestPath":"/api/v1/api/v1/products/qr-code","ConnectionId":"0HNMHICB46H2K"}
+2026-06-24 08:55:13.461 +07:00 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5215/api/v1/api/v1/products/qr-code, Response status code: 404 {"EventId":{"Id":16},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNMHICB46H2K:00000002","RequestPath":"/api/v1/api/v1/products/qr-code","ConnectionId":"0HNMHICB46H2K"}
+2026-06-24 08:56:56.100 +07:00 [INF] Request starting HTTP/1.1 GET http://localhost:5215/api/v1/api/v1/products/qr-code?sku=LAP-LENOVO-001 - application/json 190 {"EventId":{"Id":1},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNMHICB46H2M:00000001","RequestPath":"/api/v1/api/v1/products/qr-code","ConnectionId":"0HNMHICB46H2M"}
+2026-06-24 08:56:56.113 +07:00 [INF] HTTP GET /api/v1/api/v1/products/qr-code responded 404 in 0.5892 ms {"SourceContext":"Serilog.AspNetCore.RequestLoggingMiddleware","RequestId":"0HNMHICB46H2M:00000001","ConnectionId":"0HNMHICB46H2M"}
+2026-06-24 08:56:56.121 +07:00 [INF] Request finished HTTP/1.1 GET http://localhost:5215/api/v1/api/v1/products/qr-code?sku=LAP-LENOVO-001 - 404 0 null 20.9953ms {"EventId":{"Id":2},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNMHICB46H2M:00000001","RequestPath":"/api/v1/api/v1/products/qr-code","ConnectionId":"0HNMHICB46H2M"}
+2026-06-24 08:56:56.135 +07:00 [INF] Request reached the end of the middleware pipeline without being handled by application code. Request path: GET http://localhost:5215/api/v1/api/v1/products/qr-code, Response status code: 404 {"EventId":{"Id":16},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNMHICB46H2M:00000001","RequestPath":"/api/v1/api/v1/products/qr-code","ConnectionId":"0HNMHICB46H2M"}
+2026-06-24 09:00:11.882 +07:00 [INF] Executed DbCommand (13ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [b].[Id], [b].[BinId], [b].[CreatedAt], [b].[CreatedBy], [b].[ExpirationDate], [b].[LastModifiedAt], [b].[LastModifiedBy], [b].[LotNumber], [b].[LpnCode], [b].[ProductId], [b].[Quantity], [b].[RowVersion], [b].[Status], [p].[Id], [p].[ABCClass], [p].[Barcode], [p].[CreatedAt], [p].[CreatedBy], [p].[Description], [p].[DescriptionEmbeddingJson], [p].[LastModifiedAt], [p].[LastModifiedBy], [p].[Name], [p].[SKU], [p].[Unit], [p].[Weight]
+FROM [BinInventories] AS [b]
+INNER JOIN [Products] AS [p] ON [b].[ProductId] = [p].[Id]
+WHERE [b].[Quantity] < 20 AND [b].[Status] = 1 {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 09:24:31.407 +07:00 [INF] Start installing Hangfire SQL objects... {"SourceContext":"Hangfire.SqlServer.SqlServerObjectsInstaller"}
+2026-06-24 09:24:32.164 +07:00 [INF] Hangfire SQL objects installed. {"SourceContext":"Hangfire.SqlServer.SqlServerObjectsInstaller"}
+2026-06-24 09:24:34.132 +07:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1 {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 09:24:34.148 +07:00 [INF] Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long. {"EventId":{"Id":20411,"Name":"Microsoft.EntityFrameworkCore.Migrations.AcquiringMigrationLock"},"SourceContext":"Microsoft.EntityFrameworkCore.Migrations"}
+2026-06-24 09:24:34.157 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @result int;
+EXEC @result = sp_getapplock @Resource = '__EFMigrationsLock', @LockOwner = 'Session', @LockMode = 'Exclusive';
+SELECT @result {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 09:24:34.275 +07:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+IF OBJECT_ID(N'[__EFMigrationsHistory]') IS NULL
+BEGIN
+    CREATE TABLE [__EFMigrationsHistory] (
+        [MigrationId] nvarchar(150) NOT NULL,
+        [ProductVersion] nvarchar(32) NOT NULL,
+        CONSTRAINT [PK___EFMigrationsHistory] PRIMARY KEY ([MigrationId])
+    );
+END; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 09:24:34.298 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1 {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 09:24:34.305 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]'); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 09:24:34.322 +07:00 [INF] Executed DbCommand (9ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [MigrationId], [ProductVersion]
+FROM [__EFMigrationsHistory]
+ORDER BY [MigrationId]; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 09:24:34.340 +07:00 [INF] No migrations were applied. The database is already up to date. {"EventId":{"Id":20405,"Name":"Microsoft.EntityFrameworkCore.Migrations.MigrationsNotApplied"},"SourceContext":"Microsoft.EntityFrameworkCore.Migrations"}
+2026-06-24 09:24:34.344 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @result int;
+EXEC @result = sp_releaseapplock @Resource = '__EFMigrationsLock', @LockOwner = 'Session';
+SELECT @result {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 09:24:34.702 +07:00 [INF] Executed DbCommand (13ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Users] AS [u]) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 09:24:34.724 +07:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Warehouses] AS [w]) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 09:24:34.804 +07:00 [INF] Executed DbCommand (19ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1 {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 09:24:34.816 +07:00 [INF] Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long. {"EventId":{"Id":20411,"Name":"Microsoft.EntityFrameworkCore.Migrations.AcquiringMigrationLock"},"SourceContext":"Microsoft.EntityFrameworkCore.Migrations"}
+2026-06-24 09:24:34.839 +07:00 [INF] Executed DbCommand (17ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @result int;
+EXEC @result = sp_getapplock @Resource = '__EFMigrationsLock', @LockOwner = 'Session', @LockMode = 'Exclusive';
+SELECT @result {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 09:24:34.863 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+IF OBJECT_ID(N'[__EFMigrationsHistory]') IS NULL
+BEGIN
+    CREATE TABLE [__EFMigrationsHistory] (
+        [MigrationId] nvarchar(150) NOT NULL,
+        [ProductVersion] nvarchar(32) NOT NULL,
+        CONSTRAINT [PK___EFMigrationsHistory] PRIMARY KEY ([MigrationId])
+    );
+END; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 09:24:34.894 +07:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1 {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 09:24:34.901 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]'); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 09:24:34.914 +07:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [MigrationId], [ProductVersion]
+FROM [__EFMigrationsHistory]
+ORDER BY [MigrationId]; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 09:24:34.928 +07:00 [INF] No migrations were applied. The database is already up to date. {"EventId":{"Id":20405,"Name":"Microsoft.EntityFrameworkCore.Migrations.MigrationsNotApplied"},"SourceContext":"Microsoft.EntityFrameworkCore.Migrations"}
+2026-06-24 09:24:34.931 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @result int;
+EXEC @result = sp_releaseapplock @Resource = '__EFMigrationsLock', @LockOwner = 'Session';
+SELECT @result {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 09:24:34.967 +07:00 [INF] Executed DbCommand (10ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Products] AS [p]) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 09:24:35.119 +07:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[ABCClass], [p].[Barcode], [p].[CreatedAt], [p].[CreatedBy], [p].[Description], [p].[DescriptionEmbeddingJson], [p].[LastModifiedAt], [p].[LastModifiedBy], [p].[Name], [p].[SKU], [p].[Unit], [p].[Weight]
+FROM [Products] AS [p]
+WHERE [p].[DescriptionEmbeddingJson] IS NULL OR [p].[DescriptionEmbeddingJson] = N'' {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-24 09:24:35.390 +07:00 [INF] 🚀 Đang khởi động máy chủ Web API SmartWMS Center... {}
+2026-06-24 09:24:35.411 +07:00 [INF] User profile is available. Using 'C:\Users\Tak18\AppData\Local\ASP.NET\DataProtection-Keys' as key repository and Windows DPAPI to encrypt keys at rest. {"EventId":{"Id":63,"Name":"UsingProfileAsKeyRepositoryWithDPAPI"},"SourceContext":"Microsoft.AspNetCore.DataProtection.KeyManagement.XmlKeyManager"}
+2026-06-24 09:24:35.535 +07:00 [INF] Now listening on: http://localhost:5215 {"EventId":{"Id":14,"Name":"ListeningOnAddress"},"SourceContext":"Microsoft.Hosting.Lifetime"}
+2026-06-24 09:24:35.634 +07:00 [INF] Starting Hangfire Server using job storage: 'SQL Server: (localdb)\mssqllocaldb@SmartWMS_DB' {"SourceContext":"Hangfire.BackgroundJobServer"}
+2026-06-24 09:24:35.637 +07:00 [INF] Using the following options for SQL Server job storage: Queue poll interval: 00:00:00. {"SourceContext":"Hangfire.BackgroundJobServer"}
+2026-06-24 09:24:35.640 +07:00 [INF] Using the following options for Hangfire Server:
+    Worker count: 20
+    Listening queues: 'default'
+    Shutdown timeout: 00:00:15
+    Schedule polling interval: 00:00:15 {"SourceContext":"Hangfire.BackgroundJobServer"}
+2026-06-24 09:24:35.667 +07:00 [INF] Application started. Press Ctrl+C to shut down. {"SourceContext":"Microsoft.Hosting.Lifetime"}
+2026-06-24 09:24:35.671 +07:00 [INF] Hosting environment: Development {"SourceContext":"Microsoft.Hosting.Lifetime"}
+2026-06-24 09:24:35.673 +07:00 [INF] Content root path: C:\Users\Tak18\OneDrive\Desktop\CNTT\LapTrinhNangCao\SmartWMS\SmartWMS.Api {"SourceContext":"Microsoft.Hosting.Lifetime"}
+2026-06-24 09:24:35.700 +07:00 [INF] Server desktop-2al4ncg:16728:448dd42a successfully announced in 31.2764 ms {"SourceContext":"Hangfire.Server.BackgroundServerProcess"}
+2026-06-24 09:24:35.707 +07:00 [INF] Server desktop-2al4ncg:16728:448dd42a is starting the registered dispatchers: ServerWatchdog, ServerJobCancellationWatcher, SqlServerHeartbeatProcess, ExpirationManager, CountersAggregator, Worker, DelayedJobScheduler, RecurringJobScheduler... {"SourceContext":"Hangfire.Server.BackgroundServerProcess"}
+2026-06-24 09:24:35.723 +07:00 [INF] Server desktop-2al4ncg:16728:448dd42a all the dispatchers started {"SourceContext":"Hangfire.Server.BackgroundServerProcess"}
+2026-06-24 09:24:52.540 +07:00 [INF] Request starting HTTP/1.1 POST http://localhost:5215/api/v1/products/parse-barcode - application/json 44 {"EventId":{"Id":1},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNMHIV2VH9HP:00000001","RequestPath":"/api/v1/products/parse-barcode","ConnectionId":"0HNMHIV2VH9HP"}
+2026-06-24 09:24:52.637 +07:00 [WRN] Failed to determine the https port for redirect. {"EventId":{"Id":3,"Name":"FailedToDeterminePort"},"SourceContext":"Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionMiddleware","RequestId":"0HNMHIV2VH9HP:00000001","RequestPath":"/api/v1/products/parse-barcode","ConnectionId":"0HNMHIV2VH9HP"}
+2026-06-24 09:24:52.763 +07:00 [INF] Failed to validate the token. {"EventId":{"Id":1,"Name":"TokenValidationFailed"},"SourceContext":"Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerHandler","RequestId":"0HNMHIV2VH9HP:00000001","RequestPath":"/api/v1/products/parse-barcode","ConnectionId":"0HNMHIV2VH9HP"}
+Microsoft.IdentityModel.Tokens.SecurityTokenExpiredException: IDX10223: Lifetime validation failed. The token is expired. ValidTo (UTC): '24/06/2026 02:02:28', Current time (UTC): '24/06/2026 02:24:52'.
+   at Microsoft.IdentityModel.Tokens.ValidatorUtilities.ValidateLifetime(Nullable`1 notBefore, Nullable`1 expires, SecurityToken securityToken, TokenValidationParameters validationParameters)
+   at Microsoft.IdentityModel.Tokens.Validators.ValidateLifetime(Nullable`1 notBefore, Nullable`1 expires, SecurityToken securityToken, TokenValidationParameters validationParameters)
+   at Microsoft.IdentityModel.JsonWebTokens.JsonWebTokenHandler.ValidateTokenPayloadAsync(JsonWebToken jsonWebToken, TokenValidationParameters validationParameters, BaseConfiguration configuration)
+   at Microsoft.IdentityModel.JsonWebTokens.JsonWebTokenHandler.ValidateJWSAsync(JsonWebToken jsonWebToken, TokenValidationParameters validationParameters, BaseConfiguration configuration)
+2026-06-24 09:24:52.794 +07:00 [INF] Bearer was not authenticated. Failure message: IDX10223: Lifetime validation failed. The token is expired. ValidTo (UTC): '24/06/2026 02:02:28', Current time (UTC): '24/06/2026 02:24:52'. {"EventId":{"Id":7,"Name":"AuthenticationSchemeNotAuthenticatedWithFailure"},"SourceContext":"Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerHandler","RequestId":"0HNMHIV2VH9HP:00000001","RequestPath":"/api/v1/products/parse-barcode","ConnectionId":"0HNMHIV2VH9HP"}
+2026-06-24 09:24:52.806 +07:00 [INF] Authorization failed. These requirements were not met:
+RolesAuthorizationRequirement:User.IsInRole must be true for one of the following roles: (Admin|Manager|Staff) {"EventId":{"Id":2,"Name":"UserAuthorizationFailed"},"SourceContext":"Microsoft.AspNetCore.Authorization.DefaultAuthorizationService","RequestId":"0HNMHIV2VH9HP:00000001","RequestPath":"/api/v1/products/parse-barcode","ConnectionId":"0HNMHIV2VH9HP"}
+2026-06-24 09:24:52.818 +07:00 [INF] AuthenticationScheme: Bearer was challenged. {"EventId":{"Id":12,"Name":"AuthenticationSchemeChallenged"},"SourceContext":"Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerHandler","RequestId":"0HNMHIV2VH9HP:00000001","RequestPath":"/api/v1/products/parse-barcode","ConnectionId":"0HNMHIV2VH9HP"}
+2026-06-24 09:24:52.825 +07:00 [INF] HTTP POST /api/v1/products/parse-barcode responded 401 in 188.4144 ms {"SourceContext":"Serilog.AspNetCore.RequestLoggingMiddleware","RequestId":"0HNMHIV2VH9HP:00000001","ConnectionId":"0HNMHIV2VH9HP"}
+2026-06-24 09:24:52.834 +07:00 [INF] Request finished HTTP/1.1 POST http://localhost:5215/api/v1/products/parse-barcode - 401 0 null 295.1936ms {"EventId":{"Id":2},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNMHIV2VH9HP:00000001","RequestPath":"/api/v1/products/parse-barcode","ConnectionId":"0HNMHIV2VH9HP"}
+2026-06-24 09:25:12.928 +07:00 [INF] Request starting HTTP/1.1 GET http://localhost:5215/api/v1/products/paged?pageNumber=1&pageSize=10&searchKeyword=Lenovo - null null {"EventId":{"Id":1},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNMHIV2VH9HP:00000002","RequestPath":"/api/v1/products/paged","ConnectionId":"0HNMHIV2VH9HP"}
+2026-06-24 09:25:12.946 +07:00 [INF] Failed to validate the token. {"EventId":{"Id":1,"Name":"TokenValidationFailed"},"SourceContext":"Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerHandler","RequestId":"0HNMHIV2VH9HP:00000002","RequestPath":"/api/v1/products/paged","ConnectionId":"0HNMHIV2VH9HP"}
+Microsoft.IdentityModel.Tokens.SecurityTokenExpiredException: IDX10223: Lifetime validation failed. The token is expired. ValidTo (UTC): '24/06/2026 02:02:28', Current time (UTC): '24/06/2026 02:25:12'.
+   at Microsoft.IdentityModel.Tokens.ValidatorUtilities.ValidateLifetime(Nullable`1 notBefore, Nullable`1 expires, SecurityToken securityToken, TokenValidationParameters validationParameters)
+   at Microsoft.IdentityModel.Tokens.Validators.ValidateLifetime(Nullable`1 notBefore, Nullable`1 expires, SecurityToken securityToken, TokenValidationParameters validationParameters)
+   at Microsoft.IdentityModel.JsonWebTokens.JsonWebTokenHandler.ValidateTokenPayloadAsync(JsonWebToken jsonWebToken, TokenValidationParameters validationParameters, BaseConfiguration configuration)
+   at Microsoft.IdentityModel.JsonWebTokens.JsonWebTokenHandler.ValidateJWSAsync(JsonWebToken jsonWebToken, TokenValidationParameters validationParameters, BaseConfiguration configuration)
+2026-06-24 09:25:12.956 +07:00 [INF] Bearer was not authenticated. Failure message: IDX10223: Lifetime validation failed. The token is expired. ValidTo (UTC): '24/06/2026 02:02:28', Current time (UTC): '24/06/2026 02:25:12'. {"EventId":{"Id":7,"Name":"AuthenticationSchemeNotAuthenticatedWithFailure"},"SourceContext":"Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerHandler","RequestId":"0HNMHIV2VH9HP:00000002","RequestPath":"/api/v1/products/paged","ConnectionId":"0HNMHIV2VH9HP"}
+2026-06-24 09:25:12.961 +07:00 [INF] Authorization failed. These requirements were not met:
+RolesAuthorizationRequirement:User.IsInRole must be true for one of the following roles: (Admin|Manager|Staff) {"EventId":{"Id":2,"Name":"UserAuthorizationFailed"},"SourceContext":"Microsoft.AspNetCore.Authorization.DefaultAuthorizationService","RequestId":"0HNMHIV2VH9HP:00000002","RequestPath":"/api/v1/products/paged","ConnectionId":"0HNMHIV2VH9HP"}
+2026-06-24 09:25:12.965 +07:00 [INF] AuthenticationScheme: Bearer was challenged. {"EventId":{"Id":12,"Name":"AuthenticationSchemeChallenged"},"SourceContext":"Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerHandler","RequestId":"0HNMHIV2VH9HP:00000002","RequestPath":"/api/v1/products/paged","ConnectionId":"0HNMHIV2VH9HP"}
+2026-06-24 09:25:12.968 +07:00 [INF] HTTP GET /api/v1/products/paged responded 401 in 26.3421 ms {"SourceContext":"Serilog.AspNetCore.RequestLoggingMiddleware","RequestId":"0HNMHIV2VH9HP:00000002","ConnectionId":"0HNMHIV2VH9HP"}
+2026-06-24 09:25:12.973 +07:00 [INF] Request finished HTTP/1.1 GET http://localhost:5215/api/v1/products/paged?pageNumber=1&pageSize=10&searchKeyword=Lenovo - 401 0 null 45.2957ms {"EventId":{"Id":2},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNMHIV2VH9HP:00000002","RequestPath":"/api/v1/products/paged","ConnectionId":"0HNMHIV2VH9HP"}
+2026-06-24 09:25:22.331 +07:00 [INF] Request starting HTTP/1.1 POST http://localhost:5215/api/v1/products/parse-barcode - application/json 44 {"EventId":{"Id":1},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNMHIV2VH9HP:00000003","RequestPath":"/api/v1/products/parse-barcode","ConnectionId":"0HNMHIV2VH9HP"}
+2026-06-24 09:25:22.345 +07:00 [INF] Failed to validate the token. {"EventId":{"Id":1,"Name":"TokenValidationFailed"},"SourceContext":"Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerHandler","RequestId":"0HNMHIV2VH9HP:00000003","RequestPath":"/api/v1/products/parse-barcode","ConnectionId":"0HNMHIV2VH9HP"}
+Microsoft.IdentityModel.Tokens.SecurityTokenExpiredException: IDX10223: Lifetime validation failed. The token is expired. ValidTo (UTC): '24/06/2026 02:02:28', Current time (UTC): '24/06/2026 02:25:22'.
+   at Microsoft.IdentityModel.Tokens.ValidatorUtilities.ValidateLifetime(Nullable`1 notBefore, Nullable`1 expires, SecurityToken securityToken, TokenValidationParameters validationParameters)
+   at Microsoft.IdentityModel.Tokens.Validators.ValidateLifetime(Nullable`1 notBefore, Nullable`1 expires, SecurityToken securityToken, TokenValidationParameters validationParameters)
+   at Microsoft.IdentityModel.JsonWebTokens.JsonWebTokenHandler.ValidateTokenPayloadAsync(JsonWebToken jsonWebToken, TokenValidationParameters validationParameters, BaseConfiguration configuration)
+   at Microsoft.IdentityModel.JsonWebTokens.JsonWebTokenHandler.ValidateJWSAsync(JsonWebToken jsonWebToken, TokenValidationParameters validationParameters, BaseConfiguration configuration)
+2026-06-24 09:25:22.366 +07:00 [INF] Bearer was not authenticated. Failure message: IDX10223: Lifetime validation failed. The token is expired. ValidTo (UTC): '24/06/2026 02:02:28', Current time (UTC): '24/06/2026 02:25:22'. {"EventId":{"Id":7,"Name":"AuthenticationSchemeNotAuthenticatedWithFailure"},"SourceContext":"Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerHandler","RequestId":"0HNMHIV2VH9HP:00000003","RequestPath":"/api/v1/products/parse-barcode","ConnectionId":"0HNMHIV2VH9HP"}
+2026-06-24 09:25:22.375 +07:00 [INF] Authorization failed. These requirements were not met:
+RolesAuthorizationRequirement:User.IsInRole must be true for one of the following roles: (Admin|Manager|Staff) {"EventId":{"Id":2,"Name":"UserAuthorizationFailed"},"SourceContext":"Microsoft.AspNetCore.Authorization.DefaultAuthorizationService","RequestId":"0HNMHIV2VH9HP:00000003","RequestPath":"/api/v1/products/parse-barcode","ConnectionId":"0HNMHIV2VH9HP"}
+2026-06-24 09:25:22.381 +07:00 [INF] AuthenticationScheme: Bearer was challenged. {"EventId":{"Id":12,"Name":"AuthenticationSchemeChallenged"},"SourceContext":"Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerHandler","RequestId":"0HNMHIV2VH9HP:00000003","RequestPath":"/api/v1/products/parse-barcode","ConnectionId":"0HNMHIV2VH9HP"}
+2026-06-24 09:25:22.385 +07:00 [INF] HTTP POST /api/v1/products/parse-barcode responded 401 in 44.1958 ms {"SourceContext":"Serilog.AspNetCore.RequestLoggingMiddleware","RequestId":"0HNMHIV2VH9HP:00000003","ConnectionId":"0HNMHIV2VH9HP"}
+2026-06-24 09:25:22.392 +07:00 [INF] Request finished HTTP/1.1 POST http://localhost:5215/api/v1/products/parse-barcode - 401 0 null 60.898ms {"EventId":{"Id":2},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNMHIV2VH9HP:00000003","RequestPath":"/api/v1/products/parse-barcode","ConnectionId":"0HNMHIV2VH9HP"}
+2026-06-24 09:25:43.720 +07:00 [INF] Request starting HTTP/1.1 GET http://localhost:5215/api/v1/inboundreceipts/putaway-suggestion?sku=LAP-LENOVO-001&quantity=50 - null null {"EventId":{"Id":1},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNMHIV2VH9HP:00000004","RequestPath":"/api/v1/inboundreceipts/putaway-suggestion","ConnectionId":"0HNMHIV2VH9HP"}
+2026-06-24 09:25:43.731 +07:00 [INF] Failed to validate the token. {"EventId":{"Id":1,"Name":"TokenValidationFailed"},"SourceContext":"Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerHandler","RequestId":"0HNMHIV2VH9HP:00000004","RequestPath":"/api/v1/inboundreceipts/putaway-suggestion","ConnectionId":"0HNMHIV2VH9HP"}
+Microsoft.IdentityModel.Tokens.SecurityTokenExpiredException: IDX10223: Lifetime validation failed. The token is expired. ValidTo (UTC): '24/06/2026 02:02:28', Current time (UTC): '24/06/2026 02:25:43'.
+   at Microsoft.IdentityModel.Tokens.ValidatorUtilities.ValidateLifetime(Nullable`1 notBefore, Nullable`1 expires, SecurityToken securityToken, TokenValidationParameters validationParameters)
+   at Microsoft.IdentityModel.Tokens.Validators.ValidateLifetime(Nullable`1 notBefore, Nullable`1 expires, SecurityToken securityToken, TokenValidationParameters validationParameters)
+   at Microsoft.IdentityModel.JsonWebTokens.JsonWebTokenHandler.ValidateTokenPayloadAsync(JsonWebToken jsonWebToken, TokenValidationParameters validationParameters, BaseConfiguration configuration)
+   at Microsoft.IdentityModel.JsonWebTokens.JsonWebTokenHandler.ValidateJWSAsync(JsonWebToken jsonWebToken, TokenValidationParameters validationParameters, BaseConfiguration configuration)
+2026-06-24 09:25:43.744 +07:00 [INF] Bearer was not authenticated. Failure message: IDX10223: Lifetime validation failed. The token is expired. ValidTo (UTC): '24/06/2026 02:02:28', Current time (UTC): '24/06/2026 02:25:43'. {"EventId":{"Id":7,"Name":"AuthenticationSchemeNotAuthenticatedWithFailure"},"SourceContext":"Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerHandler","RequestId":"0HNMHIV2VH9HP:00000004","RequestPath":"/api/v1/inboundreceipts/putaway-suggestion","ConnectionId":"0HNMHIV2VH9HP"}
+2026-06-24 09:25:43.748 +07:00 [INF] Authorization failed. These requirements were not met:
+RolesAuthorizationRequirement:User.IsInRole must be true for one of the following roles: (Admin|Manager|Staff) {"EventId":{"Id":2,"Name":"UserAuthorizationFailed"},"SourceContext":"Microsoft.AspNetCore.Authorization.DefaultAuthorizationService","RequestId":"0HNMHIV2VH9HP:00000004","RequestPath":"/api/v1/inboundreceipts/putaway-suggestion","ConnectionId":"0HNMHIV2VH9HP"}
+2026-06-24 09:25:43.752 +07:00 [INF] AuthenticationScheme: Bearer was challenged. {"EventId":{"Id":12,"Name":"AuthenticationSchemeChallenged"},"SourceContext":"Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerHandler","RequestId":"0HNMHIV2VH9HP:00000004","RequestPath":"/api/v1/inboundreceipts/putaway-suggestion","ConnectionId":"0HNMHIV2VH9HP"}
+2026-06-24 09:25:43.756 +07:00 [INF] HTTP GET /api/v1/inboundreceipts/putaway-suggestion responded 401 in 25.2501 ms {"SourceContext":"Serilog.AspNetCore.RequestLoggingMiddleware","RequestId":"0HNMHIV2VH9HP:00000004","ConnectionId":"0HNMHIV2VH9HP"}
+2026-06-24 09:25:43.762 +07:00 [INF] Request finished HTTP/1.1 GET http://localhost:5215/api/v1/inboundreceipts/putaway-suggestion?sku=LAP-LENOVO-001&quantity=50 - 401 0 null 41.874ms {"EventId":{"Id":2},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNMHIV2VH9HP:00000004","RequestPath":"/api/v1/inboundreceipts/putaway-suggestion","ConnectionId":"0HNMHIV2VH9HP"}
+2026-06-24 09:25:55.493 +07:00 [INF] Request starting HTTP/1.1 POST http://localhost:5215/api/v1/auth/login - application/json 59 {"EventId":{"Id":1},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNMHIV2VH9HP:00000005","RequestPath":"/api/v1/auth/login","ConnectionId":"0HNMHIV2VH9HP"}
+2026-06-24 09:25:55.502 +07:00 [INF] Failed to validate the token. {"EventId":{"Id":1,"Name":"TokenValidationFailed"},"SourceContext":"Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerHandler","RequestId":"0HNMHIV2VH9HP:00000005","RequestPath":"/api/v1/auth/login","ConnectionId":"0HNMHIV2VH9HP"}
+Microsoft.IdentityModel.Tokens.SecurityTokenExpiredException: IDX10223: Lifetime validation failed. The token is expired. ValidTo (UTC): '24/06/2026 02:02:28', Current time (UTC): '24/06/2026 02:25:55'.
+   at Microsoft.IdentityModel.Tokens.ValidatorUtilities.ValidateLifetime(Nullable`1 notBefore, Nullable`1 expires, SecurityToken securityToken, TokenValidationParameters validationParameters)
+   at Microsoft.IdentityModel.Tokens.Validators.ValidateLifetime(Nullable`1 notBefore, Nullable`1 expires, SecurityToken securityToken, TokenValidationParameters validationParameters)
+   at Microsoft.IdentityModel.JsonWebTokens.JsonWebTokenHandler.ValidateTokenPayloadAsync(JsonWebToken jsonWebToken, TokenValidationParameters validationParameters, BaseConfiguration configuration)
+   at Microsoft.IdentityModel.JsonWebTokens.JsonWebTokenHandler.ValidateJWSAsync(JsonWebToken jsonWebToken, TokenValidationParameters validationParameters, BaseConfiguration configuration)
+2026-06-24 09:25:55.515 +07:00 [INF] Bearer was not authenticated. Failure message: IDX10223: Lifetime validation failed. The token is expired. ValidTo (UTC): '24/06/2026 02:02:28', Current time (UTC): '24/06/2026 02:25:55'. {"EventId":{"Id":7,"Name":"AuthenticationSchemeNotAuthenticatedWithFailure"},"SourceContext":"Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerHandler","RequestId":"0HNMHIV2VH9HP:00000005","RequestPath":"/api/v1/auth/login","ConnectionId":"0HNMHIV2VH9HP"}
+2026-06-24 09:25:55.523 +07:00 [INF] Executing endpoint 'SmartWMS.Api.Controllers.AuthController.Login (SmartWMS.Api)' {"EventId":{"Name":"ExecutingEndpoint"},"SourceContext":"Microsoft.AspNetCore.Routing.EndpointMiddleware","RequestId":"0HNMHIV2VH9HP:00000005","RequestPath":"/api/v1/auth/login","ConnectionId":"0HNMHIV2VH9HP"}
+2026-06-24 09:25:55.555 +07:00 [INF] Route matched with {action = "Login", controller = "Auth"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Login(SmartWMS.Api.Controllers.LoginRequest) on controller SmartWMS.Api.Controllers.AuthController (SmartWMS.Api). {"EventId":{"Id":102,"Name":"ControllerActionExecuting"},"SourceContext":"Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker","ActionId":"8afdbd3d-bb95-4af3-8be5-ac50b812ed8d","ActionName":"SmartWMS.Api.Controllers.AuthController.Login (SmartWMS.Api)","RequestId":"0HNMHIV2VH9HP:00000005","RequestPath":"/api/v1/auth/login","ConnectionId":"0HNMHIV2VH9HP"}
+2026-06-24 09:25:55.698 +07:00 [INF] Executed DbCommand (3ms) [Parameters=[@request_Username='?' (Size = 4000), @hashPassword='?' (Size = 4000)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [u].[Id], [u].[CreatedAt], [u].[CreatedBy], [u].[Email], [u].[FirstName], [u].[IsActive], [u].[LastModifiedAt], [u].[LastModifiedBy], [u].[LastName], [u].[PasswordHash], [u].[Role], [u].[Username]
+FROM [Users] AS [u]
+WHERE [u].[Username] = @request_Username AND [u].[PasswordHash] = @hashPassword AND [u].[IsActive] = CAST(1 AS bit) {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command","ActionId":"8afdbd3d-bb95-4af3-8be5-ac50b812ed8d","ActionName":"SmartWMS.Api.Controllers.AuthController.Login (SmartWMS.Api)","RequestId":"0HNMHIV2VH9HP:00000005","RequestPath":"/api/v1/auth/login","ConnectionId":"0HNMHIV2VH9HP"}
+2026-06-24 09:25:55.849 +07:00 [INF] Executing OkObjectResult, writing value of type '<>f__AnonymousType1`3[[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[<>f__AnonymousType2`4[[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]], SmartWMS.Api, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null],[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'. {"EventId":{"Id":1,"Name":"ObjectResultExecuting"},"SourceContext":"Microsoft.AspNetCore.Mvc.Infrastructure.ObjectResultExecutor","ActionId":"8afdbd3d-bb95-4af3-8be5-ac50b812ed8d","ActionName":"SmartWMS.Api.Controllers.AuthController.Login (SmartWMS.Api)","RequestId":"0HNMHIV2VH9HP:00000005","RequestPath":"/api/v1/auth/login","ConnectionId":"0HNMHIV2VH9HP"}
+2026-06-24 09:25:55.871 +07:00 [INF] Executed action SmartWMS.Api.Controllers.AuthController.Login (SmartWMS.Api) in 303.4873ms {"EventId":{"Id":105,"Name":"ActionExecuted"},"SourceContext":"Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker","RequestId":"0HNMHIV2VH9HP:00000005","RequestPath":"/api/v1/auth/login","ConnectionId":"0HNMHIV2VH9HP"}
+2026-06-24 09:25:55.874 +07:00 [INF] Executed endpoint 'SmartWMS.Api.Controllers.AuthController.Login (SmartWMS.Api)' {"EventId":{"Id":1,"Name":"ExecutedEndpoint"},"SourceContext":"Microsoft.AspNetCore.Routing.EndpointMiddleware","RequestId":"0HNMHIV2VH9HP:00000005","RequestPath":"/api/v1/auth/login","ConnectionId":"0HNMHIV2VH9HP"}
+2026-06-24 09:25:55.880 +07:00 [INF] HTTP POST /api/v1/auth/login responded 200 in 379.3239 ms {"SourceContext":"Serilog.AspNetCore.RequestLoggingMiddleware","RequestId":"0HNMHIV2VH9HP:00000005","ConnectionId":"0HNMHIV2VH9HP"}
+2026-06-24 09:25:55.892 +07:00 [INF] Request finished HTTP/1.1 POST http://localhost:5215/api/v1/auth/login - 200 null application/json; charset=utf-8 399.8376ms {"EventId":{"Id":2},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNMHIV2VH9HP:00000005","RequestPath":"/api/v1/auth/login","ConnectionId":"0HNMHIV2VH9HP"}
+2026-06-24 09:29:35.722 +07:00 [INF] 1 servers were removed due to timeout {"SourceContext":"Hangfire.Server.ServerWatchdog"}
