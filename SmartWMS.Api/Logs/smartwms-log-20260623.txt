@@ -1,0 +1,430 @@
+2026-06-23 20:57:37.198 +07:00 [INF] Executed DbCommand (18ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1 {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 20:57:37.246 +07:00 [INF] Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long. {"EventId":{"Id":20411,"Name":"Microsoft.EntityFrameworkCore.Migrations.AcquiringMigrationLock"},"SourceContext":"Microsoft.EntityFrameworkCore.Migrations"}
+2026-06-23 20:57:37.272 +07:00 [INF] Executed DbCommand (22ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @result int;
+EXEC @result = sp_getapplock @Resource = '__EFMigrationsLock', @LockOwner = 'Session', @LockMode = 'Exclusive';
+SELECT @result {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 20:57:37.365 +07:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+IF OBJECT_ID(N'[__EFMigrationsHistory]') IS NULL
+BEGIN
+    CREATE TABLE [__EFMigrationsHistory] (
+        [MigrationId] nvarchar(150) NOT NULL,
+        [ProductVersion] nvarchar(32) NOT NULL,
+        CONSTRAINT [PK___EFMigrationsHistory] PRIMARY KEY ([MigrationId])
+    );
+END; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 20:57:37.375 +07:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1 {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 20:57:37.375 +07:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]'); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 20:57:37.386 +07:00 [INF] Executed DbCommand (8ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [MigrationId], [ProductVersion]
+FROM [__EFMigrationsHistory]
+ORDER BY [MigrationId]; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 20:57:37.398 +07:00 [INF] Applying migration '20260623135703_UpdateBinInventoryStructure'. {"EventId":{"Id":20402,"Name":"Microsoft.EntityFrameworkCore.Migrations.MigrationApplying"},"SourceContext":"Microsoft.EntityFrameworkCore.Migrations"}
+2026-06-23 20:57:37.441 +07:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DROP INDEX [IX_BinInventories_BatchNumber] ON [BinInventories]; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 20:57:37.442 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DROP INDEX [IX_BinInventories_BinId_ProductId_BatchNumber_Status] ON [BinInventories]; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 20:57:37.443 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DROP INDEX [IX_BinInventories_ExpiryDate] ON [BinInventories]; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 20:57:37.483 +07:00 [INF] Executed DbCommand (40ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @var nvarchar(max);
+SELECT @var = QUOTENAME([d].[name])
+FROM [sys].[default_constraints] [d]
+INNER JOIN [sys].[columns] [c] ON [d].[parent_column_id] = [c].[column_id] AND [d].[parent_object_id] = [c].[object_id]
+WHERE ([d].[parent_object_id] = OBJECT_ID(N'[BinInventories]') AND [c].[name] = N'BatchNumber');
+IF @var IS NOT NULL EXEC(N'ALTER TABLE [BinInventories] DROP CONSTRAINT ' + @var + ';');
+ALTER TABLE [BinInventories] DROP COLUMN [BatchNumber]; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 20:57:37.506 +07:00 [INF] Executed DbCommand (22ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @var1 nvarchar(max);
+SELECT @var1 = QUOTENAME([d].[name])
+FROM [sys].[default_constraints] [d]
+INNER JOIN [sys].[columns] [c] ON [d].[parent_column_id] = [c].[column_id] AND [d].[parent_object_id] = [c].[object_id]
+WHERE ([d].[parent_object_id] = OBJECT_ID(N'[BinInventories]') AND [c].[name] = N'ExpiryDate');
+IF @var1 IS NOT NULL EXEC(N'ALTER TABLE [BinInventories] DROP CONSTRAINT ' + @var1 + ';');
+ALTER TABLE [BinInventories] DROP COLUMN [ExpiryDate]; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 20:57:37.526 +07:00 [INF] Executed DbCommand (20ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @var2 nvarchar(max);
+SELECT @var2 = QUOTENAME([d].[name])
+FROM [sys].[default_constraints] [d]
+INNER JOIN [sys].[columns] [c] ON [d].[parent_column_id] = [c].[column_id] AND [d].[parent_object_id] = [c].[object_id]
+WHERE ([d].[parent_object_id] = OBJECT_ID(N'[BinInventories]') AND [c].[name] = N'StockStatus');
+IF @var2 IS NOT NULL EXEC(N'ALTER TABLE [BinInventories] DROP CONSTRAINT ' + @var2 + ';');
+ALTER TABLE [BinInventories] DROP COLUMN [StockStatus]; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 20:57:37.550 +07:00 [INF] Executed DbCommand (24ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @var3 nvarchar(max);
+SELECT @var3 = QUOTENAME([d].[name])
+FROM [sys].[default_constraints] [d]
+INNER JOIN [sys].[columns] [c] ON [d].[parent_column_id] = [c].[column_id] AND [d].[parent_object_id] = [c].[object_id]
+WHERE ([d].[parent_object_id] = OBJECT_ID(N'[BinInventories]') AND [c].[name] = N'LotNumber');
+IF @var3 IS NOT NULL EXEC(N'ALTER TABLE [BinInventories] DROP CONSTRAINT ' + @var3 + ';');
+ALTER TABLE [BinInventories] ALTER COLUMN [LotNumber] nvarchar(50) NOT NULL; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 20:57:37.552 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE UNIQUE INDEX [IX_BinInventories_BinId_ProductId_LotNumber_Status] ON [BinInventories] ([BinId], [ProductId], [LotNumber], [Status]); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 20:57:37.553 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX [IX_BinInventories_ExpirationDate] ON [BinInventories] ([ExpirationDate]); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 20:57:37.553 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX [IX_BinInventories_LotNumber] ON [BinInventories] ([LotNumber]); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 20:57:37.555 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+VALUES (N'20260623135703_UpdateBinInventoryStructure', N'10.0.8'); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 20:57:37.559 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @result int;
+EXEC @result = sp_releaseapplock @Resource = '__EFMigrationsLock', @LockOwner = 'Session';
+SELECT @result {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 22:14:31.663 +07:00 [INF] Executed DbCommand (18ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1 {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 22:14:31.709 +07:00 [INF] Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long. {"EventId":{"Id":20411,"Name":"Microsoft.EntityFrameworkCore.Migrations.AcquiringMigrationLock"},"SourceContext":"Microsoft.EntityFrameworkCore.Migrations"}
+2026-06-23 22:14:31.732 +07:00 [INF] Executed DbCommand (20ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @result int;
+EXEC @result = sp_getapplock @Resource = '__EFMigrationsLock', @LockOwner = 'Session', @LockMode = 'Exclusive';
+SELECT @result {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 22:14:31.814 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+IF OBJECT_ID(N'[__EFMigrationsHistory]') IS NULL
+BEGIN
+    CREATE TABLE [__EFMigrationsHistory] (
+        [MigrationId] nvarchar(150) NOT NULL,
+        [ProductVersion] nvarchar(32) NOT NULL,
+        CONSTRAINT [PK___EFMigrationsHistory] PRIMARY KEY ([MigrationId])
+    );
+END; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 22:14:31.821 +07:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1 {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 22:14:31.822 +07:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]'); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 22:14:31.830 +07:00 [INF] Executed DbCommand (6ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [MigrationId], [ProductVersion]
+FROM [__EFMigrationsHistory]
+ORDER BY [MigrationId]; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 22:14:31.840 +07:00 [INF] Applying migration '20260623151338_AddInboundReceiptItemEntity'. {"EventId":{"Id":20402,"Name":"Microsoft.EntityFrameworkCore.Migrations.MigrationApplying"},"SourceContext":"Microsoft.EntityFrameworkCore.Migrations"}
+2026-06-23 22:14:31.885 +07:00 [ERR] Failed executing DbCommand (10ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE [InboundReceiptItem] (
+    [Id] uniqueidentifier NOT NULL,
+    [InboundReceiptId] uniqueidentifier NOT NULL,
+    [ProductId] uniqueidentifier NOT NULL,
+    [QuantityExpected] int NOT NULL,
+    [QuantityReceived] int NOT NULL,
+    [LotNumber] nvarchar(max) NOT NULL,
+    [ExpirationDate] datetime2 NULL,
+    [CreatedAt] datetime2 NOT NULL,
+    [CreatedBy] nvarchar(max) NULL,
+    [LastModifiedAt] datetime2 NULL,
+    [LastModifiedBy] nvarchar(max) NULL,
+    CONSTRAINT [PK_InboundReceiptItem] PRIMARY KEY ([Id]),
+    CONSTRAINT [FK_InboundReceiptItem_InboundReceipts_InboundReceiptId] FOREIGN KEY ([InboundReceiptId]) REFERENCES [InboundReceipts] ([Id]) ON DELETE CASCADE,
+    CONSTRAINT [FK_InboundReceiptItem_Products_ProductId] FOREIGN KEY ([ProductId]) REFERENCES [Products] ([Id]) ON DELETE CASCADE
+); {"EventId":{"Id":20102,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandError"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 22:16:38.708 +07:00 [INF] Executed DbCommand (18ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1 {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 22:16:38.781 +07:00 [INF] Executed DbCommand (12ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]'); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 22:16:38.797 +07:00 [INF] Executed DbCommand (7ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [MigrationId], [ProductVersion]
+FROM [__EFMigrationsHistory]
+ORDER BY [MigrationId]; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 22:19:05.684 +07:00 [INF] Executed DbCommand (22ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1 {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 22:19:05.751 +07:00 [INF] Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long. {"EventId":{"Id":20411,"Name":"Microsoft.EntityFrameworkCore.Migrations.AcquiringMigrationLock"},"SourceContext":"Microsoft.EntityFrameworkCore.Migrations"}
+2026-06-23 22:19:05.771 +07:00 [INF] Executed DbCommand (16ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @result int;
+EXEC @result = sp_getapplock @Resource = '__EFMigrationsLock', @LockOwner = 'Session', @LockMode = 'Exclusive';
+SELECT @result {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 22:19:05.845 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+IF OBJECT_ID(N'[__EFMigrationsHistory]') IS NULL
+BEGIN
+    CREATE TABLE [__EFMigrationsHistory] (
+        [MigrationId] nvarchar(150) NOT NULL,
+        [ProductVersion] nvarchar(32) NOT NULL,
+        CONSTRAINT [PK___EFMigrationsHistory] PRIMARY KEY ([MigrationId])
+    );
+END; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 22:19:05.852 +07:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1 {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 22:19:05.853 +07:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]'); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 22:19:05.860 +07:00 [INF] Executed DbCommand (6ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [MigrationId], [ProductVersion]
+FROM [__EFMigrationsHistory]
+ORDER BY [MigrationId]; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 22:19:05.871 +07:00 [INF] Applying migration '20260623151855_AddInboundReceiptItemEntity'. {"EventId":{"Id":20402,"Name":"Microsoft.EntityFrameworkCore.Migrations.MigrationApplying"},"SourceContext":"Microsoft.EntityFrameworkCore.Migrations"}
+2026-06-23 22:19:05.906 +07:00 [INF] Executed DbCommand (6ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE [InboundReceiptItems] (
+    [Id] uniqueidentifier NOT NULL,
+    [InboundReceiptId] uniqueidentifier NOT NULL,
+    [ProductId] uniqueidentifier NOT NULL,
+    [QuantityExpected] int NOT NULL,
+    [QuantityReceived] int NOT NULL,
+    [LotNumber] nvarchar(max) NOT NULL,
+    [ExpirationDate] datetime2 NULL,
+    [CreatedAt] datetime2 NOT NULL,
+    [CreatedBy] nvarchar(max) NULL,
+    [LastModifiedAt] datetime2 NULL,
+    [LastModifiedBy] nvarchar(max) NULL,
+    CONSTRAINT [PK_InboundReceiptItems] PRIMARY KEY ([Id]),
+    CONSTRAINT [FK_InboundReceiptItems_InboundReceipts_InboundReceiptId] FOREIGN KEY ([InboundReceiptId]) REFERENCES [InboundReceipts] ([Id]) ON DELETE CASCADE,
+    CONSTRAINT [FK_InboundReceiptItems_Products_ProductId] FOREIGN KEY ([ProductId]) REFERENCES [Products] ([Id]) ON DELETE NO ACTION
+); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 22:19:05.907 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX [IX_InboundReceiptItems_InboundReceiptId] ON [InboundReceiptItems] ([InboundReceiptId]); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 22:19:05.908 +07:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX [IX_InboundReceiptItems_ProductId] ON [InboundReceiptItems] ([ProductId]); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 22:19:05.910 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+VALUES (N'20260623151855_AddInboundReceiptItemEntity', N'10.0.8'); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 22:19:05.912 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @result int;
+EXEC @result = sp_releaseapplock @Resource = '__EFMigrationsLock', @LockOwner = 'Session';
+SELECT @result {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:09:26.434 +07:00 [INF] Executed DbCommand (18ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1 {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:09:26.481 +07:00 [INF] Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long. {"EventId":{"Id":20411,"Name":"Microsoft.EntityFrameworkCore.Migrations.AcquiringMigrationLock"},"SourceContext":"Microsoft.EntityFrameworkCore.Migrations"}
+2026-06-23 23:09:26.509 +07:00 [INF] Executed DbCommand (25ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @result int;
+EXEC @result = sp_getapplock @Resource = '__EFMigrationsLock', @LockOwner = 'Session', @LockMode = 'Exclusive';
+SELECT @result {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:09:26.682 +07:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+IF OBJECT_ID(N'[__EFMigrationsHistory]') IS NULL
+BEGIN
+    CREATE TABLE [__EFMigrationsHistory] (
+        [MigrationId] nvarchar(150) NOT NULL,
+        [ProductVersion] nvarchar(32) NOT NULL,
+        CONSTRAINT [PK___EFMigrationsHistory] PRIMARY KEY ([MigrationId])
+    );
+END; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:09:26.696 +07:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1 {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:09:26.697 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]'); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:09:26.709 +07:00 [INF] Executed DbCommand (9ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [MigrationId], [ProductVersion]
+FROM [__EFMigrationsHistory]
+ORDER BY [MigrationId]; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:09:26.722 +07:00 [INF] Applying migration '20260623160914_FinalizeReceiptAndIssueStructure'. {"EventId":{"Id":20402,"Name":"Microsoft.EntityFrameworkCore.Migrations.MigrationApplying"},"SourceContext":"Microsoft.EntityFrameworkCore.Migrations"}
+2026-06-23 23:09:26.794 +07:00 [INF] Executed DbCommand (4ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE [InboundReceipts] DROP CONSTRAINT [FK_InboundReceipts_Products_ProductId]; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:09:26.797 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE [OutboundIssues] DROP CONSTRAINT [FK_OutboundIssues_Products_ProductId]; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:09:26.800 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DROP INDEX [IX_OutboundIssues_ProductId] ON [OutboundIssues]; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:09:26.801 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DROP INDEX [IX_InboundReceipts_ProductId] ON [InboundReceipts]; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:09:26.847 +07:00 [INF] Executed DbCommand (47ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @var nvarchar(max);
+SELECT @var = QUOTENAME([d].[name])
+FROM [sys].[default_constraints] [d]
+INNER JOIN [sys].[columns] [c] ON [d].[parent_column_id] = [c].[column_id] AND [d].[parent_object_id] = [c].[object_id]
+WHERE ([d].[parent_object_id] = OBJECT_ID(N'[OutboundIssues]') AND [c].[name] = N'ProductId');
+IF @var IS NOT NULL EXEC(N'ALTER TABLE [OutboundIssues] DROP CONSTRAINT ' + @var + ';');
+ALTER TABLE [OutboundIssues] DROP COLUMN [ProductId]; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:09:26.866 +07:00 [INF] Executed DbCommand (19ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @var1 nvarchar(max);
+SELECT @var1 = QUOTENAME([d].[name])
+FROM [sys].[default_constraints] [d]
+INNER JOIN [sys].[columns] [c] ON [d].[parent_column_id] = [c].[column_id] AND [d].[parent_object_id] = [c].[object_id]
+WHERE ([d].[parent_object_id] = OBJECT_ID(N'[OutboundIssues]') AND [c].[name] = N'Quantity');
+IF @var1 IS NOT NULL EXEC(N'ALTER TABLE [OutboundIssues] DROP CONSTRAINT ' + @var1 + ';');
+ALTER TABLE [OutboundIssues] DROP COLUMN [Quantity]; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:09:26.885 +07:00 [INF] Executed DbCommand (19ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @var2 nvarchar(max);
+SELECT @var2 = QUOTENAME([d].[name])
+FROM [sys].[default_constraints] [d]
+INNER JOIN [sys].[columns] [c] ON [d].[parent_column_id] = [c].[column_id] AND [d].[parent_object_id] = [c].[object_id]
+WHERE ([d].[parent_object_id] = OBJECT_ID(N'[InboundReceipts]') AND [c].[name] = N'ProductId');
+IF @var2 IS NOT NULL EXEC(N'ALTER TABLE [InboundReceipts] DROP CONSTRAINT ' + @var2 + ';');
+ALTER TABLE [InboundReceipts] DROP COLUMN [ProductId]; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:09:26.911 +07:00 [INF] Executed DbCommand (25ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @var3 nvarchar(max);
+SELECT @var3 = QUOTENAME([d].[name])
+FROM [sys].[default_constraints] [d]
+INNER JOIN [sys].[columns] [c] ON [d].[parent_column_id] = [c].[column_id] AND [d].[parent_object_id] = [c].[object_id]
+WHERE ([d].[parent_object_id] = OBJECT_ID(N'[InboundReceipts]') AND [c].[name] = N'Quantity');
+IF @var3 IS NOT NULL EXEC(N'ALTER TABLE [InboundReceipts] DROP CONSTRAINT ' + @var3 + ';');
+ALTER TABLE [InboundReceipts] DROP COLUMN [Quantity]; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:09:26.913 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE [OutboundOrderItems] ADD [OutboundIssueId] uniqueidentifier NULL; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:09:26.913 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE [OutboundIssues] ADD [CustomerId] uniqueidentifier NULL; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:09:26.914 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE [InboundReceipts] ADD [SupplierId] uniqueidentifier NULL; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:09:26.918 +07:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE [Customers] (
+    [Id] uniqueidentifier NOT NULL,
+    [Code] nvarchar(max) NOT NULL,
+    [Name] nvarchar(max) NOT NULL,
+    [Email] nvarchar(max) NOT NULL,
+    [DeliveryAddress] nvarchar(max) NOT NULL,
+    [CreatedAt] datetime2 NOT NULL,
+    [CreatedBy] nvarchar(max) NULL,
+    [LastModifiedAt] datetime2 NULL,
+    [LastModifiedBy] nvarchar(max) NULL,
+    CONSTRAINT [PK_Customers] PRIMARY KEY ([Id])
+); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:09:26.919 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE [Suppliers] (
+    [Id] uniqueidentifier NOT NULL,
+    [Code] nvarchar(max) NOT NULL,
+    [Name] nvarchar(max) NOT NULL,
+    [Email] nvarchar(max) NOT NULL,
+    [Phone] nvarchar(max) NOT NULL,
+    [Address] nvarchar(max) NOT NULL,
+    [CreatedAt] datetime2 NOT NULL,
+    [CreatedBy] nvarchar(max) NULL,
+    [LastModifiedAt] datetime2 NULL,
+    [LastModifiedBy] nvarchar(max) NULL,
+    CONSTRAINT [PK_Suppliers] PRIMARY KEY ([Id])
+); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:09:26.932 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX [IX_OutboundOrderItems_OutboundIssueId] ON [OutboundOrderItems] ([OutboundIssueId]); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:09:26.933 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX [IX_OutboundIssues_CustomerId] ON [OutboundIssues] ([CustomerId]); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:09:26.934 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX [IX_InboundReceipts_SupplierId] ON [InboundReceipts] ([SupplierId]); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:09:26.935 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE [InboundReceipts] ADD CONSTRAINT [FK_InboundReceipts_Suppliers_SupplierId] FOREIGN KEY ([SupplierId]) REFERENCES [Suppliers] ([Id]) ON DELETE NO ACTION; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:09:26.936 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE [OutboundIssues] ADD CONSTRAINT [FK_OutboundIssues_Customers_CustomerId] FOREIGN KEY ([CustomerId]) REFERENCES [Customers] ([Id]) ON DELETE NO ACTION; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:09:26.937 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE [OutboundOrderItems] ADD CONSTRAINT [FK_OutboundOrderItems_OutboundIssues_OutboundIssueId] FOREIGN KEY ([OutboundIssueId]) REFERENCES [OutboundIssues] ([Id]); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:09:26.938 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+VALUES (N'20260623160914_FinalizeReceiptAndIssueStructure', N'10.0.8'); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:09:26.942 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @result int;
+EXEC @result = sp_releaseapplock @Resource = '__EFMigrationsLock', @LockOwner = 'Session';
+SELECT @result {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:11:42.594 +07:00 [INF] Start installing Hangfire SQL objects... {"SourceContext":"Hangfire.SqlServer.SqlServerObjectsInstaller"}
+2026-06-23 23:11:43.192 +07:00 [INF] Hangfire SQL objects installed. {"SourceContext":"Hangfire.SqlServer.SqlServerObjectsInstaller"}
+2026-06-23 23:11:44.150 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1 {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:11:44.162 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]'); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:11:44.177 +07:00 [INF] Executed DbCommand (3ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [MigrationId], [ProductVersion]
+FROM [__EFMigrationsHistory]
+ORDER BY [MigrationId]; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:11:44.432 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Warehouses] AS [w]) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:11:44.581 +07:00 [INF] Executed DbCommand (11ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1 {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:11:44.590 +07:00 [INF] Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long. {"EventId":{"Id":20411,"Name":"Microsoft.EntityFrameworkCore.Migrations.AcquiringMigrationLock"},"SourceContext":"Microsoft.EntityFrameworkCore.Migrations"}
+2026-06-23 23:11:44.606 +07:00 [INF] Executed DbCommand (10ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @result int;
+EXEC @result = sp_getapplock @Resource = '__EFMigrationsLock', @LockOwner = 'Session', @LockMode = 'Exclusive';
+SELECT @result {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:11:44.679 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+IF OBJECT_ID(N'[__EFMigrationsHistory]') IS NULL
+BEGIN
+    CREATE TABLE [__EFMigrationsHistory] (
+        [MigrationId] nvarchar(150) NOT NULL,
+        [ProductVersion] nvarchar(32) NOT NULL,
+        CONSTRAINT [PK___EFMigrationsHistory] PRIMARY KEY ([MigrationId])
+    );
+END; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:11:44.702 +07:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1 {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:11:44.707 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]'); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:11:44.714 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [MigrationId], [ProductVersion]
+FROM [__EFMigrationsHistory]
+ORDER BY [MigrationId]; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:11:44.727 +07:00 [INF] No migrations were applied. The database is already up to date. {"EventId":{"Id":20405,"Name":"Microsoft.EntityFrameworkCore.Migrations.MigrationsNotApplied"},"SourceContext":"Microsoft.EntityFrameworkCore.Migrations"}
+2026-06-23 23:11:44.730 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @result int;
+EXEC @result = sp_releaseapplock @Resource = '__EFMigrationsLock', @LockOwner = 'Session';
+SELECT @result {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:11:44.749 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT CASE
+    WHEN EXISTS (
+        SELECT 1
+        FROM [Products] AS [p]) THEN CAST(1 AS bit)
+    ELSE CAST(0 AS bit)
+END {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:11:44.845 +07:00 [INF] Executed DbCommand (5ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [p].[Id], [p].[ABCClass], [p].[Barcode], [p].[CreatedAt], [p].[CreatedBy], [p].[Description], [p].[DescriptionEmbeddingJson], [p].[LastModifiedAt], [p].[LastModifiedBy], [p].[Name], [p].[SKU], [p].[Unit], [p].[Weight]
+FROM [Products] AS [p]
+WHERE [p].[DescriptionEmbeddingJson] IS NULL OR [p].[DescriptionEmbeddingJson] = N'' {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:11:44.954 +07:00 [INF] Start processing HTTP request POST https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?* {"EventId":{"Id":100,"Name":"RequestPipelineStart"},"SourceContext":"System.Net.Http.HttpClient.IEmbeddingService.LogicalHandler","Scope":["HTTP POST https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?*"]}
+2026-06-23 23:11:44.966 +07:00 [INF] Sending HTTP request POST https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?* {"EventId":{"Id":100,"Name":"RequestStart"},"SourceContext":"System.Net.Http.HttpClient.IEmbeddingService.ClientHandler","Scope":["HTTP POST https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?*"]}
+2026-06-23 23:11:56.398 +07:00 [INF] Received HTTP response headers after 11426.1218ms - 400 {"EventId":{"Id":101,"Name":"RequestEnd"},"SourceContext":"System.Net.Http.HttpClient.IEmbeddingService.ClientHandler","HttpMethod":"POST","Uri":"https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?*","Scope":["HTTP POST https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?*"]}
+2026-06-23 23:11:56.405 +07:00 [INF] End processing HTTP request after 11454.8842ms - 400 {"EventId":{"Id":101,"Name":"RequestPipelineEnd"},"SourceContext":"System.Net.Http.HttpClient.IEmbeddingService.LogicalHandler","HttpMethod":"POST","Uri":"https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?*","Scope":["HTTP POST https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?*"]}
+2026-06-23 23:11:56.415 +07:00 [INF] Start processing HTTP request POST https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?* {"EventId":{"Id":100,"Name":"RequestPipelineStart"},"SourceContext":"System.Net.Http.HttpClient.IEmbeddingService.LogicalHandler","Scope":["HTTP POST https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?*"]}
+2026-06-23 23:11:56.419 +07:00 [INF] Sending HTTP request POST https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?* {"EventId":{"Id":100,"Name":"RequestStart"},"SourceContext":"System.Net.Http.HttpClient.IEmbeddingService.ClientHandler","Scope":["HTTP POST https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?*"]}
+2026-06-23 23:11:56.485 +07:00 [INF] Received HTTP response headers after 62.8259ms - 400 {"EventId":{"Id":101,"Name":"RequestEnd"},"SourceContext":"System.Net.Http.HttpClient.IEmbeddingService.ClientHandler","HttpMethod":"POST","Uri":"https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?*","Scope":["HTTP POST https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?*"]}
+2026-06-23 23:11:56.488 +07:00 [INF] End processing HTTP request after 73.2105ms - 400 {"EventId":{"Id":101,"Name":"RequestPipelineEnd"},"SourceContext":"System.Net.Http.HttpClient.IEmbeddingService.LogicalHandler","HttpMethod":"POST","Uri":"https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?*","Scope":["HTTP POST https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?*"]}
+2026-06-23 23:11:56.490 +07:00 [INF] Start processing HTTP request POST https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?* {"EventId":{"Id":100,"Name":"RequestPipelineStart"},"SourceContext":"System.Net.Http.HttpClient.IEmbeddingService.LogicalHandler","Scope":["HTTP POST https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?*"]}
+2026-06-23 23:11:56.493 +07:00 [INF] Sending HTTP request POST https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?* {"EventId":{"Id":100,"Name":"RequestStart"},"SourceContext":"System.Net.Http.HttpClient.IEmbeddingService.ClientHandler","Scope":["HTTP POST https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?*"]}
+2026-06-23 23:11:56.559 +07:00 [INF] Received HTTP response headers after 62.4677ms - 400 {"EventId":{"Id":101,"Name":"RequestEnd"},"SourceContext":"System.Net.Http.HttpClient.IEmbeddingService.ClientHandler","HttpMethod":"POST","Uri":"https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?*","Scope":["HTTP POST https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?*"]}
+2026-06-23 23:11:56.561 +07:00 [INF] End processing HTTP request after 70.5328ms - 400 {"EventId":{"Id":101,"Name":"RequestPipelineEnd"},"SourceContext":"System.Net.Http.HttpClient.IEmbeddingService.LogicalHandler","HttpMethod":"POST","Uri":"https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?*","Scope":["HTTP POST https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?*"]}
+2026-06-23 23:11:56.685 +07:00 [INF] Executed DbCommand (26ms) [Parameters=[@p1='?' (DbType = Guid), @p0='?' (Size = 4000), @p3='?' (DbType = Guid), @p2='?' (Size = 4000), @p5='?' (DbType = Guid), @p4='?' (Size = 4000)], CommandType='"Text"', CommandTimeout='30']
+SET NOCOUNT ON;
+UPDATE [Products] SET [DescriptionEmbeddingJson] = @p0
+OUTPUT 1
+WHERE [Id] = @p1;
+UPDATE [Products] SET [DescriptionEmbeddingJson] = @p2
+OUTPUT 1
+WHERE [Id] = @p3;
+UPDATE [Products] SET [DescriptionEmbeddingJson] = @p4
+OUTPUT 1
+WHERE [Id] = @p5; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:11:56.763 +07:00 [INF] Executed DbCommand (4ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?' (Size = 4000), @p2='?' (DbType = DateTime2), @p3='?' (Size = 4000), @p4='?' (DbType = DateTime2), @p5='?' (Size = 4000), @p6='?' (DbType = DateTime2), @p7='?' (Size = 4000), @p8='?' (Size = 4000), @p9='?' (Size = 4000), @p10='?' (Size = 4000), @p11='?' (Size = 4000), @p12='?' (Size = 4000), @p13='?' (DbType = Guid), @p14='?' (Size = 4000), @p15='?' (DbType = DateTime2), @p16='?' (Size = 4000), @p17='?' (DbType = DateTime2), @p18='?' (Size = 4000), @p19='?' (DbType = DateTime2), @p20='?' (Size = 4000), @p21='?' (Size = 4000), @p22='?' (Size = 4000), @p23='?' (Size = 4000), @p24='?' (Size = 4000), @p25='?' (Size = 4000), @p26='?' (DbType = Guid), @p27='?' (Size = 4000), @p28='?' (DbType = DateTime2), @p29='?' (Size = 4000), @p30='?' (DbType = DateTime2), @p31='?' (Size = 4000), @p32='?' (DbType = DateTime2), @p33='?' (Size = 4000), @p34='?' (Size = 4000), @p35='?' (Size = 4000), @p36='?' (Size = 4000), @p37='?' (Size = 4000), @p38='?' (Size = 4000)], CommandType='"Text"', CommandTimeout='30']
+SET IMPLICIT_TRANSACTIONS OFF;
+SET NOCOUNT ON;
+INSERT INTO [AuditLogs] ([Id], [AffectedColumns], [CreatedAt], [CreatedBy], [DateTime], [IpAddress], [LastModifiedAt], [LastModifiedBy], [NewValues], [OldValues], [TableName], [Type], [UserId])
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12),
+(@p13, @p14, @p15, @p16, @p17, @p18, @p19, @p20, @p21, @p22, @p23, @p24, @p25),
+(@p26, @p27, @p28, @p29, @p30, @p31, @p32, @p33, @p34, @p35, @p36, @p37, @p38); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-23 23:11:56.962 +07:00 [INF] 🚀 Đang khởi động máy chủ Web API SmartWMS Center... {}
+2026-06-23 23:11:56.974 +07:00 [INF] User profile is available. Using 'C:\Users\Tak18\AppData\Local\ASP.NET\DataProtection-Keys' as key repository and Windows DPAPI to encrypt keys at rest. {"EventId":{"Id":63,"Name":"UsingProfileAsKeyRepositoryWithDPAPI"},"SourceContext":"Microsoft.AspNetCore.DataProtection.KeyManagement.XmlKeyManager"}
+2026-06-23 23:11:57.093 +07:00 [INF] Now listening on: http://localhost:5215 {"EventId":{"Id":14,"Name":"ListeningOnAddress"},"SourceContext":"Microsoft.Hosting.Lifetime"}
+2026-06-23 23:11:57.130 +07:00 [INF] Starting Hangfire Server using job storage: 'SQL Server: (localdb)\mssqllocaldb@SmartWMS_DB' {"SourceContext":"Hangfire.BackgroundJobServer"}
+2026-06-23 23:11:57.132 +07:00 [INF] Using the following options for SQL Server job storage: Queue poll interval: 00:00:00. {"SourceContext":"Hangfire.BackgroundJobServer"}
+2026-06-23 23:11:57.133 +07:00 [INF] Using the following options for Hangfire Server:
+    Worker count: 20
+    Listening queues: 'default'
+    Shutdown timeout: 00:00:15
+    Schedule polling interval: 00:00:15 {"SourceContext":"Hangfire.BackgroundJobServer"}
+2026-06-23 23:11:57.151 +07:00 [INF] Application started. Press Ctrl+C to shut down. {"SourceContext":"Microsoft.Hosting.Lifetime"}
+2026-06-23 23:11:57.153 +07:00 [INF] Hosting environment: Development {"SourceContext":"Microsoft.Hosting.Lifetime"}
+2026-06-23 23:11:57.155 +07:00 [INF] Content root path: C:\Users\Tak18\OneDrive\Desktop\CNTT\LapTrinhNangCao\SmartWMS\SmartWMS.Api {"SourceContext":"Microsoft.Hosting.Lifetime"}
+2026-06-23 23:11:57.163 +07:00 [INF] Server desktop-2al4ncg:12484:633c4296 successfully announced in 12.5415 ms {"SourceContext":"Hangfire.Server.BackgroundServerProcess"}
+2026-06-23 23:11:57.167 +07:00 [INF] Server desktop-2al4ncg:12484:633c4296 is starting the registered dispatchers: ServerWatchdog, ServerJobCancellationWatcher, SqlServerHeartbeatProcess, ExpirationManager, CountersAggregator, Worker, DelayedJobScheduler, RecurringJobScheduler... {"SourceContext":"Hangfire.Server.BackgroundServerProcess"}
+2026-06-23 23:11:57.174 +07:00 [INF] Server desktop-2al4ncg:12484:633c4296 all the dispatchers started {"SourceContext":"Hangfire.Server.BackgroundServerProcess"}
+2026-06-23 23:35:39.269 +07:00 [INF] Request starting HTTP/1.1 POST http://localhost:5215/api/v1/auth/logout - null 0 {"EventId":{"Id":1},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNMH8LQSJSPA:00000001","RequestPath":"/api/v1/auth/logout","ConnectionId":"0HNMH8LQSJSPA"}
+2026-06-23 23:35:39.328 +07:00 [WRN] Failed to determine the https port for redirect. {"EventId":{"Id":3,"Name":"FailedToDeterminePort"},"SourceContext":"Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionMiddleware","RequestId":"0HNMH8LQSJSPA:00000001","RequestPath":"/api/v1/auth/logout","ConnectionId":"0HNMH8LQSJSPA"}
+2026-06-23 23:35:39.384 +07:00 [INF] Authorization failed. These requirements were not met:
+DenyAnonymousAuthorizationRequirement: Requires an authenticated user. {"EventId":{"Id":2,"Name":"UserAuthorizationFailed"},"SourceContext":"Microsoft.AspNetCore.Authorization.DefaultAuthorizationService","RequestId":"0HNMH8LQSJSPA:00000001","RequestPath":"/api/v1/auth/logout","ConnectionId":"0HNMH8LQSJSPA"}
+2026-06-23 23:35:39.389 +07:00 [INF] AuthenticationScheme: Bearer was challenged. {"EventId":{"Id":12,"Name":"AuthenticationSchemeChallenged"},"SourceContext":"Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerHandler","RequestId":"0HNMH8LQSJSPA:00000001","RequestPath":"/api/v1/auth/logout","ConnectionId":"0HNMH8LQSJSPA"}
+2026-06-23 23:35:39.394 +07:00 [INF] HTTP POST /api/v1/auth/logout responded 401 in 65.7171 ms {"SourceContext":"Serilog.AspNetCore.RequestLoggingMiddleware","RequestId":"0HNMH8LQSJSPA:00000001","ConnectionId":"0HNMH8LQSJSPA"}
+2026-06-23 23:35:39.400 +07:00 [INF] Request finished HTTP/1.1 POST http://localhost:5215/api/v1/auth/logout - 401 0 null 132.0943ms {"EventId":{"Id":2},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNMH8LQSJSPA:00000001","RequestPath":"/api/v1/auth/logout","ConnectionId":"0HNMH8LQSJSPA"}
+2026-06-23 23:41:50.106 +07:00 [INF] Request starting HTTP/1.1 POST http://localhost:5215/api/v1/auth/logout - null 0 {"EventId":{"Id":1},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNMH8LQSJSPC:00000001","RequestPath":"/api/v1/auth/logout","ConnectionId":"0HNMH8LQSJSPC"}
+2026-06-23 23:41:50.117 +07:00 [INF] Authorization failed. These requirements were not met:
+DenyAnonymousAuthorizationRequirement: Requires an authenticated user. {"EventId":{"Id":2,"Name":"UserAuthorizationFailed"},"SourceContext":"Microsoft.AspNetCore.Authorization.DefaultAuthorizationService","RequestId":"0HNMH8LQSJSPC:00000001","RequestPath":"/api/v1/auth/logout","ConnectionId":"0HNMH8LQSJSPC"}
+2026-06-23 23:41:50.120 +07:00 [INF] AuthenticationScheme: Bearer was challenged. {"EventId":{"Id":12,"Name":"AuthenticationSchemeChallenged"},"SourceContext":"Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerHandler","RequestId":"0HNMH8LQSJSPC:00000001","RequestPath":"/api/v1/auth/logout","ConnectionId":"0HNMH8LQSJSPC"}
+2026-06-23 23:41:50.121 +07:00 [INF] HTTP POST /api/v1/auth/logout responded 401 in 7.7544 ms {"SourceContext":"Serilog.AspNetCore.RequestLoggingMiddleware","RequestId":"0HNMH8LQSJSPC:00000001","ConnectionId":"0HNMH8LQSJSPC"}
+2026-06-23 23:41:50.125 +07:00 [INF] Request finished HTTP/1.1 POST http://localhost:5215/api/v1/auth/logout - 401 0 null 19.3837ms {"EventId":{"Id":2},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNMH8LQSJSPC:00000001","RequestPath":"/api/v1/auth/logout","ConnectionId":"0HNMH8LQSJSPC"}
+2026-06-23 23:42:28.322 +07:00 [INF] Request starting HTTP/1.1 POST http://localhost:5215/api/v1/auth/logout - null 0 {"EventId":{"Id":1},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNMH8LQSJSPC:00000002","RequestPath":"/api/v1/auth/logout","ConnectionId":"0HNMH8LQSJSPC"}
+2026-06-23 23:42:28.328 +07:00 [INF] Authorization failed. These requirements were not met:
+DenyAnonymousAuthorizationRequirement: Requires an authenticated user. {"EventId":{"Id":2,"Name":"UserAuthorizationFailed"},"SourceContext":"Microsoft.AspNetCore.Authorization.DefaultAuthorizationService","RequestId":"0HNMH8LQSJSPC:00000002","RequestPath":"/api/v1/auth/logout","ConnectionId":"0HNMH8LQSJSPC"}
+2026-06-23 23:42:28.331 +07:00 [INF] AuthenticationScheme: Bearer was challenged. {"EventId":{"Id":12,"Name":"AuthenticationSchemeChallenged"},"SourceContext":"Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerHandler","RequestId":"0HNMH8LQSJSPC:00000002","RequestPath":"/api/v1/auth/logout","ConnectionId":"0HNMH8LQSJSPC"}
+2026-06-23 23:42:28.332 +07:00 [INF] HTTP POST /api/v1/auth/logout responded 401 in 6.3585 ms {"SourceContext":"Serilog.AspNetCore.RequestLoggingMiddleware","RequestId":"0HNMH8LQSJSPC:00000002","ConnectionId":"0HNMH8LQSJSPC"}
+2026-06-23 23:42:28.335 +07:00 [INF] Request finished HTTP/1.1 POST http://localhost:5215/api/v1/auth/logout - 401 0 null 12.9638ms {"EventId":{"Id":2},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNMH8LQSJSPC:00000002","RequestPath":"/api/v1/auth/logout","ConnectionId":"0HNMH8LQSJSPC"}
+2026-06-23 23:42:43.475 +07:00 [INF] Request starting HTTP/1.1 POST http://localhost:5215/api/v1/auth/login - application/json 72 {"EventId":{"Id":1},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNMH8LQSJSPC:00000003","RequestPath":"/api/v1/auth/login","ConnectionId":"0HNMH8LQSJSPC"}
+2026-06-23 23:42:43.480 +07:00 [INF] Executing endpoint 'SmartWMS.Api.Controllers.AuthController.Login (SmartWMS.Api)' {"EventId":{"Name":"ExecutingEndpoint"},"SourceContext":"Microsoft.AspNetCore.Routing.EndpointMiddleware","RequestId":"0HNMH8LQSJSPC:00000003","RequestPath":"/api/v1/auth/login","ConnectionId":"0HNMH8LQSJSPC"}
+2026-06-23 23:42:43.507 +07:00 [INF] Route matched with {action = "Login", controller = "Auth"}. Executing controller action with signature System.Threading.Tasks.Task`1[Microsoft.AspNetCore.Mvc.IActionResult] Login(SmartWMS.Api.Controllers.LoginRequest) on controller SmartWMS.Api.Controllers.AuthController (SmartWMS.Api). {"EventId":{"Id":102,"Name":"ControllerActionExecuting"},"SourceContext":"Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker","ActionId":"e15dd5cd-3a5e-43ca-8083-42785cddb8c4","ActionName":"SmartWMS.Api.Controllers.AuthController.Login (SmartWMS.Api)","RequestId":"0HNMH8LQSJSPC:00000003","RequestPath":"/api/v1/auth/login","ConnectionId":"0HNMH8LQSJSPC"}
+2026-06-23 23:42:43.599 +07:00 [INF] Executed DbCommand (3ms) [Parameters=[@request_Username='?' (Size = 4000), @hashPassword='?' (Size = 4000)], CommandType='"Text"', CommandTimeout='30']
+SELECT TOP(1) [u].[Id], [u].[CreatedAt], [u].[CreatedBy], [u].[Email], [u].[FirstName], [u].[IsActive], [u].[LastModifiedAt], [u].[LastModifiedBy], [u].[LastName], [u].[PasswordHash], [u].[Role], [u].[Username]
+FROM [Users] AS [u]
+WHERE [u].[Username] = @request_Username AND [u].[PasswordHash] = @hashPassword AND [u].[IsActive] = CAST(1 AS bit) {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command","ActionId":"e15dd5cd-3a5e-43ca-8083-42785cddb8c4","ActionName":"SmartWMS.Api.Controllers.AuthController.Login (SmartWMS.Api)","RequestId":"0HNMH8LQSJSPC:00000003","RequestPath":"/api/v1/auth/login","ConnectionId":"0HNMH8LQSJSPC"}
+2026-06-23 23:42:43.609 +07:00 [INF] Executing UnauthorizedObjectResult, writing value of type '<>f__AnonymousType0`2[[System.Boolean, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]'. {"EventId":{"Id":1,"Name":"ObjectResultExecuting"},"SourceContext":"Microsoft.AspNetCore.Mvc.Infrastructure.ObjectResultExecutor","ActionId":"e15dd5cd-3a5e-43ca-8083-42785cddb8c4","ActionName":"SmartWMS.Api.Controllers.AuthController.Login (SmartWMS.Api)","RequestId":"0HNMH8LQSJSPC:00000003","RequestPath":"/api/v1/auth/login","ConnectionId":"0HNMH8LQSJSPC"}
+2026-06-23 23:42:43.618 +07:00 [INF] Executed action SmartWMS.Api.Controllers.AuthController.Login (SmartWMS.Api) in 104.3144ms {"EventId":{"Id":105,"Name":"ActionExecuted"},"SourceContext":"Microsoft.AspNetCore.Mvc.Infrastructure.ControllerActionInvoker","RequestId":"0HNMH8LQSJSPC:00000003","RequestPath":"/api/v1/auth/login","ConnectionId":"0HNMH8LQSJSPC"}
+2026-06-23 23:42:43.621 +07:00 [INF] Executed endpoint 'SmartWMS.Api.Controllers.AuthController.Login (SmartWMS.Api)' {"EventId":{"Id":1,"Name":"ExecutedEndpoint"},"SourceContext":"Microsoft.AspNetCore.Routing.EndpointMiddleware","RequestId":"0HNMH8LQSJSPC:00000003","RequestPath":"/api/v1/auth/login","ConnectionId":"0HNMH8LQSJSPC"}
+2026-06-23 23:42:43.624 +07:00 [INF] HTTP POST /api/v1/auth/login responded 401 in 144.9211 ms {"SourceContext":"Serilog.AspNetCore.RequestLoggingMiddleware","RequestId":"0HNMH8LQSJSPC:00000003","ConnectionId":"0HNMH8LQSJSPC"}
+2026-06-23 23:42:43.632 +07:00 [INF] Request finished HTTP/1.1 POST http://localhost:5215/api/v1/auth/login - 401 null application/json; charset=utf-8 156.7577ms {"EventId":{"Id":2},"SourceContext":"Microsoft.AspNetCore.Hosting.Diagnostics","RequestId":"0HNMH8LQSJSPC:00000003","RequestPath":"/api/v1/auth/login","ConnectionId":"0HNMH8LQSJSPC"}

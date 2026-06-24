@@ -2,6 +2,6 @@
 
 public interface IAiChatService
 {
-    // Hàm gửi câu hỏi kèm theo ngữ cảnh dữ liệu thực tế của kho sang cho Gemini
-    Task<string> AskGeminiWithContextAsync(string userMessage, string warehouseContext);
+    // Cập nhật tên phương thức chính xác để sửa lỗi định nghĩa
+    Task<string> AskGeminiWithContextAsync(string userMessage, string contextData);
 }

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using SmartWMS.Application.Common.Interfaces;
+using SmartWMS.Application.Common.Models;
 
 namespace SmartWMS.Infrastructure.SignalR;
 
@@ -12,18 +13,15 @@ public class InventoryNotificationService : IInventoryNotificationService
         _hubContext = hubContext;
     }
 
-    public async Task NotifyStockUpdateAsync(Guid binId, int quantityChanged, string action)
+    public async Task SendToGroupAsync(string groupName, string method, object data)
     {
-        // Gửi thông báo tới tất cả các Client đang kết nối với sự kiện tên là "ReceiveStockUpdate"
-        var message = $"Kệ {binId} vừa được {action} với số lượng {quantityChanged}.";
+        await _hubContext.Clients.Group(groupName).SendAsync(method, data);
+    }
 
-        await _hubContext.Clients.All.SendAsync("ReceiveStockUpdate", new
-        {
-            BinId = binId,
-            Quantity = quantityChanged,
-            Action = action,
-            Message = message,
-            Timestamp = DateTime.UtcNow
-        });
+    // BỔ SUNG: Phát broadcast dữ liệu cập nhật tồn kho thời gian thực cho toàn bộ hệ thống
+    public async Task SendInventoryUpdateAsync(InventoryUpdateModel model)
+    {
+        // Gửi sự kiện "ReceiveInventoryUpdate" kèm data xuống cho cả Web Dashboard và Mobile App
+        await _hubContext.Clients.All.SendAsync("ReceiveInventoryUpdate", model);
     }
 }

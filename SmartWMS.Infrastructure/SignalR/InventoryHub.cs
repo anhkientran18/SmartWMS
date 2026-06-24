@@ -1,14 +1,15 @@
 ﻿using Microsoft.AspNetCore.SignalR;
+using System;
+using System.Threading.Tasks;
 
 namespace SmartWMS.Infrastructure.SignalR;
 
-// Client sẽ kết nối tới Hub này
 public class InventoryHub : Hub
 {
+    // Khi một thiết bị kết nối vào trạm kho vận
     public override async Task OnConnectedAsync()
     {
-        // Có thể log lại khi có thiết bị kết nối thành công
-        Console.WriteLine($"Client connected: {Context.ConnectionId}");
+        await Clients.Caller.SendAsync("ReceiveConnectionStatus", "Kết nối thành công tới máy chủ thời gian thực SmartWMS Center.");
         await base.OnConnectedAsync();
     }
 }

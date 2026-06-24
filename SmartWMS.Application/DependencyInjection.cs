@@ -17,6 +17,11 @@ public static class DependencyInjection
             // Đăng ký Pipeline Behavior chặn request để Validate
             cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         });
+        // Thêm dòng đăng ký Validation Behavior này vào luồng cấu hình MediatR
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+
+        // Đăng ký FluentValidation tự động quét toàn bộ các lớp Validator trong Assembly Application
+        services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
 
         return services;
     }

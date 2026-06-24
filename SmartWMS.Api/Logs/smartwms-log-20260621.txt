@@ -1,0 +1,166 @@
+2026-06-21 22:04:30.109 +07:00 [INF] Executed DbCommand (19ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1 {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-21 22:04:30.159 +07:00 [INF] Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long. {"EventId":{"Id":20411,"Name":"Microsoft.EntityFrameworkCore.Migrations.AcquiringMigrationLock"},"SourceContext":"Microsoft.EntityFrameworkCore.Migrations"}
+2026-06-21 22:04:30.183 +07:00 [INF] Executed DbCommand (20ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @result int;
+EXEC @result = sp_getapplock @Resource = '__EFMigrationsLock', @LockOwner = 'Session', @LockMode = 'Exclusive';
+SELECT @result {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-21 22:04:30.253 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+IF OBJECT_ID(N'[__EFMigrationsHistory]') IS NULL
+BEGIN
+    CREATE TABLE [__EFMigrationsHistory] (
+        [MigrationId] nvarchar(150) NOT NULL,
+        [ProductVersion] nvarchar(32) NOT NULL,
+        CONSTRAINT [PK___EFMigrationsHistory] PRIMARY KEY ([MigrationId])
+    );
+END; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-21 22:04:30.262 +07:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1 {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-21 22:04:30.262 +07:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]'); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-21 22:04:30.270 +07:00 [INF] Executed DbCommand (6ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [MigrationId], [ProductVersion]
+FROM [__EFMigrationsHistory]
+ORDER BY [MigrationId]; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-21 22:04:30.280 +07:00 [INF] Applying migration '20260621150143_AddSoftDeleteToBin'. {"EventId":{"Id":20402,"Name":"Microsoft.EntityFrameworkCore.Migrations.MigrationApplying"},"SourceContext":"Microsoft.EntityFrameworkCore.Migrations"}
+2026-06-21 22:04:30.729 +07:00 [INF] Executed DbCommand (404ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+EXEC sp_rename N'[Bins].[LastModifiedBy]', N'UpdatedBy', 'COLUMN'; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-21 22:04:30.731 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+EXEC sp_rename N'[Bins].[LastModifiedAt]', N'UpdatedAt', 'COLUMN'; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-21 22:04:30.737 +07:00 [INF] Executed DbCommand (6ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE [Products] ADD [ABCClass] nvarchar(max) NOT NULL DEFAULT N''; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-21 22:04:30.738 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE [Products] ADD [DescriptionEmbeddingJson] nvarchar(max) NULL; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-21 22:04:30.740 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE [Products] ADD [Weight] float NOT NULL DEFAULT 0.0E0; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-21 22:04:30.769 +07:00 [INF] Executed DbCommand (29ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @var nvarchar(max);
+SELECT @var = QUOTENAME([d].[name])
+FROM [sys].[default_constraints] [d]
+INNER JOIN [sys].[columns] [c] ON [d].[parent_column_id] = [c].[column_id] AND [d].[parent_object_id] = [c].[object_id]
+WHERE ([d].[parent_object_id] = OBJECT_ID(N'[Bins]') AND [c].[name] = N'CreatedBy');
+IF @var IS NOT NULL EXEC(N'ALTER TABLE [Bins] DROP CONSTRAINT ' + @var + ';');
+UPDATE [Bins] SET [CreatedBy] = N'' WHERE [CreatedBy] IS NULL;
+ALTER TABLE [Bins] ALTER COLUMN [CreatedBy] nvarchar(max) NOT NULL;
+ALTER TABLE [Bins] ADD DEFAULT N'' FOR [CreatedBy]; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-21 22:04:30.772 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE [Bins] ADD [IsDeleted] bit NOT NULL DEFAULT CAST(0 AS bit); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-21 22:04:30.772 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE [BinInventories] ADD [ExpirationDate] datetime2 NULL; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-21 22:04:30.773 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE [BinInventories] ADD [LotNumber] nvarchar(max) NOT NULL DEFAULT N''; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-21 22:04:30.774 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+ALTER TABLE [BinInventories] ADD [StockStatus] nvarchar(max) NOT NULL DEFAULT N''; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-21 22:04:30.775 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE [InventoryTransactions] (
+    [Id] uniqueidentifier NOT NULL,
+    [ProductId] uniqueidentifier NOT NULL,
+    [TransactionType] nvarchar(max) NOT NULL,
+    [QuantityChanged] int NOT NULL,
+    [SourceBinCode] nvarchar(max) NOT NULL,
+    [DestinationBinCode] nvarchar(max) NOT NULL,
+    [ReasonCode] nvarchar(max) NOT NULL,
+    [CreatedBy] nvarchar(max) NOT NULL,
+    [CreatedAt] datetime2 NOT NULL,
+    CONSTRAINT [PK_InventoryTransactions] PRIMARY KEY ([Id]),
+    CONSTRAINT [FK_InventoryTransactions_Products_ProductId] FOREIGN KEY ([ProductId]) REFERENCES [Products] ([Id]) ON DELETE CASCADE
+); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-21 22:04:31.356 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE [OutboundOrderItems] (
+    [Id] uniqueidentifier NOT NULL,
+    [OrderId] uniqueidentifier NOT NULL,
+    [ProductId] uniqueidentifier NOT NULL,
+    [Quantity] int NOT NULL,
+    [Status] nvarchar(max) NOT NULL,
+    [CreatedAt] datetime2 NOT NULL,
+    CONSTRAINT [PK_OutboundOrderItems] PRIMARY KEY ([Id]),
+    CONSTRAINT [FK_OutboundOrderItems_Products_ProductId] FOREIGN KEY ([ProductId]) REFERENCES [Products] ([Id]) ON DELETE CASCADE
+); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-21 22:04:31.357 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX [IX_InventoryTransactions_ProductId] ON [InventoryTransactions] ([ProductId]); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-21 22:04:31.357 +07:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX [IX_OutboundOrderItems_ProductId] ON [OutboundOrderItems] ([ProductId]); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-21 22:04:31.358 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+VALUES (N'20260621150143_AddSoftDeleteToBin', N'10.0.8'); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-21 22:04:31.361 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @result int;
+EXEC @result = sp_releaseapplock @Resource = '__EFMigrationsLock', @LockOwner = 'Session';
+SELECT @result {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-21 22:08:16.531 +07:00 [INF] Executed DbCommand (18ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1 {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-21 22:08:16.576 +07:00 [INF] Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long. {"EventId":{"Id":20411,"Name":"Microsoft.EntityFrameworkCore.Migrations.AcquiringMigrationLock"},"SourceContext":"Microsoft.EntityFrameworkCore.Migrations"}
+2026-06-21 22:08:16.593 +07:00 [INF] Executed DbCommand (14ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @result int;
+EXEC @result = sp_getapplock @Resource = '__EFMigrationsLock', @LockOwner = 'Session', @LockMode = 'Exclusive';
+SELECT @result {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-21 22:08:16.660 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+IF OBJECT_ID(N'[__EFMigrationsHistory]') IS NULL
+BEGIN
+    CREATE TABLE [__EFMigrationsHistory] (
+        [MigrationId] nvarchar(150) NOT NULL,
+        [ProductVersion] nvarchar(32) NOT NULL,
+        CONSTRAINT [PK___EFMigrationsHistory] PRIMARY KEY ([MigrationId])
+    );
+END; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-21 22:08:16.668 +07:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1 {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-21 22:08:16.668 +07:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]'); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-21 22:08:16.675 +07:00 [INF] Executed DbCommand (5ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [MigrationId], [ProductVersion]
+FROM [__EFMigrationsHistory]
+ORDER BY [MigrationId]; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-21 22:08:16.685 +07:00 [INF] Applying migration '20260621150542_AddOutboundOrderItemsTable'. {"EventId":{"Id":20402,"Name":"Microsoft.EntityFrameworkCore.Migrations.MigrationApplying"},"SourceContext":"Microsoft.EntityFrameworkCore.Migrations"}
+2026-06-21 22:08:16.698 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+VALUES (N'20260621150542_AddOutboundOrderItemsTable', N'10.0.8'); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-21 22:08:16.700 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @result int;
+EXEC @result = sp_releaseapplock @Resource = '__EFMigrationsLock', @LockOwner = 'Session';
+SELECT @result {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-21 22:39:11.894 +07:00 [INF] Executed DbCommand (18ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1 {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-21 22:39:11.939 +07:00 [INF] Acquiring an exclusive lock for migration application. See https://aka.ms/efcore-docs-migrations-lock for more information if this takes too long. {"EventId":{"Id":20411,"Name":"Microsoft.EntityFrameworkCore.Migrations.AcquiringMigrationLock"},"SourceContext":"Microsoft.EntityFrameworkCore.Migrations"}
+2026-06-21 22:39:11.962 +07:00 [INF] Executed DbCommand (19ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @result int;
+EXEC @result = sp_getapplock @Resource = '__EFMigrationsLock', @LockOwner = 'Session', @LockMode = 'Exclusive';
+SELECT @result {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-21 22:39:12.028 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+IF OBJECT_ID(N'[__EFMigrationsHistory]') IS NULL
+BEGIN
+    CREATE TABLE [__EFMigrationsHistory] (
+        [MigrationId] nvarchar(150) NOT NULL,
+        [ProductVersion] nvarchar(32) NOT NULL,
+        CONSTRAINT [PK___EFMigrationsHistory] PRIMARY KEY ([MigrationId])
+    );
+END; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-21 22:39:12.035 +07:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT 1 {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-21 22:39:12.036 +07:00 [INF] Executed DbCommand (0ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT OBJECT_ID(N'[__EFMigrationsHistory]'); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-21 22:39:12.044 +07:00 [INF] Executed DbCommand (6ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+SELECT [MigrationId], [ProductVersion]
+FROM [__EFMigrationsHistory]
+ORDER BY [MigrationId]; {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-21 22:39:12.054 +07:00 [INF] Applying migration '20260621153847_AddProductSerials'. {"EventId":{"Id":20402,"Name":"Microsoft.EntityFrameworkCore.Migrations.MigrationApplying"},"SourceContext":"Microsoft.EntityFrameworkCore.Migrations"}
+2026-06-21 22:39:12.088 +07:00 [INF] Executed DbCommand (5ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE TABLE [ProductSerialNumbers] (
+    [Id] uniqueidentifier NOT NULL,
+    [ProductId] uniqueidentifier NOT NULL,
+    [BinInventoryId] uniqueidentifier NULL,
+    [SerialCode] nvarchar(max) NOT NULL,
+    [Status] nvarchar(max) NOT NULL,
+    [OutboundOrderCode] nvarchar(max) NULL,
+    CONSTRAINT [PK_ProductSerialNumbers] PRIMARY KEY ([Id]),
+    CONSTRAINT [FK_ProductSerialNumbers_Products_ProductId] FOREIGN KEY ([ProductId]) REFERENCES [Products] ([Id]) ON DELETE CASCADE
+); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-21 22:39:12.089 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+CREATE INDEX [IX_ProductSerialNumbers_ProductId] ON [ProductSerialNumbers] ([ProductId]); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-21 22:39:12.090 +07:00 [INF] Executed DbCommand (1ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+VALUES (N'20260621153847_AddProductSerials', N'10.0.8'); {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
+2026-06-21 22:39:12.094 +07:00 [INF] Executed DbCommand (2ms) [Parameters=[], CommandType='"Text"', CommandTimeout='30']
+DECLARE @result int;
+EXEC @result = sp_releaseapplock @Resource = '__EFMigrationsLock', @LockOwner = 'Session';
+SELECT @result {"EventId":{"Id":20101,"Name":"Microsoft.EntityFrameworkCore.Database.Command.CommandExecuted"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Command"}
