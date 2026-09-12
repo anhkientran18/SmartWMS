@@ -1,7 +1,15 @@
-.vs/
+# Build results
 [Bb]in/
 [Oo]bj/
-*.user
+
+# User-specific files
+*.rsuser
 *.suo
-*.dbmdl
-*.temp
+*.user
+*.userosscache
+*.sln.docstates
+
+# Logs
+Logs/
+*.log
+smartwms-log-*.txt
