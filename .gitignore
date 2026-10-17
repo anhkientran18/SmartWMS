@@ -13,3 +13,13 @@
 Logs/
 *.log
 smartwms-log-*.txt
+
+# Bỏ qua thư mục Logs và file log
+SmartWMS.Api/Logs/
+*.log
+smartwms-log-*.txt
+
+# Bỏ qua các thư mục build cache
+bin/
+obj/
+.vs/
