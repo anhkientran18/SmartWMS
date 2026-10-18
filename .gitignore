@@ -1,25 +1,17 @@
-# Build results
+# Build results (Chặn toàn bộ thư mục biên dịch cache)
 [Bb]in/
 [Oo]bj/
 
-# User-specific files
+# User-specific files (Chặn các file cấu hình cá nhân của Visual Studio)
 *.rsuser
 *.suo
 *.user
 *.userosscache
 *.sln.docstates
+.vs/
 
-# Logs
+# Logs (Chặn toàn bộ file nhật ký hệ thống và thư mục Logs rác)
+SmartWMS.Api/Logs/
 Logs/
 *.log
 smartwms-log-*.txt
-
-# Bỏ qua thư mục Logs và file log
-SmartWMS.Api/Logs/
-*.log
-smartwms-log-*.txt
-
-# Bỏ qua các thư mục build cache
-bin/
-obj/
-.vs/
