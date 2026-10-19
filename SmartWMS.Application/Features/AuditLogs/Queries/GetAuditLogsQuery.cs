@@ -1,7 +1,7 @@
 ﻿using MediatR;
 using SmartWMS.Application.Common.Models;
-using SmartWMS.Application.Features.AuditLogs.Queries.Dtos; // Import danh mục DTO mới tách
+using SmartWMS.Application.Features.AuditLogs.DTOs.Queries;
 
-namespace SmartWMS.Application.Features.AuditLogs.Queries;
+namespace SmartWMS.Application.Features.AuditLogs.Queries.GetAuditLogs;
 
-public record GetAuditLogsQuery(int PageNumber = 1, int PageSize = 20) : IRequest<Result<AuditLogPaginationDto>>;
+public record GetAuditLogsQuery(AuditLogPaginatedRequest RequestData) : IRequest<Result<PaginatedResult<AuditLogDto>>>;

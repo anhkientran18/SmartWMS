@@ -6,7 +6,10 @@ public class DeleteBinCommandValidator : AbstractValidator<DeleteBinCommand>
 {
     public DeleteBinCommandValidator()
     {
-        RuleFor(x => x.Id)
-            .NotEmpty().WithMessage("Vui lòng cung cấp mã định danh (Id) ô kệ cần xóa.");
+        RuleFor(x => x.RequestData).NotNull().WithMessage("Dữ liệu không được trống.");
+        When(x => x.RequestData != null, () =>
+        {
+            RuleFor(x => x.RequestData.Id).NotEmpty().WithMessage("Vui lòng cung cấp Id ô kệ cần xóa.");
+        });
     }
-}   
+}

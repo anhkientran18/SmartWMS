@@ -1,32 +1,23 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SmartWMS.Application.Features.AuditLogs.Queries;
+using SmartWMS.Api.Extensions;
+using SmartWMS.Application.Features.AuditLogs.DTOs.Queries;
+using SmartWMS.Application.Features.AuditLogs.Queries.GetAuditLogs;
+using System.Threading.Tasks;
 
 namespace SmartWMS.Api.Controllers;
 
-[Authorize(Roles = "Admin")] // BẢO MẬT: Chỉ có Giám đốc hệ thống (Admin) mới được xem lịch sử thao tác
+[Authorize(Roles = "Admin")]
 [ApiController]
-[Route("api/v1/[controller]")]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/[controller]")]
 public class AuditLogsController : ControllerBase
 {
     private readonly IMediator _mediator;
-
-    public AuditLogsController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
+    public AuditLogsController(IMediator mediator) => _mediator = mediator;
 
     [HttpGet]
     public async Task<IActionResult> GetLogs([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 20)
-    {
-        var result = await _mediator.Send(new GetAuditLogsQuery(pageNumber, pageSize));
-
-        if (result.IsSuccess)
-        {
-            return Ok(result);
-        }
-
-        return BadRequest(result);
-    }
+        => (await _mediator.Send(new GetAuditLogsQuery(new AuditLogPaginatedRequest { PageIndex = pageNumber, PageSize = pageSize }))).ToActionResult();
 }

@@ -1,17 +1,19 @@
 ﻿using FluentValidation;
-using Microsoft.Extensions.Localization;
-using SmartWMS.Domain.Localization;
+using System.Linq;
 
 namespace SmartWMS.Application.Features.OutboundOrders.Commands.CreateWavePickTask;
 
 public class CreateWavePickTaskCommandValidator : AbstractValidator<CreateWavePickTaskCommand>
 {
-    public CreateWavePickTaskCommandValidator(IStringLocalizer<SharedResource> localizer)
+    public CreateWavePickTaskCommandValidator()
     {
-        RuleFor(v => v.OrderIds)
-            .NotEmpty()
-            .WithMessage(_ => localizer["OrderIds_Required"]) // Bản dịch: "Danh sách đơn hàng gộp sóng xuất kho không được để trống"
-            .Must(ids => ids != null && ids.Count > 0)
-            .WithMessage(_ => localizer["OrderIds_MustContainItems"]); // Bản dịch: "Phải chọn tối thiểu một đơn hàng để khởi tạo đợt sóng bốc hàng"
+        RuleFor(x => x.RequestData).NotNull().WithMessage("Dữ liệu không được trống.");
+        When(x => x.RequestData != null, () =>
+        {
+            RuleFor(x => x.RequestData.OutboundOrderIds)
+                .NotEmpty().WithMessage("Vui lòng chọn danh sách đơn hàng xuất cần gom chuyến.")
+                .Must(ids => ids != null && ids.Any()).WithMessage("Danh sách đơn hàng trống.")
+                .Must(ids => ids != null && ids.Count > 1).WithMessage("Gom chuyến (Wave Pick) yêu cầu ít nhất 2 đơn hàng xuất.");
+        });
     }
 }

@@ -1,17 +1,15 @@
 ﻿using FluentValidation;
-using Microsoft.Extensions.Localization;
-using SmartWMS.Domain.Localization;
 
 namespace SmartWMS.Application.Features.Forecasts.Queries.GetStockForecast;
 
 public class GetStockForecastQueryValidator : AbstractValidator<GetStockForecastQuery>
 {
-    public GetStockForecastQueryValidator(IStringLocalizer<SharedResource> localizer)
+    public GetStockForecastQueryValidator()
     {
-        RuleFor(v => v.SKU)
-            .NotEmpty()
-            .WithMessage(_ => localizer["SKU_Required"])
-            .MaximumLength(50)
-            .WithMessage(_ => localizer["SKU_TooLong"]);
+        RuleFor(x => x.RequestData).NotNull().WithMessage("Dữ liệu không được để trống.");
+        When(x => x.RequestData != null, () =>
+        {
+            RuleFor(x => x.RequestData.Sku).NotEmpty().WithMessage("Vui lòng cung cấp mã SKU cần dự báo.");
+        });
     }
 }

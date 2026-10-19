@@ -2,50 +2,48 @@
 using Microsoft.EntityFrameworkCore;
 using SmartWMS.Application.Common.Interfaces;
 using SmartWMS.Application.Common.Models;
-using SmartWMS.Application.Features.AuditLogs.Queries.Dtos;
+using SmartWMS.Application.Features.AuditLogs.DTOs.Queries;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
-namespace SmartWMS.Application.Features.AuditLogs.Queries;
+namespace SmartWMS.Application.Features.AuditLogs.Queries.GetAuditLogs;
 
-public class GetAuditLogsQueryHandler : IRequestHandler<GetAuditLogsQuery, Result<AuditLogPaginationDto>>
+public class GetAuditLogsQueryHandler : IRequestHandler<GetAuditLogsQuery, Result<PaginatedResult<AuditLogDto>>>
 {
     private readonly IApplicationDbContext _context;
 
-    public GetAuditLogsQueryHandler(IApplicationDbContext context)
-    {
-        _context = context;
-    }
+    public GetAuditLogsQueryHandler(IApplicationDbContext context) => _context = context;
 
-    public async Task<Result<AuditLogPaginationDto>> Handle(GetAuditLogsQuery request, CancellationToken cancellationToken)
+    public async Task<Result<PaginatedResult<AuditLogDto>>> Handle(GetAuditLogsQuery request, CancellationToken cancellationToken)
     {
-        // Lấy tổng số dòng nhật ký
-        var totalRecords = await _context.AuditLogs.CountAsync(cancellationToken);
+        var req = request.RequestData;
 
-        // Phân trang và sắp xếp mới nhất lên đầu
-        var logs = await _context.AuditLogs
-            .AsNoTracking()
-            .OrderByDescending(a => a.DateTime)
-            .Skip((request.PageNumber - 1) * request.PageSize)
-            .Take(request.PageSize)
-            .Select(a => new AuditLogDto
+        // Truy vấn thẳng qua DbContext để tối ưu tốc độ đọc Log
+        var query = _context.AuditLogs.AsNoTracking();
+
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        var items = await query
+            .OrderByDescending(x => x.DateTime) // Sắp xếp theo trường DateTime của bạn
+            .Skip((req.PageIndex - 1) * req.PageSize)
+            .Take(req.PageSize)
+            .Select(x => new AuditLogDto
             {
-                Id = a.Id,
-                UserId = a.UserId,
-                Type = a.Type,
-                TableName = a.TableName,
-                DateTime = a.DateTime,
-                OldValues = a.OldValues ?? "",
-                NewValues = a.NewValues ?? "",
-                AffectedColumns = a.AffectedColumns ?? ""
+                Id = x.Id,
+                UserId = x.UserId,
+                Type = x.Type,
+                TableName = x.TableName,
+                DateTime = x.DateTime,
+                OldValues = x.OldValues,
+                NewValues = x.NewValues,
+                AffectedColumns = x.AffectedColumns,
+                IpAddress = x.IpAddress
             })
             .ToListAsync(cancellationToken);
 
-        var result = new AuditLogPaginationDto
-        {
-            TotalRecords = totalRecords,
-            TotalPages = (int)Math.Ceiling(totalRecords / (double)request.PageSize),
-            Logs = logs
-        };
-
-        return Result<AuditLogPaginationDto>.Success(result, "Truy xuất nhật ký hệ thống thành công.");
+        return Result<PaginatedResult<AuditLogDto>>.Success(
+            PaginatedResult<AuditLogDto>.Create(items, totalCount, req.PageIndex, req.PageSize)
+        );
     }
 }

@@ -1,71 +1,76 @@
 ﻿using MediatR;
-using Microsoft.EntityFrameworkCore;
+using SmartWMS.Application.Common.Events;
 using SmartWMS.Application.Common.Interfaces;
 using SmartWMS.Application.Common.Models;
+using SmartWMS.Application.Features.InventoryManagement.Specifications.Commands;
 using SmartWMS.Domain.Entities;
+using SmartWMS.Domain.Enums;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace SmartWMS.Application.Features.InventoryManagement.Commands.ChangeStockStatus;
 
-public class ChangeStockStatusCommandHandler : IRequestHandler<ChangeStockStatusCommand, Result<Guid>>
+public class ChangeStockStatusCommandHandler : IRequestHandler<ChangeStockStatusCommand, Result<bool>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly IMediator _mediator;
 
-    public ChangeStockStatusCommandHandler(IApplicationDbContext context)
+    public ChangeStockStatusCommandHandler(IUnitOfWork unitOfWork, IMediator mediator)
     {
-        _context = context;
+        _unitOfWork = unitOfWork;
+        _mediator = mediator;
     }
 
-    public async Task<Result<Guid>> Handle(ChangeStockStatusCommand request, CancellationToken cancellationToken)
+    public async Task<Result<bool>> Handle(ChangeStockStatusCommand request, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.Reason))
-        {
-            return Result<Guid>.Failure("Bắt buộc phải nhập lý do thay đổi trạng thái chất lượng hàng hóa.");
-        }
+        var req = request.RequestData;
+        var inventoryRepo = _unitOfWork.Repository<BinInventory>();
+        var transactionRepo = _unitOfWork.Repository<InventoryTransaction>();
 
-        // 1. Tìm bản ghi tồn kho chi tiết khớp hoàn toàn theo ô kệ, sản phẩm và số lô (BatchNumber)
-        var inventory = await _context.BinInventories
-            .Include(x => x.Bin)
-            .FirstOrDefaultAsync(x => x.BinId == request.BinId &&
-                                      x.ProductId == request.ProductId &&
-                                      x.LotNumber == request.LotNumber, cancellationToken);
+        // 1. Kéo tồn kho lên kiểm tra
+        var spec = new BinInventoryForStatusChangeSpec(req.BinId, req.ProductId, req.LotNumber);
+        var inventory = await inventoryRepo.GetEntityWithSpecAsync(spec, cancellationToken);
 
         if (inventory == null)
-        {
-            return Result<Guid>.Failure("Không tìm thấy lô tồn kho yêu cầu chuyển đổi trạng thái.");
-        }
+            return Result<bool>.Failure("Không tìm thấy lô hàng này tại ô kệ đã chọn.");
 
-        int oldStatusInt = (int)inventory.Status;
-        if (oldStatusInt == request.NewStatus)
-        {
-            return Result<Guid>.Success(inventory.Id, "Trạng thái mới trùng khớp với trạng thái hiện tại. Không cần cập nhật.");
-        }
+        if (inventory.Status == req.NewStatus)
+            return Result<bool>.Failure($"Lô hàng này hiện đã ở trạng thái {req.NewStatus}, không cần thay đổi.");
 
-        // 2. Tiến hành cập nhật trạng thái chất lượng (Ép kiểu an toàn về Enum của thực thể gốc)
-        // Lưu ý: Đổi tên 'InventoryStatus' bên dưới nếu Enum trong Domain của bạn đặt tên khác
-        inventory.Status = (SmartWMS.Domain.Enums.InventoryStatus)request.NewStatus;
-
-        // 3. GHI NHẬT KÝ KIỂM TOÁN SỔ CÁI KHO (Inventory Transaction Ledger)
+        string oldStatus = inventory.Status.ToString();
         string binCode = inventory.Bin?.Code ?? "UNKNOWN";
-        var transaction = new InventoryTransaction
+
+        // 2. Cập nhật trạng thái mới
+        inventory.Status = req.NewStatus;
+        inventoryRepo.Update(inventory);
+
+        // 3. Ghi Sổ cái kiểm toán (Audit Log)
+        await transactionRepo.AddAsync(new InventoryTransaction
         {
             Id = Guid.NewGuid(),
-            ProductId = request.ProductId,
-            TransactionType = "STATUS_CHANGE",
-            QuantityChanged = inventory.Quantity, // Số lượng hàng bị tác động chuyển đổi trạng thái
+            ProductId = req.ProductId,
+            TransactionType = "STATUS_CHANGE", // Ghi nhận loại giao dịch đổi trạng thái
+            QuantityChanged = 0, // Không làm thay đổi số lượng
             SourceBinCode = binCode,
             DestinationBinCode = binCode,
-            ReasonCode = $"QC_SHIFT_{oldStatusInt}_TO_{request.NewStatus}",
-            CreatedBy = "QC_Inspector",
+            ReasonCode = $"[{oldStatus} -> {req.NewStatus.ToString().ToUpper()}] {req.ReasonCode}",
+            CreatedBy = "WarehouseManager", // Theo RBAC
             CreatedAt = DateTime.UtcNow
-        };
-        _context.InventoryTransactions.Add(transaction);
+        }, cancellationToken);
 
-        // 4. Đồng bộ Transaction xuống SQL Server
-        await _context.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return Result<Guid>.Success(inventory.Id, $"Chuyển đổi trạng thái chất lượng lô hàng tại ô {binCode} thành công sang mã trạng thái: {request.NewStatus}.");
+        // 4. Phát Domain Event (Tùy chọn: Để gửi Email cảnh báo hoặc SignalR)
+        if (req.NewStatus == InventoryStatus.QCHold || req.NewStatus == InventoryStatus.Damaged)
+        {
+            await _mediator.Publish(new InventoryChangedEvent
+            {
+                EventType = "STOCK_QC_HOLD",
+                Message = $"CẢNH BÁO: Đã chuyển {inventory.Quantity} sản phẩm tại kệ {binCode} sang trạng thái {req.NewStatus}. Lý do: {req.ReasonCode}"
+            }, cancellationToken);
+        }
+
+        return Result<bool>.Success(true, $"Đã chuyển trạng thái lô hàng sang {req.NewStatus} thành công.");
     }
 }

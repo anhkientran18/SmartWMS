@@ -1,16 +1,18 @@
 ﻿using FluentValidation;
-using Microsoft.Extensions.Localization;
-using SmartWMS.Domain.Localization;
+using System;
 
 namespace SmartWMS.Application.Features.Bins.Queries.GetBinContent;
 
 public class GetBinContentQueryValidator : AbstractValidator<GetBinContentQuery>
 {
-    public GetBinContentQueryValidator(IStringLocalizer<SharedResource> localizer)
+    public GetBinContentQueryValidator()
     {
-        // Chặn đứng trường hợp súng quét PDA truyền lên mã Guid trống rỗng (Guid.Empty)
-        RuleFor(v => v.BinId)
-            .NotEmpty()
-            .WithMessage(_ => localizer["BinId_Required"]); // Bản dịch đề xuất: "Mã định danh ô kệ (Bin ID) bắt buộc phải có."
+        RuleFor(x => x.RequestData).NotNull().WithMessage("Dữ liệu không được trống.");
+        When(x => x.RequestData != null, () =>
+        {
+            RuleFor(v => v.RequestData.BinId)
+                .NotEmpty().WithMessage("Mã định danh ô kệ (Bin ID) bắt buộc phải có.")
+                .NotEqual(Guid.Empty).WithMessage("ID ô kệ không hợp lệ.");
+        });
     }
 }

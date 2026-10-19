@@ -1,5 +1,4 @@
-﻿using MediatR;
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
 using SmartWMS.Application.Common.Interfaces;
 using SmartWMS.Application.Common.Models.Configurations;
 using System;
@@ -13,196 +12,159 @@ namespace SmartWMS.Infrastructure.Services;
 public class GeminiInsightService : IAiInsightService
 {
     private readonly HttpClient _httpClient;
-    private readonly GeminiSettings _geminiSettings;
+    private readonly GeminiSettings _settings;
 
-    // Constructor nhận vào IOptions để giải phóng sự phụ thuộc vào file appsettings thô
-    public GeminiInsightService(HttpClient httpClient, IOptions<GeminiSettings> geminiOptions)
+    public GeminiInsightService(HttpClient httpClient, IOptions<GeminiSettings> options)
     {
         _httpClient = httpClient;
-        _geminiSettings = geminiOptions.Value; // Trích xuất giá trị cấu hình an toàn
+        _settings = options.Value;
     }
 
     public async Task<string> GenerateInsightAsync(string prompt)
     {
-        try
-        {
-            var requestBody = new { contents = new[] { new { parts = new[] { new { text = prompt } } } } };
-            string apiKey = _geminiSettings.ApiKey;
-
-            var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key={apiKey}";
-            var content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
-            var response = await _httpClient.PostAsync(url, content);
-
-            if (response.IsSuccessStatusCode)
-            {
-                var responseString = await response.Content.ReadAsStringAsync();
-                using var doc = JsonDocument.Parse(responseString);
-                return doc.RootElement.GetProperty("candidates")[0].GetProperty("content").GetProperty("parts")[0].GetProperty("text").GetString()?.Trim() ?? "";
-            }
-        }
-        catch { }
-        return "Lỗi phân tích cú pháp AI.";
+        return await CallGeminiTextApiAsync(_settings.DefaultModel, prompt);
     }
 
     public async Task<string> GenerateExecutiveInsightAsync(string statisticalData)
     {
-        var executivePrompt = $"Bạn là Giám đốc vận hành kho (COO). Dựa trên số liệu sau: '{statisticalData}'. " +
-                              $"Hãy viết MỘT đoạn văn ngắn (khoảng 3-4 câu) phân tích tình hình và đưa ra cảnh báo hoặc lời khuyên quản trị. " +
-                              $"Văn phong chuyên nghiệp, tập trung vào tối ưu hóa không gian và an toàn tồn kho.";
-        return await GenerateInsightAsync(executivePrompt);
+        string prompt = $"Bạn là chuyên gia quản lý kho bãi WMS. Dựa trên dữ liệu thống kê sau: {statisticalData}. Hãy đưa ra đánh giá ngắn gọn (khoảng 3-4 câu) và lời khuyên tối ưu vận hành.";
+        return await CallGeminiTextApiAsync(_settings.ProModel, prompt);
     }
 
     public async Task<string> AnalyzeReceiptImageAsync(byte[] imageBytes, string mimeType)
     {
-        try
-        {
-            string base64Image = Convert.ToBase64String(imageBytes);
-            string systemInstruction = "Bạn là chuyên gia OCR của hệ thống kho SmartWMS. Hãy phân tích hình ảnh hóa đơn này " +
-                                       "và trích xuất danh sách sản phẩm thành dạng JSON thô thuần túy.";
-
-            var requestBody = new
-            {
-                contents = new[]
-                {
-                    new
-                    {
-                        parts = new object[]
-                        {
-                            new { text = systemInstruction },
-                            new { inline_data = new { mime_type = mimeType, data = base64Image } }
-                        }
-                    }
-                }
-            };
-
-            string apiKey = _geminiSettings.ApiKey;
-            var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={apiKey}";
-            var content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
-            var response = await _httpClient.PostAsync(url, content);
-
-            if (response.IsSuccessStatusCode)
-            {
-                var responseString = await response.Content.ReadAsStringAsync();
-                using var doc = JsonDocument.Parse(responseString);
-                string aiTextResult = doc.RootElement.GetProperty("candidates")[0].GetProperty("content").GetProperty("parts")[0].GetProperty("text").GetString()?.Trim() ?? "{}";
-                if (aiTextResult.StartsWith("```")) aiTextResult = aiTextResult.Replace("```json", "").Replace("```", "").Trim();
-                return aiTextResult;
-            }
-        }
-        catch (Exception ex) { return $"{{\"Error\": \"Lỗi: {ex.Message}\"}}"; }
-        return "{\"Error\": \"Lỗi kết nối AI Vision.\"}";
+        string prompt = "Hãy trích xuất thông tin hóa đơn nhập kho từ hình ảnh này dưới dạng JSON hợp lệ gồm các trường: SupplierName, InvoiceNumber, InvoiceDate (yyyy-MM-dd), Items (mảng gồm SKU, ProductName, Quantity, UnitPrice). Chỉ trả về JSON thuần, không bọc markdown.";
+        string rawJson = await CallGeminiVisionApiAsync(_settings.DefaultModel, prompt, imageBytes, mimeType);
+        return CleanJsonOutput(rawJson);
     }
 
     public async Task<string> ParseVoiceCommandAsync(string voiceText)
     {
-        try
-        {
-            string systemInstruction = "Bạn là bộ xử lý ngôn ngữ tự nhiên (NLP) của hệ thống kho SmartWMS. Phân tích khẩu lệnh và trả về JSON thuần.";
-            string finalPrompt = $"{systemInstruction}\n\n[KHẨU LỆNH]: \"{voiceText}\"";
-            var requestBody = new { contents = new[] { new { parts = new[] { new { text = finalPrompt } } } } };
-
-            string apiKey = _geminiSettings.ApiKey;
-            // ĐÃ SỬA: Loại bỏ liên kết Markdown lỗi để định dạng chính xác URL endpoint API của Google
-            var url = $"[https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=](https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=){apiKey}";
-            var content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
-            var response = await _httpClient.PostAsync(url, content);
-
-            if (response.IsSuccessStatusCode)
-            {
-                var responseString = await response.Content.ReadAsStringAsync();
-                using var doc = JsonDocument.Parse(responseString);
-                string jsonResult = doc.RootElement.GetProperty("candidates")[0].GetProperty("content").GetProperty("parts")[0].GetProperty("text").GetString()?.Trim() ?? "{}";
-                if (jsonResult.StartsWith("```")) jsonResult = jsonResult.Replace("```json", "").Replace("```", "").Trim();
-                return jsonResult;
-            }
-        }
-        catch (Exception ex) { return $"{{\"Error\": \"Lỗi: {ex.Message}\"}}"; }
-        return "{\"Error\": \"Lỗi kết nối AI Engine.\"}";
+        string prompt = $"Phân tích câu lệnh giọng nói nhân viên kho: '{voiceText}'. Trả về JSON chứa Action (INBOUND, OUTBOUND, MOVE, COUNT) và parameters đi kèm.";
+        string rawJson = await CallGeminiTextApiAsync(_settings.DefaultModel, prompt);
+        return CleanJsonOutput(rawJson);
     }
 
     public async Task<string> AnalyzeDamageImageAsync(byte[] imageBytes, string mimeType)
     {
-        try
-        {
-            string base64Image = Convert.ToBase64String(imageBytes);
-            string systemInstruction = "Bạn là chuyên gia kiểm định chất lượng (QC) hình ảnh của SmartWMS. Hãy phân tích hình ảnh sản phẩm lỗi này.";
+        string prompt = "Phân tích hình ảnh hàng hóa bị lỗi/hư hỏng. Trả về JSON gồm: DamageType, Severity (Low/Medium/High), DamageDescription, ActionRecommended. Chỉ trả về JSON thuần.";
+        string rawJson = await CallGeminiVisionApiAsync(_settings.DefaultModel, prompt, imageBytes, mimeType);
+        return CleanJsonOutput(rawJson);
+    }
 
-            var requestBody = new
+    public async Task<string> AnalyzeSlottingOptimizationAsync(string movementDataJson)
+    {
+        string prompt = $@"Dựa trên dữ liệu biến động tồn kho 30 ngày qua: {movementDataJson}.
+Hãy đề xuất sắp xếp lại vị trí hàng hóa (Slotting Optimization) để tối ưu quãng đường di chuyển.
+Trả về một JSON Array chứa danh sách đối tượng:
+[
+  {{
+    ""SKU"": ""string"",
+    ""ProductName"": ""string"",
+    ""CurrentZone"": ""string"",
+    ""SuggestedZone"": ""string"",
+    ""VelocityClass"": ""Fast/Medium/Slow"",
+    ""AIReasoning"": ""string""
+  }}
+]
+Lưu ý: Chỉ trả về chuỗi JSON Array thuần, không có ký tự markdown ```json.";
+
+        string rawJson = await CallGeminiTextApiAsync(_settings.ProModel, prompt);
+        return CleanJsonOutput(rawJson);
+    }
+
+    public async Task<string> PredictDemandAsync(string jsonPayload)
+    {
+        string prompt = $@"Dựa trên lịch sử xuất kho 90 ngày của sản phẩm: {jsonPayload}.
+Hãy dự báo nhu cầu xuất kho trong 30 ngày tới.
+Trả về một JSON đối tượng khớp chính xác cấu trúc C# DTO sau:
+{{
+  ""SKU"": ""string"",
+  ""HistoricalMovements"": [ {{ ""Date"": ""yyyy-MM-dd"", ""Quantity"": 0 }} ],
+  ""ForecastedDemand"": [ {{ ""Date"": ""yyyy-MM-dd"", ""Quantity"": 0 }} ]
+}}
+Lưu ý: Chỉ trả về chuỗi JSON thuần, không có ký tự markdown ```json.";
+
+        string rawJson = await CallGeminiTextApiAsync(_settings.ProModel, prompt);
+        return CleanJsonOutput(rawJson);
+    }
+
+    private async Task<string> CallGeminiTextApiAsync(string model, string prompt)
+    {
+        var url = $"{_settings.BaseUrl}/models/{model}:generateContent?key={_settings.ApiKey}";
+        var requestBody = new
+        {
+            contents = new[]
             {
-                contents = new object[]
+                new { parts = new[] { new { text = prompt } } }
+            }
+        };
+
+        var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
+        var response = await _httpClient.PostAsync(url, jsonContent);
+        response.EnsureSuccessStatusCode();
+
+        var jsonResponse = await response.Content.ReadAsStringAsync();
+        return ExtractTextFromGeminiResponse(jsonResponse);
+    }
+
+    private async Task<string> CallGeminiVisionApiAsync(string model, string prompt, byte[] imageBytes, string mimeType)
+    {
+        var url = $"{_settings.BaseUrl}/models/{model}:generateContent?key={_settings.ApiKey}";
+        string base64Image = Convert.ToBase64String(imageBytes);
+
+        var requestBody = new
+        {
+            contents = new[]
+            {
+                new
                 {
-                    new
+                    parts = new object[]
                     {
-                        parts = new object[]
+                        new { text = prompt },
+                        new
                         {
-                            new { text = systemInstruction },
-                            new { inline_data = new { mime_type = mimeType, data = base64Image } }
+                            inlineData = new
+                            {
+                                mimeType = string.IsNullOrWhiteSpace(mimeType) ? "image/jpeg" : mimeType,
+                                data = base64Image
+                            }
                         }
                     }
                 }
-            };
-
-            string apiKey = _geminiSettings.ApiKey;
-            var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={apiKey}";
-            var content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
-            var response = await _httpClient.PostAsync(url, content);
-
-            if (response.IsSuccessStatusCode)
-            {
-                var responseString = await response.Content.ReadAsStringAsync();
-                using var doc = JsonDocument.Parse(responseString);
-                string aiTextResult = doc.RootElement.GetProperty("candidates")[0].GetProperty("content").GetProperty("parts")[0].GetProperty("text").GetString()?.Trim() ?? "{}";
-                if (aiTextResult.StartsWith("```")) aiTextResult = aiTextResult.Replace("```json", "").Replace("```", "").Trim();
-                return aiTextResult;
             }
-        }
-        catch (Exception ex) { return $"{{\"Error\": \"Lỗi phân tích Computer Vision: {ex.Message}\"}}"; }
-        return "{\"Error\": \"Không thể kết nối dịch vụ kiểm tra hình ảnh AI.\"}";
+        };
+
+        var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
+        var response = await _httpClient.PostAsync(url, jsonContent);
+        response.EnsureSuccessStatusCode();
+
+        var jsonResponse = await response.Content.ReadAsStringAsync();
+        return ExtractTextFromGeminiResponse(jsonResponse);
     }
 
-    /// <summary>
-    /// BỔ SUNG MỚI: Triệu hồi AI Gemini phân tích lịch sử bốc hàng và đề xuất sơ đồ Slotting tối ưu vị trí ô kệ kho bãi
-    /// </summary>
-    public async Task<string> AnalyzeSlottingOptimizationAsync(string movementDataJson)
+    private static string ExtractTextFromGeminiResponse(string jsonResponse)
     {
-        try
+        using var doc = JsonDocument.Parse(jsonResponse);
+        var root = doc.RootElement;
+        if (root.TryGetProperty("candidates", out var candidates) && candidates.GetArrayLength() > 0)
         {
-            string systemInstruction = "Bạn là một chuyên gia tối ưu hóa bố trí kho vận (Warehouse Slotting Expert). " +
-                                       "Hãy phân tích chuỗi dữ liệu JSON chứa lịch sử bốc hàng (tần suất, số lượng) và sơ đồ vị trí hiện tại được cung cấp. " +
-                                       "Phân loại hàng hóa theo mô hình ABC: Nhóm A (Bán chạy, tần suất cao), Nhóm B (Trung bình), Nhóm C (Tồn chậm). " +
-                                       "Đưa ra khuyến nghị: Nhóm A phải xếp ở 'Khu Mát (Cold Zone)' hoặc khu gần cửa xuất để đi nhanh, nhóm C xếp vào 'Khu Khô (Dry Zone)' hoặc góc sâu. " +
-                                       "BẮT BUỘC chỉ trả về chuỗi JSON nguyên bản là một mảng các đối tượng, KHÔNG ĐƯỢC bọc trong ký tự hiển thị mã nguồn như ```json, KHÔNG ĐƯỢC có văn bản giải thích thừa. " +
-                                       "Cấu trúc JSON đầu ra bắt buộc phải khớp chính xác 100% với định dạng này: " +
-                                       "[{\"SKU\":\"Mã\",\"ProductName\":\"Tên\",\"CurrentZone\":\"Vùng Cũ\",\"SuggestedZone\":\"Vùng Mới\",\"VelocityClass\":\"A\",\"AIReasoning\":\"Lý do ngắn gọn\"}]";
-
-            var requestBody = new
+            var parts = candidates[0].GetProperty("content").GetProperty("parts");
+            if (parts.GetArrayLength() > 0)
             {
-                contents = new[]
-                {
-                    new { parts = new[] { new { text = $"{systemInstruction}\n\nĐây là dữ liệu kho thực tế cần xử lý:\n{movementDataJson}" } } }
-                },
-                generationConfig = new
-                {
-                    temperature = 0.2,
-                    topP = 0.8
-                }
-            };
-
-            string apiKey = _geminiSettings.ApiKey;
-            var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={apiKey}";
-            var content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
-            var response = await _httpClient.PostAsync(url, content);
-
-            if (response.IsSuccessStatusCode)
-            {
-                var responseString = await response.Content.ReadAsStringAsync();
-                using var doc = JsonDocument.Parse(responseString);
-                string aiTextResult = doc.RootElement.GetProperty("candidates")[0].GetProperty("content").GetProperty("parts")[0].GetProperty("text").GetString()?.Trim() ?? "[]";
-                if (aiTextResult.StartsWith("```")) aiTextResult = aiTextResult.Replace("```json", "").Replace("```", "").Trim();
-                return aiTextResult;
+                return parts[0].GetProperty("text").GetString() ?? string.Empty;
             }
         }
-        catch (Exception ex) { return $"{{\"Error\": \"Lỗi phân tích AI Slotting: {ex.Message}\"}}"; }
-        return "[]";
+        return string.Empty;
+    }
+
+    private static string CleanJsonOutput(string raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return "{}";
+        var cleaned = raw.Trim();
+        if (cleaned.StartsWith("```json")) cleaned = cleaned[7..];
+        else if (cleaned.StartsWith("```")) cleaned = cleaned[3..];
+        if (cleaned.EndsWith("```")) cleaned = cleaned[..^3];
+        return cleaned.Trim();
     }
 }

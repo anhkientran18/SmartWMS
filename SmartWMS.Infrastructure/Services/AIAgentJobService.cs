@@ -74,10 +74,10 @@ public class AIAgentJobService : IAIAgentJobService
 
             _context.InboundReceipts.Add(autoTicket);
 
-            // 4. Phát tín hiệu Real-time qua SignalR Hub tới Group Managers
+            // 4. Phát tín hiệu Real-time qua SignalR Hub tới Group WarehouseManagers
             string dynamicMessage = $"Cảnh báo: Mặt hàng {item.Product!.SKU} sắp hết. AI Agent đã chuẩn bị sẵn phiếu nhập hàng gấp, mời bạn phê duyệt.";
 
-            await _notificationService.SendToGroupAsync("Managers", "LowStockAlert", new
+            await _notificationService.SendToGroupAsync("WarehouseManagers", "LowStockAlert", new
             {
                 ProductSku = item.Product!.SKU,
                 CurrentQty = item.Quantity,

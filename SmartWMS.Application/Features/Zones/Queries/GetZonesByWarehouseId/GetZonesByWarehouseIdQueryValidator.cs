@@ -1,12 +1,15 @@
 ﻿using FluentValidation;
+using System;
 
 namespace SmartWMS.Application.Features.Zones.Queries.GetZonesByWarehouseId;
 
-public class GetZonesByWarehouseIdQueryValidator : AbstractValidator<GetZonesByWarehouseIdQuery>
+public sealed class GetZonesByWarehouseIdQueryValidator : AbstractValidator<GetZonesByWarehouseIdQuery>
 {
     public GetZonesByWarehouseIdQueryValidator()
     {
-        RuleFor(v => v.WarehouseId)
-            .NotEmpty().WithMessage("Mã định danh nhà kho (WarehouseId) không được để trống.");
+        RuleFor(x => x.RequestData).NotNull();
+        When(x => x.RequestData != null, () => {
+            RuleFor(x => x.RequestData.WarehouseId).NotEmpty().NotEqual(Guid.Empty);
+        });
     }
 }

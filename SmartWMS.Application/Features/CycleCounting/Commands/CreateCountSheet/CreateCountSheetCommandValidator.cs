@@ -1,30 +1,19 @@
 ﻿using FluentValidation;
-using Microsoft.Extensions.Localization;
-using SmartWMS.Domain.Localization;
+using System;
 
-namespace SmartWMS.Application.Features.InventoryManagement.Commands.CreateCountSheet;
+namespace SmartWMS.Application.Features.CycleCounting.Commands.CreateCountSheet;
 
 public class CreateCountSheetCommandValidator : AbstractValidator<CreateCountSheetCommand>
 {
-    public CreateCountSheetCommandValidator(IStringLocalizer<SharedResource> localizer)
+    public CreateCountSheetCommandValidator()
     {
-        // 1. Kiểm tra tiêu đề của phiếu kiểm kê
-        RuleFor(v => v.Title)
-            .NotEmpty()
-            .WithMessage(_ => localizer["CountSheetTitle_Required"]) // Bản dịch đề xuất: "Tiêu đề phiếu kiểm kê không được để trống."
-            .MaximumLength(150)
-            .WithMessage(_ => localizer["CountSheetTitle_TooLong"]);
-
-        // 2. Kiểm tra nhân viên được chỉ định thực hiện đếm hàng tại hiện trường
-        RuleFor(v => v.AssignedOperator)
-            .NotEmpty()
-            .WithMessage(_ => localizer["AssignedOperator_Required"]); // Bản dịch đề xuất: "Vui lòng chỉ định nhân viên chịu trách nhiệm kiểm đếm."
-
-        // 3. Kiểm tra danh sách các ô kệ mục tiêu
-        RuleFor(v => v.TargetBinIds)
-            .NotEmpty()
-            .WithMessage(_ => localizer["TargetBinIds_Required"])
-            .Must(ids => ids != null && ids.Count > 0)
-            .WithMessage(_ => localizer["TargetBinIds_MustContainItems"]); // Bản dịch đề xuất: "Danh sách ô kệ cần rà soát phải chứa ít nhất một vị trí."
+        RuleFor(x => x.RequestData).NotNull().WithMessage("Dữ liệu không được trống.");
+        When(x => x.RequestData != null, () =>
+        {
+            // Bắt buộc phải truyền vào ZoneId hoặc BinId
+            RuleFor(x => x.RequestData)
+                .Must(req => (req.ZoneId.HasValue && req.ZoneId != Guid.Empty) || (req.BinId.HasValue && req.BinId != Guid.Empty))
+                .WithMessage("Vui lòng chọn Khu vực (Zone) hoặc Ô kệ (Bin) để tiến hành kiểm kê.");
+        });
     }
 }

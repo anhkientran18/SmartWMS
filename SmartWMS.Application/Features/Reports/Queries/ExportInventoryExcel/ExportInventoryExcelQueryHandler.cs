@@ -27,8 +27,7 @@ public class ExportInventoryExcelQueryHandler : IRequestHandler<ExportInventoryE
             .Include(b => b.Zone)
             .Where(b => !b.IsDeleted)
             .AsNoTracking()
-            // 🌟 ĐÃ SỬA: Thêm dấu '!' sau Zone để tắt cảnh báo lỗi của C# Compiler
-            .OrderBy(b => b.Zone!.Name)
+            .OrderBy(b => b.Zone!.Name) // Đã tắt cảnh báo Null chuẩn xác
             .ThenBy(b => b.Code)
             .ToListAsync(cancellationToken);
 
@@ -39,14 +38,14 @@ public class ExportInventoryExcelQueryHandler : IRequestHandler<ExportInventoryE
         using var workbook = new XLWorkbook();
         var worksheet = workbook.Worksheets.Add("BaoCaoTonKho");
 
-        // 3. Thiết lập Tiêu đề cột (Header thô)
+        // 3. Thiết lập Tiêu đề cột (Header)
         var headers = new[] { "STT", "Mã Ô Kệ (Bin)", "Khu Vực (Zone)", "Sức Chứa Tối Đa", "Đang Chứa", "Tỷ Lệ Lấp Đầy (%)" };
         for (int i = 0; i < headers.Length; i++)
         {
             worksheet.Cell(1, i + 1).Value = headers[i];
         }
 
-        // 4. Vòng lặp đổ dữ liệu chi tiết hiện trường ô kệ
+        // 4. Đổ dữ liệu chi tiết
         int row = 2;
         int stt = 1;
 
@@ -58,7 +57,6 @@ public class ExportInventoryExcelQueryHandler : IRequestHandler<ExportInventoryE
             worksheet.Cell(row, 4).Value = bin.MaxCapacity;
             worksheet.Cell(row, 5).Value = bin.CurrentOccupancy;
 
-            // Tính toán tỷ lệ lấp đầy hình học của ô kệ
             double utilization = bin.MaxCapacity > 0
                 ? Math.Round((bin.CurrentOccupancy / bin.MaxCapacity) * 100, 2)
                 : 0.0;
@@ -67,14 +65,12 @@ public class ExportInventoryExcelQueryHandler : IRequestHandler<ExportInventoryE
             row++;
         }
 
-        // 5. Khởi tạo bảng thông minh và áp đặt Theme đồng bộ tự động
+        // 5. Khởi tạo bảng và Format Theme
         var table = worksheet.Range(1, 1, row - 1, 6).CreateTable();
         table.Theme = XLTableTheme.TableStyleMedium2;
-
-        // Tự động căn chỉnh độ rộng các cột theo chữ bên trong
         worksheet.Columns().AdjustToContents();
 
-        // 6. Chuyển đổi File Excel thành mảng Byte để truyền qua mạng API
+        // 6. Xuất ra mảng Byte
         using var stream = new MemoryStream();
         workbook.SaveAs(stream);
         var content = stream.ToArray();

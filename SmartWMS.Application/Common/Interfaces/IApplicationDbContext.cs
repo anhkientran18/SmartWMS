@@ -17,5 +17,9 @@ public interface IApplicationDbContext
     DbSet<InventoryTransaction> InventoryTransactions { get; set; }
     DbSet<OutboundOrderItem> OutboundOrderItems { get; set; }
     DbSet<ProductSerialNumber> ProductSerialNumbers { get; set; }
+    DbSet<Supplier> Suppliers { get; }
+    DbSet<Customer> Customers { get; }
+    DbSet<CycleCountSheet> CycleCountSheets { get; }
+    DbSet<CycleCountItem> CycleCountItems { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }

@@ -1,22 +1,22 @@
-﻿using FluentValidation.Results;
+﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace SmartWMS.Application.Common.Exceptions;
 
-public class ValidationException : Exception
+public class ValidationError
 {
-    public IDictionary<string, string[]> Errors { get; }
+    public string PropertyName { get; set; } = string.Empty;
+    public string ErrorMessage { get; set; } = string.Empty;
+    public object? AttemptedValue { get; set; }
+    public string? ErrorCode { get; set; }
+}
 
-    public ValidationException()
-        : base("One or more validation failures have occurred.")
-    {
-        Errors = new Dictionary<string, string[]>();
-    }
+public class ValidationException : ApplicationException
+{
+    public List<ValidationError> Errors { get; }
 
-    public ValidationException(IEnumerable<ValidationFailure> failures)
-        : this()
+    public ValidationException(List<ValidationError> errors) : base("Validation failed")
     {
-        Errors = failures
-            .GroupBy(e => e.PropertyName, e => e.ErrorMessage)
-            .ToDictionary(failureGroup => failureGroup.Key, failureGroup => failureGroup.ToArray());
+        Errors = errors;
     }
 }

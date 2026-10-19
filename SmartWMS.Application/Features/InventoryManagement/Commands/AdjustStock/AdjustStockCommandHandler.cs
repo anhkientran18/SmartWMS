@@ -1,118 +1,93 @@
 ﻿using MediatR;
-using Microsoft.EntityFrameworkCore;
 using SmartWMS.Application.Common.Interfaces;
 using SmartWMS.Application.Common.Models;
+using SmartWMS.Application.Features.InventoryManagement.Specifications.Commands;
 using SmartWMS.Domain.Entities;
-using SmartWMS.Domain.Enums; // Đã bao gồm hệ thống Enum dùng chung
+using SmartWMS.Domain.Enums;
 using System;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace SmartWMS.Application.Features.InventoryManagement.Commands.AdjustStock;
 
-public class AdjustStockCommandHandler : IRequestHandler<AdjustStockCommand, Result<Guid>>
+public class AdjustStockCommandHandler : IRequestHandler<AdjustStockCommand, Result<bool>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public AdjustStockCommandHandler(IApplicationDbContext context)
+    public AdjustStockCommandHandler(IUnitOfWork unitOfWork)
     {
-        _context = context;
+        _unitOfWork = unitOfWork;
     }
 
-    public async Task<Result<Guid>> Handle(AdjustStockCommand request, CancellationToken cancellationToken)
+    public async Task<Result<bool>> Handle(AdjustStockCommand request, CancellationToken cancellationToken)
     {
-        if (request.NewQuantity < 0)
+        var req = request.RequestData;
+        var binRepo = _unitOfWork.Repository<Bin>();
+        var invRepo = _unitOfWork.Repository<BinInventory>();
+        var transRepo = _unitOfWork.Repository<InventoryTransaction>();
+
+        // 1. Kéo dữ liệu Ô kệ lên kiểm tra
+        var bin = await binRepo.GetEntityWithSpecAsync(new BinForAdjustSpec(req.BinId), cancellationToken);
+        if (bin == null) return Result<bool>.Failure("Vị trí ô kệ không tồn tại hoặc đã bị tháo dỡ.");
+
+        // 2. Kéo dữ liệu Tồn kho hiện tại lên
+        var inventory = await invRepo.GetEntityWithSpecAsync(new BinInventoryForAdjustSpec(req.BinId, req.ProductId, req.LotNumber), cancellationToken);
+
+        // TH 1: ĐIỀU CHỈNH TĂNG (+)
+        if (req.AdjustmentQuantity > 0)
         {
-            return Result<Guid>.Failure("Số lượng tồn kho sau hiệu chỉnh không được phép nhỏ hơn 0.");
-        }
+            if (bin.CurrentOccupancy + req.AdjustmentQuantity > bin.MaxCapacity)
+                return Result<bool>.Failure($"Kệ {bin.Code} không đủ sức chứa cho lượng hàng điểu chỉnh tăng.");
 
-        if (string.IsNullOrWhiteSpace(request.ReasonCode))
-        {
-            return Result<Guid>.Failure("Bắt buộc phải nhập mã lý do (Reason Code) để phục vụ kiểm toán kho.");
-        }
-
-        var bin = await _context.Bins
-            .FirstOrDefaultAsync(b => b.Id == request.BinId, cancellationToken);
-
-        if (bin == null)
-        {
-            return Result<Guid>.Failure("Không tìm thấy ô kệ chỉ định trên sơ đồ.");
-        }
-
-        var inventory = await _context.BinInventories
-            .FirstOrDefaultAsync(x => x.BinId == request.BinId &&
-                                      x.ProductId == request.ProductId &&
-                                      x.LotNumber == request.LotNumber, cancellationToken);
-
-        int oldQuantity = inventory?.Quantity ?? 0;
-        int deltaQuantity = request.NewQuantity - oldQuantity;
-
-        if (deltaQuantity == 0)
-        {
-            return Result<Guid>.Success(inventory?.Id ?? Guid.Empty, "Số lượng hiệu chỉnh trùng khớp với số lượng hệ thống. Không cần cập nhật.");
-        }
-
-        if (deltaQuantity > 0)
-        {
-            var potentialOccupancy = bin.CurrentOccupancy + deltaQuantity;
-            if (potentialOccupancy > bin.MaxCapacity)
+            if (inventory == null)
             {
-                var remainingSpace = bin.MaxCapacity - bin.CurrentOccupancy;
-                return Result<Guid>.Failure($"Không thể cân đối tăng! Ô kệ {bin.Code} chỉ còn trống ({Math.Round(remainingSpace, 2)}), không đủ chứa thêm lượng chênh lệch ({deltaQuantity}).");
+                await invRepo.AddAsync(new BinInventory
+                {
+                    Id = Guid.NewGuid(),
+                    BinId = req.BinId,
+                    ProductId = req.ProductId,
+                    LotNumber = string.IsNullOrWhiteSpace(req.LotNumber) ? "LOT-DEFAULT" : req.LotNumber,
+                    Quantity = req.AdjustmentQuantity,
+                    Status = InventoryStatus.Available
+                }, cancellationToken);
+            }
+            else
+            {
+                inventory.Quantity += req.AdjustmentQuantity;
+                invRepo.Update(inventory);
             }
         }
-
-        if (inventory == null)
-        {
-            inventory = new BinInventory
-            {
-                Id = Guid.NewGuid(),
-                BinId = request.BinId,
-                ProductId = request.ProductId,
-                LotNumber = string.IsNullOrWhiteSpace(request.LotNumber) ? "LOT-UNKN" : request.LotNumber,
-                Quantity = request.NewQuantity,
-                Status = request.ReasonCode == "DAMAGED" ? InventoryStatus.Damaged : InventoryStatus.Available
-            };
-            _context.BinInventories.Add(inventory);
-        }
+        // TH 2: ĐIỀU CHỈNH GIẢM (-)
         else
         {
-            inventory.Quantity = request.NewQuantity;
+            if (inventory == null || inventory.Quantity < Math.Abs(req.AdjustmentQuantity))
+                return Result<bool>.Failure("Tồn kho hiện tại không đủ để thực hiện điều chỉnh giảm theo yêu cầu.");
 
-            if (request.ReasonCode == "DAMAGED")
-            {
-                inventory.Status = InventoryStatus.Damaged;
-            }
-
-            if (inventory.Quantity == 0)
-            {
-                _context.BinInventories.Remove(inventory);
-            }
+            inventory.Quantity += req.AdjustmentQuantity; // Vì req.AdjustmentQuantity là số âm nên += sẽ thành trừ
+            invRepo.Update(inventory);
         }
 
-        bin.CurrentOccupancy += deltaQuantity;
+        // 3. Cập nhật sức chứa của Kệ
+        bin.CurrentOccupancy += req.AdjustmentQuantity;
+        binRepo.Update(bin);
 
-        // ============================================================================
-        // 🌟 ĐÃ CẬP NHẬT: TỰ ĐỘNG GHI SỔ CÁI BIẾN ĐỘNG KHO (Sử dụng Enum an toàn)
-        // ============================================================================
-        var transaction = new InventoryTransaction
+        // 4. Ghi Sổ cái (Audit Log)
+        await transRepo.AddAsync(new InventoryTransaction
         {
             Id = Guid.NewGuid(),
-            ProductId = request.ProductId,
-            // 🚀 KHÔNG CÒN MAGIC STRING: Tự động chuyển đổi thành "ADJUSTMENT" tương thích DB cũ
+            ProductId = req.ProductId,
             TransactionType = TransactionType.Adjustment.ToString().ToUpper(),
-            QuantityChanged = deltaQuantity,
-            SourceBinCode = deltaQuantity < 0 ? (bin.Code ?? "UNKNOWN") : "SYSTEM_ADJUST",
-            DestinationBinCode = deltaQuantity > 0 ? (bin.Code ?? "UNKNOWN") : "SYSTEM_ADJUST",
-            ReasonCode = request.ReasonCode,
-            CreatedBy = WarehouseRole.Manager.ToString(), // 🚀 Đồng bộ chuỗi phân quyền "Manager"
+            QuantityChanged = req.AdjustmentQuantity,
+            SourceBinCode = req.AdjustmentQuantity < 0 ? bin.Code : "N/A",
+            DestinationBinCode = req.AdjustmentQuantity > 0 ? bin.Code : "N/A",
+            ReasonCode = req.ReasonCode,
+            CreatedBy = "WarehouseManager", // Theo RBAC của bạn
             CreatedAt = DateTime.UtcNow
-        };
-        _context.InventoryTransactions.Add(transaction);
+        }, cancellationToken);
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return Result<Guid>.Success(inventory.Id, $"Hiệu chỉnh kho thành công tại ô {bin.Code}. Lý do: {request.ReasonCode}. Lệch net: {deltaQuantity}");
+        string actionName = req.AdjustmentQuantity > 0 ? "tăng" : "giảm";
+        return Result<bool>.Success(true, $"Đã điều chỉnh {actionName} {Math.Abs(req.AdjustmentQuantity)} sản phẩm thành công.");
     }
 }

@@ -1,28 +1,46 @@
 ﻿using MediatR;
-using Microsoft.EntityFrameworkCore;
+using SmartWMS.Application.Common.Constants;
 using SmartWMS.Application.Common.Interfaces;
 using SmartWMS.Application.Common.Models;
+using SmartWMS.Application.Features.Zones.Specifications.Commands;
+using SmartWMS.Domain.Entities;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 
-namespace SmartWMS.Application.Features.Zones.Commands;
+namespace SmartWMS.Application.Features.Zones.Commands.DeleteZone;
 
-public class DeleteZoneCommandHandler : IRequestHandler<DeleteZoneCommand, Result<bool>>
+public sealed class DeleteZoneCommandHandler : IRequestHandler<DeleteZoneCommand, Result<bool>>
 {
-    private readonly IApplicationDbContext _context;
-    public DeleteZoneCommandHandler(IApplicationDbContext context) => _context = context;
+    private readonly IUnitOfWork _unitOfWork;
+
+    public DeleteZoneCommandHandler(IUnitOfWork unitOfWork)
+    {
+        _unitOfWork = unitOfWork;
+    }
 
     public async Task<Result<bool>> Handle(DeleteZoneCommand request, CancellationToken cancellationToken)
     {
-        var zone = await _context.Zones.FindAsync(new object[] { request.Id }, cancellationToken);
-        if (zone == null) return Result<bool>.Failure("Khu vực không tồn tại.");
+        var zoneRepo = _unitOfWork.Repository<Zone>();
+        var binRepo = _unitOfWork.Repository<Bin>();
+        var reqData = request.RequestData;
 
-        // RÀNG BUỘC LOGISTICS: Chặn xóa nếu khu vực đang chứa các ô kệ (Bins)
-        var hasBins = await _context.Bins.AnyAsync(b => b.ZoneId == request.Id, cancellationToken);
-        if (hasBins)
-            return Result<bool>.Failure("Không thể xóa khu vực này vì hệ thống đang có các ô kệ (Bin) nằm bên trong. Vui lòng xóa các ô kệ trước.");
+        var zoneSpec = new ZoneByIdForUpdateSpec(reqData.Id);
+        var zone = await zoneRepo.GetEntityWithSpecAsync(zoneSpec, cancellationToken);
 
-        _context.Zones.Remove(zone);
-        await _context.SaveChangesAsync(cancellationToken);
+        if (zone == null)
+            return Result<bool>.Failure(ErrorCodeConstants.ZoneNotFound, "Không tìm thấy khu vực yêu cầu tháo dỡ.");
 
-        return Result<bool>.Success(true, "Xóa khu vực thành công.");
+        // Ràng buộc doanh nghiệp: Không cho phép xóa Zone nếu bên trong vẫn còn Bin
+        var binCheckSpec = new ZoneBinCheckForDeleteSpec(reqData.Id);
+        if (await binRepo.AnyAsync(binCheckSpec, cancellationToken))
+            return Result<bool>.Failure(ErrorCodeConstants.ValidationError, $"Không thể tháo dỡ khu vực {zone.Name} vì vẫn còn các ô kệ trực thuộc.");
+
+        // Nếu bảng Zone của bạn chưa cấu hình IsDeleted, hãy đổi thành Delete cứng: zoneRepo.Delete(zone);
+        zoneRepo.Delete(zone);
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return Result<bool>.Success(true, $"Đã tháo dỡ khu vực {zone.Name} thành công.");
     }
 }

@@ -1,15 +1,7 @@
 ﻿using MediatR;
 using SmartWMS.Application.Common.Models;
-using System;
+using SmartWMS.Application.Features.Bins.DTOs.Commands;
 
-namespace SmartWMS.Application.Features.Bins.Commands; // Đảm bảo namespace này trùng khớp với Handler
+namespace SmartWMS.Application.Features.Bins.Commands.DeleteBin;
 
-public class DeleteBinCommand : IRequest<Result<bool>>
-{
-    public Guid Id { get; set; }
-
-    public DeleteBinCommand(Guid id)
-    {
-        Id = id;
-    }
-}
+public record DeleteBinCommand(DeleteBinRequest RequestData) : IRequest<Result<bool>>;

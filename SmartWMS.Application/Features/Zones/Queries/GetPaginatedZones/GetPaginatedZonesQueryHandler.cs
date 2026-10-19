@@ -1,54 +1,34 @@
 ﻿using MediatR;
-using Microsoft.EntityFrameworkCore;
 using SmartWMS.Application.Common.Interfaces;
 using SmartWMS.Application.Common.Models;
-using SmartWMS.Application.Features.Zones.Dtos;
-using System;
+using SmartWMS.Application.Features.Zones.DTOs;
+using SmartWMS.Application.Features.Zones.Specifications.Queries;
+using SmartWMS.Domain.Entities;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace SmartWMS.Application.Features.Zones.Queries.GetPaginatedZones;
 
-public class GetPaginatedZonesQueryHandler : IRequestHandler<GetPaginatedZonesQuery, Result<ZonePaginationDto>>
+public sealed class GetPaginatedZonesQueryHandler : IRequestHandler<GetPaginatedZonesQuery, Result<PaginatedResult<ZoneDto>>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IUnitOfWork _unitOfWork;
+    public GetPaginatedZonesQueryHandler(IUnitOfWork unitOfWork) => _unitOfWork = unitOfWork;
 
-    public GetPaginatedZonesQueryHandler(IApplicationDbContext context) => _context = context;
-
-    public async Task<Result<ZonePaginationDto>> Handle(GetPaginatedZonesQuery request, CancellationToken cancellationToken)
+    public async Task<Result<PaginatedResult<ZoneDto>>> Handle(GetPaginatedZonesQuery request, CancellationToken cancellationToken)
     {
-        var query = _context.Zones.AsNoTracking().AsQueryable();
+        var repo = _unitOfWork.Repository<Zone>();
+        var req = request.RequestData;
 
-        // 1. 🌟 ĐÃ SỬA: Chỉ lọc theo từ khóa Name (Đã loại bỏ cột Code không tồn tại)
-        if (!string.IsNullOrWhiteSpace(request.SearchKeyword))
-        {
-            var keyword = request.SearchKeyword.Trim();
-            query = query.Where(z => z.Name.Contains(keyword));
-        }
+        var listSpec = new ZonePaginatedListSpec(req.SearchKeyword, req.PageIndex, req.PageSize);
+        var countSpec = new ZoneCountSpec(req.SearchKeyword);
 
-        // 2. Đếm tổng số lượng phân khu thỏa mãn điều kiện
-        var totalRecords = await query.CountAsync(cancellationToken);
+        var items = await repo.ListAsync(listSpec, cancellationToken);
+        var total = await repo.CountAsync(countSpec, cancellationToken);
 
-        // 3. Phân trang và chiếu dữ liệu (Đã loại bỏ gán Code = z.Code)
-        var items = await query
-            .OrderByDescending(z => z.CreatedAt)
-            .Skip((request.PageNumber - 1) * request.PageSize)
-            .Take(request.PageSize)
-            .Select(z => new ZoneDto
-            {
-                Id = z.Id,
-                Name = z.Name,
-                WarehouseId = z.WarehouseId
-            })
-            .ToListAsync(cancellationToken);
+        var dtoItems = items.Select(z => new ZoneDto { Id = z.Id, Code = z.Code, Name = z.Name, WarehouseId = z.WarehouseId }).ToList();
+        var result = PaginatedResult<ZoneDto>.Create(dtoItems, total, req.PageIndex, req.PageSize);
 
-        // 4. Trả về kết quả đóng gói phân trang
-        return Result<ZonePaginationDto>.Success(new ZonePaginationDto
-        {
-            TotalRecords = totalRecords,
-            TotalPages = (int)Math.Ceiling(totalRecords / (double)request.PageSize),
-            Items = items
-        });
+        return Result<PaginatedResult<ZoneDto>>.Success(result);
     }
 }

@@ -1,18 +1,8 @@
 ﻿using MediatR;
 using SmartWMS.Application.Common.Models;
-using SmartWMS.Application.Features.Zones.Dtos;
+using SmartWMS.Application.Features.Zones.DTOs;
+using SmartWMS.Application.Features.Zones.DTOs.Queries;
 
 namespace SmartWMS.Application.Features.Zones.Queries.GetPaginatedZones;
 
-public record GetPaginatedZonesQuery(
-    Guid? WarehouseId = null, // Lọc theo Kho (tùy chọn)
-    int PageNumber = 1,
-    int PageSize = 10,
-    string? SearchKeyword = null) : IRequest<Result<ZonePaginationDto>>;
-
-public class ZonePaginationDto
-{
-    public int TotalRecords { get; set; }
-    public int TotalPages { get; set; }
-    public List<ZoneDto> Items { get; set; } = new();
-}
+public record GetPaginatedZonesQuery(ZonePaginatedListQueryRequest RequestData) : IRequest<Result<PaginatedResult<ZoneDto>>>;

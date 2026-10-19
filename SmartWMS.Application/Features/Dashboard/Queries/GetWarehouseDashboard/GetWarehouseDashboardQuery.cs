@@ -1,10 +1,7 @@
 ﻿using MediatR;
 using SmartWMS.Application.Common.Models;
-using SmartWMS.Application.Features.Dashboard.Queries.GetWarehouseDashboard.Dtos; // Import namespace chứa DTO vừa phân rã
+using SmartWMS.Application.Features.Dashboard.DTOs.Queries;
 
 namespace SmartWMS.Application.Features.Dashboard.Queries.GetWarehouseDashboard;
 
-public class GetWarehouseDashboardQuery : IRequest<Result<WarehouseDashboardDto>>
-{
-    // Truy vấn số liệu dashboard tổng quan không cần tham số đầu vào phức tạp
-}
+public record GetWarehouseDashboardQuery(WarehouseDashboardQueryRequest RequestData) : IRequest<Result<WarehouseDashboardDto>>;

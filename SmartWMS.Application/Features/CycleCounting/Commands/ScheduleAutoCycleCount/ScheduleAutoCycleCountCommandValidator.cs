@@ -1,16 +1,20 @@
 ﻿using FluentValidation;
-using Microsoft.Extensions.Localization;
-using SmartWMS.Domain.Localization;
+using System;
 
-namespace SmartWMS.Application.Features.InventoryManagement.Commands.ScheduleAutoCycleCount;
+namespace SmartWMS.Application.Features.CycleCounting.Commands.ScheduleAutoCycleCount;
 
 public class ScheduleAutoCycleCountCommandValidator : AbstractValidator<ScheduleAutoCycleCountCommand>
 {
-    public ScheduleAutoCycleCountCommandValidator(IStringLocalizer<SharedResource> localizer)
+    public ScheduleAutoCycleCountCommandValidator()
     {
-        // RÀNG BUỘC NGƯỠNG GIAO DỊCH: Ngưỡng kích hoạt kiểm kê bắt buộc phải lớn hơn 0
-        RuleFor(v => v.TransactionThreshold)
-            .GreaterThan(0)
-            .WithMessage(_ => localizer["TransactionThreshold_GreaterThanZero"]); // Bản dịch đề xuất: "Ngưỡng tần suất giao dịch để kích hoạt kiểm kê tự động phải lớn hơn 0."
+        RuleFor(x => x.RequestData).NotNull().WithMessage("Dữ liệu không được để trống.");
+        When(x => x.RequestData != null, () =>
+        {
+            RuleFor(x => x.RequestData.ZoneId)
+                .NotEmpty().NotEqual(Guid.Empty).WithMessage("Vui lòng chọn Khu vực (Zone) cần lên lịch kiểm kê.");
+
+            RuleFor(x => x.RequestData.CronExpression)
+                .NotEmpty().WithMessage("Vui lòng cung cấp chu kỳ chạy (Cron Expression).");
+        });
     }
 }

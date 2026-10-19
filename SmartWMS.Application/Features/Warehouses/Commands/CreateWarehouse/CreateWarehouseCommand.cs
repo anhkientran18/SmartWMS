@@ -1,11 +1,8 @@
 ﻿using MediatR;
 using SmartWMS.Application.Common.Models;
+using SmartWMS.Application.Features.Warehouses.DTOs.Commands;
+using System;
 
 namespace SmartWMS.Application.Features.Warehouses.Commands.CreateWarehouse;
 
-public record CreateWarehouseCommand : IRequest<Result<Guid>>
-{
-    public string Name { get; init; } = string.Empty;
-    public string Code { get; init; } = string.Empty;
-    public string? Address { get; init; }
-}
+public record CreateWarehouseCommand(CreateWarehouseRequest RequestData) : IRequest<Result<Guid>>;

@@ -1,31 +1,19 @@
 ﻿using FluentValidation;
-using Microsoft.Extensions.Localization;
-using SmartWMS.Domain.Localization;
+using System;
 
 namespace SmartWMS.Application.Features.InventoryManagement.Commands.AdjustStock;
 
 public class AdjustStockCommandValidator : AbstractValidator<AdjustStockCommand>
 {
-    public AdjustStockCommandValidator(IStringLocalizer<SharedResource> localizer)
+    public AdjustStockCommandValidator()
     {
-        RuleFor(v => v.ProductId)
-            .NotEmpty()
-            .WithMessage(_ => localizer["ProductId_Required"]);
-
-        RuleFor(v => v.BinId)
-            .NotEmpty()
-            .WithMessage(_ => localizer["BinId_Required"]);
-
-        // Số lượng điều chỉnh có thể âm hoặc dương, nhưng không được bằng 0
-        RuleFor(v => v.Quantity)
-            .NotEqual(0)
-            .WithMessage(_ => localizer["AdjustQuantity_MustNotBeZero"]);
-
-        // Bắt buộc nhập lý do điều chỉnh để phục vụ công tác tra cứu nhật ký hệ thống
-        RuleFor(v => v.Reason)
-            .NotEmpty()
-            .WithMessage(_ => localizer["Reason_Required"])
-            .MaximumLength(250)
-            .WithMessage(_ => localizer["Reason_TooLong"]);
+        RuleFor(x => x.RequestData).NotNull().WithMessage("Dữ liệu không được trống.");
+        When(x => x.RequestData != null, () =>
+        {
+            RuleFor(x => x.RequestData.BinId).NotEmpty().NotEqual(Guid.Empty).WithMessage("Vui lòng chọn ô kệ.");
+            RuleFor(x => x.RequestData.ProductId).NotEmpty().NotEqual(Guid.Empty).WithMessage("Vui lòng chọn sản phẩm.");
+            RuleFor(x => x.RequestData.AdjustmentQuantity).NotEqual(0).WithMessage("Số lượng điều chỉnh phải khác 0.");
+            RuleFor(x => x.RequestData.ReasonCode).NotEmpty().WithMessage("Vui lòng nhập lý do điều chỉnh.");
+        });
     }
 }

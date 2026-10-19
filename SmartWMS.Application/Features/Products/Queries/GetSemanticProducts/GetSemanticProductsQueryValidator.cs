@@ -1,18 +1,19 @@
 ﻿using FluentValidation;
-using Microsoft.Extensions.Localization;
-using SmartWMS.Domain.Localization;
 
 namespace SmartWMS.Application.Features.Products.Queries.GetSemanticProducts;
 
-public class GetSemanticProductsQueryValidator : AbstractValidator<GetSemanticProductsQuery>
+public sealed class GetSemanticProductsQueryValidator : AbstractValidator<GetSemanticProductsQuery>
 {
-    public GetSemanticProductsQueryValidator(IStringLocalizer<SharedResource> localizer)
+    public GetSemanticProductsQueryValidator()
     {
-        // Chặn đứng trường hợp UI gửi chuỗi rỗng lên AI Gateway gây tốn chi phí token vô ích
-        RuleFor(v => v.SearchText)
-            .NotEmpty()
-            .WithMessage(_ => localizer["SearchText_Required"])
-            .MaximumLength(200)
-            .WithMessage(_ => localizer["SearchText_TooLong"]);
+        RuleFor(x => x.RequestData)
+            .NotNull().WithMessage("Dữ liệu đầu vào không được để trống.");
+
+        When(x => x.RequestData != null, () =>
+        {
+            RuleFor(v => v.RequestData.SearchText)
+                .NotEmpty().WithMessage("Vui lòng nhập nội dung tìm kiếm.")
+                .MaximumLength(200).WithMessage("Nội dung tìm kiếm không được vượt quá 200 ký tự.");
+        });
     }
 }

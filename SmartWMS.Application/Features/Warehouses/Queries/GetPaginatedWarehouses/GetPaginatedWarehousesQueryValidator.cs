@@ -2,15 +2,23 @@
 
 namespace SmartWMS.Application.Features.Warehouses.Queries.GetPaginatedWarehouses;
 
-public class GetPaginatedWarehousesQueryValidator : AbstractValidator<GetPaginatedWarehousesQuery>
+public sealed class GetPaginatedWarehousesQueryValidator : AbstractValidator<GetPaginatedWarehousesQuery>
 {
     public GetPaginatedWarehousesQueryValidator()
     {
-        RuleFor(x => x.PageNumber)
-            .GreaterThanOrEqualTo(1).WithMessage("Số thứ tự trang tìm kiếm phải bắt đầu từ trang 1.");
+        RuleFor(x => x.RequestData).NotNull();
 
-        RuleFor(x => x.PageSize)
-            .GreaterThanOrEqualTo(1).WithMessage("Số lượng bản ghi trên một trang tối thiểu là 1 dòng.")
-            .LessThanOrEqualTo(50).WithMessage("Hệ thống giới hạn hiển thị tối đa 50 nhà kho trên một trang để bảo vệ RAM.");
+        When(x => x.RequestData != null, () =>
+        {
+            RuleFor(x => x.RequestData.PageIndex)
+                .GreaterThan(0).WithMessage("Số trang (PageIndex) phải lớn hơn 0.");
+
+            RuleFor(x => x.RequestData.PageSize)
+                .GreaterThan(0).WithMessage("Số lượng mục trên mỗi trang (PageSize) phải lớn hơn 0.")
+                .LessThanOrEqualTo(100).WithMessage("Số lượng mục trên mỗi trang không được vượt quá 100 để đảm bảo hiệu suất.");
+
+            RuleFor(x => x.RequestData.SearchKeyword)
+                .MaximumLength(200).WithMessage("Từ khóa tìm kiếm quá dài.");
+        });
     }
 }

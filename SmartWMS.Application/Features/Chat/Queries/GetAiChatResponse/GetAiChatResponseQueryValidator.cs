@@ -6,8 +6,14 @@ public class GetAiChatResponseQueryValidator : AbstractValidator<GetAiChatRespon
 {
     public GetAiChatResponseQueryValidator()
     {
-        RuleFor(x => x.Message)
-            .NotEmpty().WithMessage("Nội dung tin nhắn gửi tới AI không được để trống.")
-            .MaximumLength(1000).WithMessage("Câu hỏi gửi tới AI không được vượt quá 1000 ký tự để tối ưu hóa xử lý.");
+        RuleFor(x => x.RequestData)
+            .NotNull().WithMessage("Dữ liệu không được để trống.");
+
+        When(x => x.RequestData != null, () =>
+        {
+            RuleFor(x => x.RequestData.Message)
+                .NotEmpty().WithMessage("Nội dung tin nhắn không được để trống.")
+                .MaximumLength(2000).WithMessage("Tin nhắn không được vượt quá 2000 ký tự.");
+        });
     }
 }

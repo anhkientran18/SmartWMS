@@ -1,11 +1,13 @@
-﻿namespace SmartWMS.Application.Common.Interfaces;
+﻿using System.Threading.Tasks;
+
+namespace SmartWMS.Application.Common.Interfaces;
 
 public interface IAiInsightService
 {
     // Sử dụng cho AI Agent chạy ngầm soạn văn bản/email
     Task<string> GenerateInsightAsync(string prompt);
 
-    // Sử dụng cho biểu đồ phân tích trên Web Dashboard của Manager
+    // Sử dụng cho biểu đồ phân tích trên Web Dashboard của WarehouseManager
     Task<string> GenerateExecutiveInsightAsync(string statisticalData);
 
     // Sử dụng cho OCR quét bóc tách hóa đơn nhập kho
@@ -17,4 +19,7 @@ public interface IAiInsightService
     // BỔ SUNG MỚI: Sử dụng cho Computer Vision phân loại hàng lỗi hiện trường
     Task<string> AnalyzeDamageImageAsync(byte[] imageBytes, string mimeType);
     Task<string> AnalyzeSlottingOptimizationAsync(string movementDataJson);
+
+    // 🌟 BỔ SUNG MỚI: Sử dụng cho AI Dự báo tồn kho (Forecasts)
+    Task<string> PredictDemandAsync(string jsonPayload);
 }

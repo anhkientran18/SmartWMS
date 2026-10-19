@@ -1,13 +1,7 @@
 ﻿using MediatR;
 using SmartWMS.Application.Common.Models;
-using System;
+using SmartWMS.Application.Features.CycleCounting.DTOs.Commands;
 
-namespace SmartWMS.Application.Features.InventoryManagement.Commands.ConfirmCycleCount;
+namespace SmartWMS.Application.Features.CycleCounting.Commands.ConfirmCycleCount;
 
-public class ConfirmCycleCountCommand : IRequest<Result<bool>>
-{
-    public Guid BinId { get; set; }
-    public Guid ProductId { get; set; }
-    public string LotNumber { get; set; } = string.Empty;
-    public int PhysicalQuantity { get; set; } // Số lượng thực tế công nhân đếm được tại ô kệ
-}
+public record ConfirmCycleCountCommand(ConfirmCycleCountRequest RequestData) : IRequest<Result<bool>>;

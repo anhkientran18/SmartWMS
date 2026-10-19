@@ -1,39 +1,27 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SmartWMS.Application.Features.Forecasts.Queries.GetStockForecast; // Khớp chính xác thư mục Use Case
+using SmartWMS.Application.Features.Forecasts.DTOs.Queries;
+using SmartWMS.Application.Features.Forecasts.Queries.GetStockForecast;
+using SmartWMS.Api.Extensions;
 using System.Threading.Tasks;
 
 namespace SmartWMS.Api.Controllers;
 
-[Authorize(Roles = "Admin,Manager")]
+[Authorize(Roles = "Admin,WarehouseManager")]
 [ApiController]
-[Route("api/v1/[controller]")]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/[controller]")]
 public class ForecastsController : ControllerBase
 {
     private readonly IMediator _mediator;
 
-    public ForecastsController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
+    public ForecastsController(IMediator mediator) => _mediator = mediator;
 
-    // API Endpoint trích xuất biểu đồ dự báo nhu cầu tiêu thụ mặt hàng trong 30 ngày tới
+    /// <summary>
+    /// Dự báo nhu cầu tồn kho cho SKU sản phẩm
+    /// </summary>
     [HttpGet("demand-prediction")]
     public async Task<IActionResult> GetDemandPrediction([FromQuery] string sku)
-    {
-        var query = new GetStockForecastQuery { SKU = sku };
-
-        // Thực thi gửi qua trục MediatR Pipeline để nhận về Result<StockForecastResultDto>
-        var result = await _mediator.Send(query);
-
-        if (result.IsSuccess)
-        {
-            // ĐÃ SỬA: Trả về Ok(result) trực tiếp. Tầng Application đã đóng gói sẵn 
-            // thuộc tính Forecast Data dưới dạng JsonElement nên dữ liệu xuất ra sẽ tự động sạch sẽ.
-            return Ok(result);
-        }
-
-        return BadRequest(result);
-    }
+        => (await _mediator.Send(new GetStockForecastQuery(new StockForecastRequest { Sku = sku }))).ToActionResult();
 }

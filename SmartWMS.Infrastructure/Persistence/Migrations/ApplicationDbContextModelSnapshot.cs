@@ -190,6 +190,10 @@ namespace SmartWMS.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Code")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -200,13 +204,12 @@ namespace SmartWMS.Infrastructure.Migrations
                     b.Property<string>("CreatedBy")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("DeliveryAddress")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
 
                     b.Property<DateTime?>("LastModifiedAt")
                         .HasColumnType("datetime2");
@@ -218,12 +221,16 @@ namespace SmartWMS.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.HasKey("Id");
 
                     b.ToTable("Customers");
                 });
 
-            modelBuilder.Entity("SmartWMS.Domain.Entities.InboundReceipt", b =>
+            modelBuilder.Entity("SmartWMS.Domain.Entities.CycleCountItem", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -231,6 +238,12 @@ namespace SmartWMS.Infrastructure.Migrations
 
                     b.Property<Guid>("BinId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CountSheetId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("CountedQuantity")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -242,6 +255,131 @@ namespace SmartWMS.Infrastructure.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("LastModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LotNumber")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("SystemQuantity")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BinId");
+
+                    b.HasIndex("CountSheetId");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("CycleCountItems");
+                });
+
+            modelBuilder.Entity("SmartWMS.Domain.Entities.CycleCountSheet", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("AssignedUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("BatchCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("BinId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Notes")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SheetNumber")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("ZoneId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssignedUserId");
+
+                    b.HasIndex("BinId");
+
+                    b.HasIndex("ZoneId");
+
+                    b.ToTable("CycleCountSheets");
+                });
+
+            modelBuilder.Entity("SmartWMS.Domain.Entities.InboundReceipt", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("BinId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("ExpectedDeliveryDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Notes")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ReceiptNumber")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ReferenceDocument")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid?>("SupplierId")
@@ -362,10 +500,32 @@ namespace SmartWMS.Infrastructure.Migrations
                     b.Property<Guid?>("CustomerId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime>("ExpectedShipDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
                     b.Property<DateTime?>("LastModifiedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("LastModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Notes")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OrderNumber")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Priority")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
@@ -437,6 +597,9 @@ namespace SmartWMS.Infrastructure.Migrations
 
                     b.Property<string>("DescriptionEmbeddingJson")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
 
                     b.Property<DateTime?>("LastModifiedAt")
                         .HasColumnType("datetime2");
@@ -526,6 +689,9 @@ namespace SmartWMS.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
                     b.Property<DateTime?>("LastModifiedAt")
                         .HasColumnType("datetime2");
 
@@ -609,6 +775,7 @@ namespace SmartWMS.Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Address")
+                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
@@ -621,6 +788,9 @@ namespace SmartWMS.Infrastructure.Migrations
 
                     b.Property<string>("CreatedBy")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
 
                     b.Property<DateTime?>("LastModifiedAt")
                         .HasColumnType("datetime2");
@@ -638,17 +808,24 @@ namespace SmartWMS.Infrastructure.Migrations
                     b.ToTable("Warehouses");
                 });
 
-            modelBuilder.Entity("Zone", b =>
+            modelBuilder.Entity("SmartWMS.Domain.Entities.Zone", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("CreatedBy")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
 
                     b.Property<DateTime?>("LastModifiedAt")
                         .HasColumnType("datetime2");
@@ -673,7 +850,7 @@ namespace SmartWMS.Infrastructure.Migrations
 
             modelBuilder.Entity("SmartWMS.Domain.Entities.Bin", b =>
                 {
-                    b.HasOne("Zone", "Zone")
+                    b.HasOne("SmartWMS.Domain.Entities.Zone", "Zone")
                         .WithMany("Bins")
                         .HasForeignKey("ZoneId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -701,13 +878,59 @@ namespace SmartWMS.Infrastructure.Migrations
                     b.Navigation("Product");
                 });
 
-            modelBuilder.Entity("SmartWMS.Domain.Entities.InboundReceipt", b =>
+            modelBuilder.Entity("SmartWMS.Domain.Entities.CycleCountItem", b =>
                 {
                     b.HasOne("SmartWMS.Domain.Entities.Bin", "Bin")
                         .WithMany()
                         .HasForeignKey("BinId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("SmartWMS.Domain.Entities.CycleCountSheet", "CountSheet")
+                        .WithMany("Items")
+                        .HasForeignKey("CountSheetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SmartWMS.Domain.Entities.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Bin");
+
+                    b.Navigation("CountSheet");
+
+                    b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("SmartWMS.Domain.Entities.CycleCountSheet", b =>
+                {
+                    b.HasOne("SmartWMS.Domain.Entities.User", "AssignedUser")
+                        .WithMany()
+                        .HasForeignKey("AssignedUserId");
+
+                    b.HasOne("SmartWMS.Domain.Entities.Bin", "Bin")
+                        .WithMany()
+                        .HasForeignKey("BinId");
+
+                    b.HasOne("SmartWMS.Domain.Entities.Zone", "Zone")
+                        .WithMany()
+                        .HasForeignKey("ZoneId");
+
+                    b.Navigation("AssignedUser");
+
+                    b.Navigation("Bin");
+
+                    b.Navigation("Zone");
+                });
+
+            modelBuilder.Entity("SmartWMS.Domain.Entities.InboundReceipt", b =>
+                {
+                    b.HasOne("SmartWMS.Domain.Entities.Bin", "Bin")
+                        .WithMany()
+                        .HasForeignKey("BinId");
 
                     b.HasOne("SmartWMS.Domain.Entities.Supplier", "Supplier")
                         .WithMany()
@@ -793,7 +1016,7 @@ namespace SmartWMS.Infrastructure.Migrations
                     b.Navigation("Product");
                 });
 
-            modelBuilder.Entity("Zone", b =>
+            modelBuilder.Entity("SmartWMS.Domain.Entities.Zone", b =>
                 {
                     b.HasOne("SmartWMS.Domain.Entities.Warehouse", "Warehouse")
                         .WithMany("Zones")
@@ -807,6 +1030,11 @@ namespace SmartWMS.Infrastructure.Migrations
             modelBuilder.Entity("SmartWMS.Domain.Entities.Bin", b =>
                 {
                     b.Navigation("BinInventories");
+                });
+
+            modelBuilder.Entity("SmartWMS.Domain.Entities.CycleCountSheet", b =>
+                {
+                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("SmartWMS.Domain.Entities.InboundReceipt", b =>
@@ -829,7 +1057,7 @@ namespace SmartWMS.Infrastructure.Migrations
                     b.Navigation("Zones");
                 });
 
-            modelBuilder.Entity("Zone", b =>
+            modelBuilder.Entity("SmartWMS.Domain.Entities.Zone", b =>
                 {
                     b.Navigation("Bins");
                 });

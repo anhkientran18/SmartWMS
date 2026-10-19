@@ -1,49 +1,34 @@
 ﻿using MediatR;
-using Microsoft.EntityFrameworkCore;
 using SmartWMS.Application.Common.Interfaces;
 using SmartWMS.Application.Common.Models;
-using SmartWMS.Application.Features.Warehouses.Dtos; // 🌟 ĐÃ ĐỒNG BỘ: Chuyển sang dùng 'Dtos' viết thường
+using SmartWMS.Application.Features.Warehouses.DTOs;
+using SmartWMS.Application.Features.Warehouses.Specifications.Queries;
+using SmartWMS.Domain.Entities;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SmartWMS.Application.Features.Warehouses.Queries.GetPaginatedWarehouses;
 
-public class GetPaginatedWarehousesQueryHandler : IRequestHandler<GetPaginatedWarehousesQuery, Result<WarehousePaginationDto>>
+public sealed class GetPaginatedWarehousesQueryHandler : IRequestHandler<GetPaginatedWarehousesQuery, Result<PaginatedResult<WarehouseDto>>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IUnitOfWork _unitOfWork;
+    public GetPaginatedWarehousesQueryHandler(IUnitOfWork unitOfWork) => _unitOfWork = unitOfWork;
 
-    public GetPaginatedWarehousesQueryHandler(IApplicationDbContext context) => _context = context;
-
-    public async Task<Result<WarehousePaginationDto>> Handle(GetPaginatedWarehousesQuery request, CancellationToken cancellationToken)
+    public async Task<Result<PaginatedResult<WarehouseDto>>> Handle(GetPaginatedWarehousesQuery request, CancellationToken cancellationToken)
     {
-        var query = _context.Warehouses.AsNoTracking().AsQueryable();
+        var req = request.RequestData;
+        var repo = _unitOfWork.Repository<Warehouse>();
 
-        // Lọc theo từ khóa (🌟 ĐÃ TỐI ƯU: Loại bỏ .ToLower() để bảo vệ an toàn và kích hoạt Index Seek siêu tốc)
-        if (!string.IsNullOrWhiteSpace(request.SearchKeyword))
-        {
-            var keyword = request.SearchKeyword.Trim();
-            query = query.Where(w => w.Name.Contains(keyword) ||
-                                     w.Code.Contains(keyword));
-        }
+        var listSpec = new WarehousePaginatedListSpec(req.SearchKeyword, req.PageIndex, req.PageSize);
+        var countSpec = new WarehouseCountSpec(req.SearchKeyword);
 
-        var totalRecords = await query.CountAsync(cancellationToken);
+        var items = await repo.ListAsync(listSpec, cancellationToken);
+        var total = await repo.CountAsync(countSpec, cancellationToken);
 
-        var items = await query
-            .OrderByDescending(w => w.CreatedAt)
-            .Skip((request.PageNumber - 1) * request.PageSize)
-            .Take(request.PageSize)
-            .Select(w => new WarehouseDto
-            {
-                Id = w.Id,
-                Name = w.Name,
-                Code = w.Code,
-                Address = w.Address ?? string.Empty
-            })
-            .ToListAsync(cancellationToken);
+        var dtoItems = items.Select(w => new WarehouseDto { Id = w.Id, Code = w.Code, Name = w.Name, Address = w.Address }).ToList();
+        var result = PaginatedResult<WarehouseDto>.Create(dtoItems, total, req.PageIndex, req.PageSize);
 
-        return Result<WarehousePaginationDto>.Success(new WarehousePaginationDto
-        {
-            TotalRecords = totalRecords,
-            TotalPages = (int)Math.Ceiling(totalRecords / (double)request.PageSize),
-            Items = items
-        });
+        return Result<PaginatedResult<WarehouseDto>>.Success(result);
     }
 }

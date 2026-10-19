@@ -1,12 +1,20 @@
 ﻿using FluentValidation;
+using System;
 
 namespace SmartWMS.Application.Features.Warehouses.Queries.GetWarehouseById;
 
-public class GetWarehouseByIdQueryValidator : AbstractValidator<GetWarehouseByIdQuery>
+public sealed class GetWarehouseByIdQueryValidator : AbstractValidator<GetWarehouseByIdQuery>
 {
     public GetWarehouseByIdQueryValidator()
     {
-        RuleFor(v => v.Id)
-            .NotEmpty().WithMessage("Mã định danh nhà kho (Id) không được để trống.");
+        RuleFor(x => x.RequestData)
+            .NotNull().WithMessage("Dữ liệu truy vấn không được để trống.");
+
+        When(x => x.RequestData != null, () =>
+        {
+            RuleFor(x => x.RequestData.Id)
+                .NotEmpty().WithMessage("ID kho không được để trống.")
+                .NotEqual(Guid.Empty).WithMessage("ID kho không hợp lệ.");
+        });
     }
 }

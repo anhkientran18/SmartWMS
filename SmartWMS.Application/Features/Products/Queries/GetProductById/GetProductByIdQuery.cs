@@ -1,7 +1,8 @@
 ﻿using MediatR;
 using SmartWMS.Application.Common.Models;
-using SmartWMS.Application.Features.Products.Dtos;
+using SmartWMS.Application.Features.Products.DTOs;
+using SmartWMS.Application.Features.Products.DTOs.Queries;
 
-namespace SmartWMS.Application.Features.Products.Queries;
+namespace SmartWMS.Application.Features.Products.Queries.GetProductById;
 
-public record GetProductByIdQuery(Guid Id) : IRequest<Result<ProductDto>>;
+public record GetProductByIdQuery(ProductByIdQueryRequest RequestData) : IRequest<Result<ProductDto>>;

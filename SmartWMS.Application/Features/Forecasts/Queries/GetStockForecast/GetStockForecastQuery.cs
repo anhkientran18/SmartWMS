@@ -1,10 +1,8 @@
 ﻿using MediatR;
 using SmartWMS.Application.Common.Models;
-using SmartWMS.Application.Features.Forecasts.Queries.GetStockForecast.Dtos;
+using SmartWMS.Application.Features.Forecasts.DTOs.Queries;
 
 namespace SmartWMS.Application.Features.Forecasts.Queries.GetStockForecast;
 
-public class GetStockForecastQuery : IRequest<Result<StockForecastDto>>
-{
-    public string SKU { get; set; } = string.Empty;
-}
+// Thay đổi Result<string> thành Result<StockForecastDto>
+public record GetStockForecastQuery(StockForecastRequest RequestData) : IRequest<Result<StockForecastDto>>;

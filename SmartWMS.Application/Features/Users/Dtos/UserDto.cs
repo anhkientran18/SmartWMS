@@ -1,4 +1,7 @@
-﻿namespace SmartWMS.Application.Features.Users.Dtos;
+﻿using System;
+using System.Collections.Generic;
+
+namespace SmartWMS.Application.Features.Users.DTOs;
 
 public class UserDto
 {
@@ -9,13 +12,5 @@ public class UserDto
     public string FullName { get; set; } = string.Empty;
     public string Role { get; set; } = string.Empty;
     public bool IsActive { get; set; }
-    public string Email { get; internal set; } = string.Empty;
-}
-
-// BỔ SUNG THÊM CLASS NÀY ĐỂ TRẢ VỀ CHO FRONTEND
-public class UserPaginationDto
-{
-    public int TotalRecords { get; set; }
-    public int TotalPages { get; set; }
-    public List<UserDto> Items { get; set; } = new();
+    public string Email { get; set; } = string.Empty;
 }

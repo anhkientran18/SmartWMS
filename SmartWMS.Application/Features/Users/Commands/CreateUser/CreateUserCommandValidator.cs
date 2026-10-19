@@ -37,8 +37,8 @@ public class CreateUserCommandValidator : AbstractValidator<CreateUserCommand>
 
         RuleFor(v => v.Role)
             .NotEmpty().WithMessage("Vui lòng chỉ định vai trò cho tài khoản này.")
-            .Must(role => role == "Admin" || role == "Manager" || role == "Staff")
-            .WithMessage("Vai trò không hợp lệ. Chỉ chấp nhận: Admin, Manager hoặc Staff.");
+            .Must(role => role == "Admin" || role == "WarehouseManager" || role == "Staff")
+            .WithMessage("Vai trò không hợp lệ. Chỉ chấp nhận: Admin, WarehouseManager hoặc Staff.");
     }
 
     private async Task<bool> BeUniqueUsername(string username, CancellationToken cancellationToken)

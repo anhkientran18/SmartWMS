@@ -2,7 +2,10 @@
 using Microsoft.EntityFrameworkCore;
 using SmartWMS.Application.Common.Interfaces;
 using SmartWMS.Application.Common.Models;
-using SmartWMS.Application.Features.Dashboard.Queries.GetDashboardInsightQuery.Dtos;
+using SmartWMS.Application.Features.Dashboard.DTOs.Queries;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SmartWMS.Application.Features.Dashboard.Queries.GetDashboardInsightQuery;
 
@@ -19,33 +22,34 @@ public class GetDashboardInsightQueryHandler : IRequestHandler<GetDashboardInsig
 
     public async Task<Result<DashboardInsightDto>> Handle(GetDashboardInsightQuery request, CancellationToken cancellationToken)
     {
-        // 1. Lấy dữ liệu thống kê thô từ DB
-        var totalProducts = await _context.Products.CountAsync(cancellationToken);
-        var totalBins = await _context.Bins.CountAsync(cancellationToken);
+        var totalProducts = await _context.Products.AsNoTracking().CountAsync(p => !p.IsDeleted, cancellationToken);
+        var totalBins = await _context.Bins.AsNoTracking().CountAsync(b => !b.IsDeleted, cancellationToken);
 
-        var bins = await _context.Bins.AsNoTracking().ToListAsync(cancellationToken);
-        double totalCapacity = bins.Sum(b => b.MaxCapacity);
-        double totalOccupancy = bins.Sum(b => b.CurrentOccupancy);
+        var bins = await _context.Bins
+            .AsNoTracking()
+            .Where(b => !b.IsDeleted)
+            .Select(b => new { b.MaxCapacity, b.CurrentOccupancy })
+            .ToListAsync(cancellationToken);
 
-        double occupancyPercentage = totalCapacity > 0 ? Math.Round((totalOccupancy / totalCapacity) * 100, 2) : 0;
+        double totalMaxCapacity = bins.Sum(b => b.MaxCapacity);
+        double totalCurrentOccupancy = bins.Sum(b => b.CurrentOccupancy);
 
-        // 2. Gom dữ liệu thành bối cảnh cho AI
-        string statsContext = $"Kho đang có {totalProducts} loại sản phẩm, quản lý {totalBins} ô kệ. " +
-                              $"Tổng sức chứa toàn kho là {totalCapacity} kiện, hiện đang chứa {totalOccupancy} kiện. " +
-                              $"Tỷ lệ lấp đầy toàn kho đạt {occupancyPercentage}%.";
+        double occupancyRate = totalMaxCapacity > 0
+            ? System.Math.Round((totalCurrentOccupancy / totalMaxCapacity) * 100, 2)
+            : 0.0;
 
-        // 3. Gọi AI phân tích Insight
-        string aiInsight = await _aiInsightService.GenerateExecutiveInsightAsync(statsContext);
+        string statisticalData = $"Tổng sản phẩm: {totalProducts}, Tổng số ô kệ: {totalBins}, Tỷ lệ lấp đầy kho: {occupancyRate}%.";
 
-        // 4. Trả về kết quả cho Dashboard
+        string aiSummary = await _aiInsightService.GenerateExecutiveInsightAsync(statisticalData);
+
         var resultDto = new DashboardInsightDto
         {
             TotalProducts = totalProducts,
             TotalBins = totalBins,
-            OverallOccupancyPercentage = occupancyPercentage,
-            AiExecutiveSummary = aiInsight
+            OverallOccupancyPercentage = occupancyRate,
+            AiExecutiveSummary = aiSummary
         };
 
-        return Result<DashboardInsightDto>.Success(resultDto);
+        return Result<DashboardInsightDto>.Success(resultDto, "Tạo phân tích AI Dashboard thành công.");
     }
 }

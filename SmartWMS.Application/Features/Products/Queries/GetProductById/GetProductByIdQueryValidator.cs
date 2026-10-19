@@ -2,11 +2,17 @@
 
 namespace SmartWMS.Application.Features.Products.Queries.GetProductById;
 
-public class GetProductByIdQueryValidator : AbstractValidator<GetProductByIdQuery>
+public sealed class GetProductByIdQueryValidator : AbstractValidator<GetProductByIdQuery>
 {
     public GetProductByIdQueryValidator()
     {
-        RuleFor(v => v.Id)
-            .NotEmpty().WithMessage("Mã định danh sản phẩm (Id) không được để trống.");
+        RuleFor(x => x.RequestData)
+            .NotNull().WithMessage("Dữ liệu đầu vào không được để trống.");
+
+        When(x => x.RequestData != null, () =>
+        {
+            RuleFor(v => v.RequestData.Id)
+                .NotEmpty().WithMessage("Mã định danh sản phẩm (Id) không được để trống.");
+        });
     }
 }

@@ -1,70 +1,51 @@
 ﻿using MediatR;
-using Microsoft.EntityFrameworkCore;
 using SmartWMS.Application.Common.Interfaces;
 using SmartWMS.Application.Common.Models;
-using SmartWMS.Application.Features.InventoryManagement.Queries.GetStockHistory.Dtos;
-using SmartWMS.Domain.Entities; // BỔ SUNG: Khớp định dạng kiểu dữ liệu thực thể lịch sử
-using System;
-using System.Collections.Generic;
+using SmartWMS.Application.Features.InventoryManagement.DTOs.Queries;
+using SmartWMS.Application.Features.InventoryManagement.Specifications.Queries;
+using SmartWMS.Domain.Entities;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace SmartWMS.Application.Features.InventoryManagement.Queries.GetStockHistory;
 
-public class GetStockHistoryQueryHandler : IRequestHandler<GetStockHistoryQuery, Result<List<StockHistoryDto>>>
+public class GetStockHistoryQueryHandler : IRequestHandler<GetStockHistoryQuery, Result<PaginatedResult<StockHistoryDto>>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public GetStockHistoryQueryHandler(IApplicationDbContext context)
+    public GetStockHistoryQueryHandler(IUnitOfWork unitOfWork)
     {
-        _context = context;
+        _unitOfWork = unitOfWork;
     }
 
-    public async Task<Result<List<StockHistoryDto>>> Handle(GetStockHistoryQuery request, CancellationToken cancellationToken)
+    public async Task<Result<PaginatedResult<StockHistoryDto>>> Handle(GetStockHistoryQuery request, CancellationToken cancellationToken)
     {
-        // 1. Khởi tạo truy vấn an toàn từ bảng lưu vết Transaction đã được khai báo contract
-        var query = _context.InventoryTransactions
-            .Include(x => x.Product)
-            .AsNoTracking();
+        var repo = _unitOfWork.Repository<InventoryTransaction>();
+        var req = request.RequestData;
 
-        // 2. Áp dụng bộ lọc động theo mã sản phẩm
-        if (request.ProductId.HasValue && request.ProductId != Guid.Empty)
+        var listSpec = new StockHistoryPaginatedSpec(req.ProductId, req.TransactionType, req.PageIndex, req.PageSize);
+        var countSpec = new StockHistoryCountSpec(req.ProductId, req.TransactionType);
+
+        var items = await repo.ListAsync(listSpec, cancellationToken);
+        var totalCount = await repo.CountAsync(countSpec, cancellationToken);
+
+        var dtoItems = items.Select(x => new StockHistoryDto
         {
-            query = query.Where(x => x.ProductId == request.ProductId.Value);
-        }
+            Id = x.Id,
+            ProductId = x.ProductId,
+            ProductName = x.Product?.Name ?? "UNKNOWN",
+            TransactionType = x.TransactionType,
+            QuantityChanged = x.QuantityChanged,
+            SourceBinCode = x.SourceBinCode,
+            DestinationBinCode = x.DestinationBinCode,
+            ReasonCode = x.ReasonCode,
+            CreatedAt = x.CreatedAt,
+            CreatedBy = x.CreatedBy
+        }).ToList();
 
-        // 3. Áp dụng bộ lọc động theo loại hình giao dịch
-        if (!string.IsNullOrWhiteSpace(request.TransactionType))
-        {
-            query = query.Where(x => x.TransactionType == request.TransactionType);
-        }
+        var result = PaginatedResult<StockHistoryDto>.Create(dtoItems, totalCount, req.PageIndex, req.PageSize);
 
-        // Sắp xếp nhật ký mới nhất lên trên đầu
-        var transactions = await query
-            .OrderByDescending(x => x.CreatedAt)
-            .ToListAsync(cancellationToken);
-
-        var resultList = new List<StockHistoryDto>();
-
-        // 4. Ánh xạ dữ liệu cấu trúc an toàn tuyệt đối với lỗi Nullable
-        foreach (var tx in transactions)
-        {
-            resultList.Add(new StockHistoryDto
-            {
-                Id = tx.Id,
-                SKU = tx.Product != null ? (tx.Product.SKU ?? string.Empty) : "UNKNOWN",
-                ProductName = tx.Product != null ? (tx.Product.Name ?? string.Empty) : "Sản phẩm đã bị xóa",
-                TransactionType = tx.TransactionType ?? "UNKNOWN",
-                QuantityChanged = tx.QuantityChanged,
-                SourceBinCode = tx.SourceBinCode ?? "N/A",
-                DestinationBinCode = tx.DestinationBinCode ?? "N/A",
-                ReasonCode = tx.ReasonCode ?? "Routine Operation",
-                OperatorName = tx.CreatedBy ?? "SystemAutomated",
-                CreatedAt = tx.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")
-            });
-        }
-
-        return Result<List<StockHistoryDto>>.Success(resultList, $"Truy xuất thành công nhật ký biến động gồm {resultList.Count} bản ghi.");
+        return Result<PaginatedResult<StockHistoryDto>>.Success(result);
     }
 }

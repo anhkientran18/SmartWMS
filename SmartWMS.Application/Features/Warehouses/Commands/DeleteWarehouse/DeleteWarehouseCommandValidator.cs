@@ -6,7 +6,10 @@ public class DeleteWarehouseCommandValidator : AbstractValidator<DeleteWarehouse
 {
     public DeleteWarehouseCommandValidator()
     {
-        RuleFor(v => v.Id)
-            .NotEmpty().WithMessage("Vui lòng cung cấp chính xác mã định danh (Id) nhà kho cần thực hiện xóa.");
+        RuleFor(x => x.RequestData).NotNull();
+        When(x => x.RequestData != null, () =>
+        {
+            RuleFor(x => x.RequestData.Id).NotEmpty().WithMessage("Vui lòng cung cấp Id kho cần xóa.");
+        });
     }
 }

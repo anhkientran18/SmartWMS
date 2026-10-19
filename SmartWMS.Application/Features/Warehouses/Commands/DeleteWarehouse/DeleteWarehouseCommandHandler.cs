@@ -1,31 +1,47 @@
 ﻿using MediatR;
-using Microsoft.EntityFrameworkCore;
+using SmartWMS.Application.Common.Constants;
 using SmartWMS.Application.Common.Interfaces;
 using SmartWMS.Application.Common.Models;
+using SmartWMS.Application.Features.Warehouses.Specifications.Commands;
+using SmartWMS.Domain.Entities;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 
-namespace SmartWMS.Application.Features.Warehouses.Commands;
+namespace SmartWMS.Application.Features.Warehouses.Commands.DeleteWarehouse;
 
-public class DeleteWarehouseCommandHandler : IRequestHandler<DeleteWarehouseCommand, Result<bool>>
+public sealed class DeleteWarehouseCommandHandler : IRequestHandler<DeleteWarehouseCommand, Result<bool>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public DeleteWarehouseCommandHandler(IApplicationDbContext context) => _context = context;
+    public DeleteWarehouseCommandHandler(IUnitOfWork unitOfWork)
+    {
+        _unitOfWork = unitOfWork;
+    }
 
     public async Task<Result<bool>> Handle(DeleteWarehouseCommand request, CancellationToken cancellationToken)
     {
-        var warehouse = await _context.Warehouses.FindAsync(new object[] { request.Id }, cancellationToken);
+        var warehouseRepo = _unitOfWork.Repository<Warehouse>();
+        var zoneRepo = _unitOfWork.Repository<Zone>();
+        var reqData = request.RequestData;
+
+        var whSpec = new WarehouseByIdForUpdateSpec(reqData.Id);
+        var warehouse = await warehouseRepo.GetEntityWithSpecAsync(whSpec, cancellationToken);
 
         if (warehouse == null)
-            return Result<bool>.Failure("Kho tổng không tồn tại hoặc đã bị xóa.");
+            return Result<bool>.Failure(ErrorCodeConstants.ValidationError, "Không tìm thấy cơ sở kho yêu cầu tháo dỡ.");
 
-        // RÀNG BUỘC LOGISTICS: Chặn xóa kho nếu bên trong đang có cấu hình các Khu vực (Zones)
-        var hasZones = await _context.Zones.AnyAsync(z => z.WarehouseId == request.Id, cancellationToken);
-        if (hasZones)
-            return Result<bool>.Failure("Không thể xóa kho tổng này vì bên trong đang chứa các khu vực (Zone) hoạt động. Vui lòng xóa hết khu vực trước.");
+        // Ràng buộc: Không được xóa nếu kho đang chứa các khu vực (Zone)
+        var zoneCheckSpec = new WarehouseZoneCheckForDeleteSpec(reqData.Id);
+        if (await zoneRepo.AnyAsync(zoneCheckSpec, cancellationToken))
+            return Result<bool>.Failure(ErrorCodeConstants.ValidationError, $"Không thể tháo dỡ {warehouse.Name} vì vẫn còn chứa các phân khu hoạt động.");
 
-        _context.Warehouses.Remove(warehouse);
-        await _context.SaveChangesAsync(cancellationToken);
+        // Soft Delete (Xóa mềm)
+        warehouse.IsDeleted = true;
 
-        return Result<bool>.Success(true, "Tháo dỡ (Xóa) kho tổng thành công.");
+        warehouseRepo.Update(warehouse);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return Result<bool>.Success(true, $"Đã đóng cửa và gỡ bỏ cơ sở {warehouse.Name} thành công.");
     }
 }

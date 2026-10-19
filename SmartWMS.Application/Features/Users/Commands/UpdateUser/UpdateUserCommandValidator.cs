@@ -22,7 +22,7 @@ public class UpdateUserCommandValidator : AbstractValidator<UpdateUserCommand>
         // 3. Kiểm tra vai trò hợp lệ
         RuleFor(v => v.Role)
             .NotEmpty().WithMessage("Vui lòng chỉ định vai trò cho tài khoản này.")
-            .Must(role => role == "Admin" || role == "Manager" || role == "Worker" || role == "Staff")
+            .Must(role => role == "Admin" || role == "WarehouseManager" || role == "Worker" || role == "Staff")
             .WithMessage("Vai trò không hợp lệ. Chỉ chấp nhận các vai trò hệ thống quy định.");
 
         // 4. Kiểm tra mật khẩu mới (Chỉ validate ĐỘ DÀI khi admin có nhập mật khẩu mới)

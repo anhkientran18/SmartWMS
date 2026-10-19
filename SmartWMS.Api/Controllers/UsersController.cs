@@ -1,54 +1,49 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SmartWMS.Api.Extensions;
 using SmartWMS.Application.Features.Users.Commands;
+using SmartWMS.Application.Features.Users.DTOs;
 using SmartWMS.Application.Features.Users.Queries;
-using SmartWMS.Application.Features.Users.Queries.GetAllUsers;
+using SmartWMS.Application.Features.Users.Queries.GetUserList;
+using System;
+using System.Threading.Tasks;
 
 namespace SmartWMS.Api.Controllers;
 
-[Authorize(Roles = "Admin")] // BẢO MẬT: Chỉ có Admin mới có quyền Quản lý người dùng
+[Authorize(Roles = "Admin")]
 [ApiController]
-[Route("api/v1/[controller]")]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/[controller]")]
 public class UsersController : ControllerBase
 {
     private readonly IMediator _mediator;
     public UsersController(IMediator mediator) => _mediator = mediator;
 
-    [HttpGet]
-    public async Task<IActionResult> GetAll() => Ok(await _mediator.Send(new GetAllUsersQuery()));
+    [HttpGet("list")]
+    public async Task<IActionResult> GetList()
+        => (await _mediator.Send(new GetUserListQuery())).ToActionResult();
 
-    [HttpGet("{id}")]
+    [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id)
-    {
-        var result = await _mediator.Send(new GetUserByIdQuery(id));
-        if (result.IsSuccess) return Ok(result);
-        return NotFound(result);
-    }
+        => (await _mediator.Send(new GetUserByIdQuery(id))).ToActionResult();
 
-    [HttpGet("paged")]
+    [HttpGet]
     public async Task<IActionResult> GetPaged([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string? searchKeyword = null)
-    {
-        var result = await _mediator.Send(new GetPaginatedUsersQuery(pageNumber, pageSize, searchKeyword));
-
-        if (result.IsSuccess)
-        {
-            return Ok(result);
-        }
-
-        return BadRequest(result);
-    }
+        => (await _mediator.Send(new GetPaginatedUsersQuery(pageNumber, pageSize, searchKeyword))).ToActionResult();
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] CreateUserCommand command) => Ok(await _mediator.Send(command));
+    public async Task<IActionResult> Create([FromBody] CreateUserCommand command)
+        => (await _mediator.Send(command)).ToActionResult();
 
-    [HttpPut("{id}")]
+    [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateUserCommand command)
     {
-        if (id != command.Id) return BadRequest(new { message = "ID không trùng khớp." });
-        return Ok(await _mediator.Send(command));
+        if (id != command.Id) return BadRequest(new { isSuccess = false, message = "ID không trùng khớp." });
+        return (await _mediator.Send(command)).ToActionResult();
     }
 
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(Guid id) => Ok(await _mediator.Send(new DeleteUserCommand(id)));
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id)
+        => (await _mediator.Send(new DeleteUserCommand(id))).ToActionResult();
 }

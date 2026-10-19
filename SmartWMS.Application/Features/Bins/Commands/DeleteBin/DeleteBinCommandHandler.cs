@@ -1,50 +1,50 @@
 ﻿using MediatR;
-using Microsoft.EntityFrameworkCore;
+using SmartWMS.Application.Common.Constants;
 using SmartWMS.Application.Common.Interfaces;
 using SmartWMS.Application.Common.Models;
+using SmartWMS.Application.Features.Bins.Specifications.Commands;
+using SmartWMS.Domain.Entities;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SmartWMS.Application.Features.Bins.Commands;
+namespace SmartWMS.Application.Features.Bins.Commands.DeleteBin;
 
-public class DeleteBinCommandHandler : IRequestHandler<DeleteBinCommand, Result<bool>>
+public sealed class DeleteBinCommandHandler : IRequestHandler<DeleteBinCommand, Result<bool>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public DeleteBinCommandHandler(IApplicationDbContext context)
+    public DeleteBinCommandHandler(IUnitOfWork unitOfWork)
     {
-        _context = context;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<Result<bool>> Handle(DeleteBinCommand request, CancellationToken cancellationToken)
     {
-        // 1. Tìm kiếm ô kệ cần xóa
-        var bin = await _context.Bins
-            .FirstOrDefaultAsync(b => b.Id == request.Id, cancellationToken);
+        var binRepo = _unitOfWork.Repository<Bin>();
+        var invRepo = _unitOfWork.Repository<BinInventory>();
+        var reqData = request.RequestData;
+
+        // 1. Lấy kệ ra
+        var binSpec = new BinByIdForUpdateSpec(reqData.Id); // Tái sử dụng Spec có Tracking
+        var bin = await binRepo.GetEntityWithSpecAsync(binSpec, cancellationToken);
 
         if (bin == null)
-        {
-            return Result<bool>.Failure("Không tìm thấy ô kệ yêu cầu tháo dỡ.");
-        }
+            return Result<bool>.Failure(ErrorCodeConstants.BinNotFound, "Không tìm thấy ô kệ yêu cầu tháo dỡ.");
 
-        // 2. RÀNG BUỘC DOANH NGHIỆP: Ô kệ đang chứa hàng thì không được phép xóa mềm
-        var hasStock = await _context.BinInventories
-            .AnyAsync(x => x.BinId == request.Id && x.Quantity > 0, cancellationToken);
+        // 2. Ràng buộc doanh nghiệp (Kệ đang chứa hàng không được xóa)
+        var invSpec = new BinInventoryCheckForDeleteSpec(reqData.Id);
+        if (await invRepo.AnyAsync(invSpec, cancellationToken))
+            return Result<bool>.Failure(ErrorCodeConstants.ValidationError, $"Không thể tháo dỡ ô kệ {bin.Code} vì đang chứa hàng hóa.");
 
-        if (hasStock)
-        {
-            return Result<bool>.Failure($"Không thể tháo dỡ ô kệ {bin.Code}! Ô kệ này hiện vẫn đang chứa hàng hóa thực tế bên trong.");
-        }
-
-        // 3. THỰC THI XÓA MỀM (SOFT DELETE)
-        // Thay vì dùng lệnh DELETE cứng làm mất dữ liệu giao dịch, ta đổi trạng thái ẩn
+        // 3. Thực thi Soft Delete
         bin.IsDeleted = true;
         bin.UpdatedAt = DateTime.UtcNow;
         bin.UpdatedBy = "SystemAdmin";
 
-        await _context.SaveChangesAsync(cancellationToken);
+        binRepo.Update(bin);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return Result<bool>.Success(true, $"Đã ẩn và tháo dỡ ô kệ {bin.Code} khỏi sơ đồ vận hành kho thành công.");
+        return Result<bool>.Success(true, $"Đã ẩn và tháo dỡ ô kệ {bin.Code} khỏi sơ đồ vận hành.");
     }
 }

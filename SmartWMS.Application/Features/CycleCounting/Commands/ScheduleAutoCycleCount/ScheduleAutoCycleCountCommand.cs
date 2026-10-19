@@ -1,11 +1,7 @@
 ﻿using MediatR;
 using SmartWMS.Application.Common.Models;
-using SmartWMS.Application.Features.InventoryManagement.Commands.ScheduleAutoCycleCount.Dtos; // Import namespace chứa DTO vừa tách biệt
+using SmartWMS.Application.Features.CycleCounting.DTOs.Commands;
 
-namespace SmartWMS.Application.Features.InventoryManagement.Commands.ScheduleAutoCycleCount;
+namespace SmartWMS.Application.Features.CycleCounting.Commands.ScheduleAutoCycleCount;
 
-public class ScheduleAutoCycleCountCommand : IRequest<Result<CycleCountSummaryDto>>
-{
-    // Tham số ngưỡng: Ô kệ có số lần xuất nhập vượt quá con số này trong tuần sẽ bị đưa vào diện kiểm kê gấp
-    public int TransactionThreshold { get; set; } = 30;
-}
+public record ScheduleAutoCycleCountCommand(ScheduleAutoCycleCountRequest RequestData) : IRequest<Result<bool>>;

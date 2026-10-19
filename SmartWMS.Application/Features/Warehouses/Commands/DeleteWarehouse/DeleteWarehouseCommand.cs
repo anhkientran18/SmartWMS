@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using SmartWMS.Application.Common.Models;
+using SmartWMS.Application.Features.Warehouses.DTOs.Commands;
 
-namespace SmartWMS.Application.Features.Warehouses.Commands;
+namespace SmartWMS.Application.Features.Warehouses.Commands.DeleteWarehouse;
 
-public record DeleteWarehouseCommand(Guid Id) : IRequest<Result<bool>>;
+public record DeleteWarehouseCommand(DeleteWarehouseRequest RequestData) : IRequest<Result<bool>>;

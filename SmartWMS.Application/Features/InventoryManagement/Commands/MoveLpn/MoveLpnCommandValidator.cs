@@ -1,23 +1,17 @@
 ﻿using FluentValidation;
-using Microsoft.Extensions.Localization;
-using SmartWMS.Domain.Localization;
+using System;
 
 namespace SmartWMS.Application.Features.InventoryManagement.Commands.MoveLpn;
 
 public class MoveLpnCommandValidator : AbstractValidator<MoveLpnCommand>
 {
-    public MoveLpnCommandValidator(IStringLocalizer<SharedResource> localizer)
+    public MoveLpnCommandValidator()
     {
-        // 1. Kiểm tra mã Pallet / Kiện hàng tổng
-        RuleFor(v => v.LpnCode)
-            .NotEmpty()
-            .WithMessage(_ => localizer["LpnCode_Required"]) // Bản dịch đề xuất: "Mã kiện hàng hoặc mã Pallet không được để trống."
-            .MaximumLength(50)
-            .WithMessage(_ => localizer["LpnCode_TooLong"]);
-
-        // 2. Kiểm tra mã định danh ô kệ đích đến (Chặn đứng Guid.Empty)
-        RuleFor(v => v.ToBinId)
-            .NotEmpty()
-            .WithMessage(_ => localizer["DestinationBinId_Required"]); // Bản dịch đề xuất: "Vui lòng chọn vị trí ô kệ đích để hạ kiện hàng xuống."
+        RuleFor(x => x.RequestData).NotNull().WithMessage("Dữ liệu không được trống.");
+        When(x => x.RequestData != null, () =>
+        {
+            RuleFor(x => x.RequestData.LpnCode).NotEmpty().WithMessage("Mã Pallet (LPN) không được trống.");
+            RuleFor(x => x.RequestData.ToBinId).NotEmpty().NotEqual(Guid.Empty).WithMessage("Vui lòng chọn ô kệ đích hợp lệ.");
+        });
     }
 }

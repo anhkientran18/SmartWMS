@@ -1,8 +1,9 @@
 ﻿using MediatR;
 using SmartWMS.Application.Common.Models;
-using SmartWMS.Application.Features.Zones.Dtos;
+using SmartWMS.Application.Features.Zones.DTOs;
+using SmartWMS.Application.Features.Zones.DTOs.Queries;
+using System.Collections.Generic;
 
-namespace SmartWMS.Application.Features.Zones.Queries;
+namespace SmartWMS.Application.Features.Zones.Queries.GetZonesByWarehouseId;
 
-// API này rất cần thiết khi Frontend muốn chọn Kho Tổng A -> Sẽ đổ ra danh sách các Khu Vực thuộc Kho A
-public record GetZonesByWarehouseIdQuery(Guid WarehouseId) : IRequest<Result<List<ZoneDto>>>;
+public record GetZonesByWarehouseIdQuery(ZoneByWarehouseIdQueryRequest RequestData) : IRequest<Result<List<ZoneDto>>>;

@@ -1,31 +1,24 @@
 ﻿using FluentValidation;
-using Microsoft.EntityFrameworkCore;
-using SmartWMS.Application.Common.Interfaces;
 
 namespace SmartWMS.Application.Features.Products.Commands.Create;
 
-public class CreateProductCommandValidator : AbstractValidator<CreateProductCommand>
+public sealed class CreateProductCommandValidator : AbstractValidator<CreateProductCommand>
 {
-    private readonly IApplicationDbContext _context;
-
-    public CreateProductCommandValidator(IApplicationDbContext context)
+    public CreateProductCommandValidator()
     {
-        _context = context;
+        RuleFor(x => x.RequestData)
+            .NotNull()
+            .WithMessage("Dữ liệu đầu vào không được để trống.");
 
-        RuleFor(v => v.Name)
-            .NotEmpty().WithMessage("Tên sản phẩm không được để trống.")
-            .MaximumLength(200).WithMessage("Tên sản phẩm không được vượt quá 200 ký tự.");
+        When(x => x.RequestData != null, () =>
+        {
+            RuleFor(x => x.RequestData.Name)
+                .NotEmpty().WithMessage("Tên sản phẩm không được để trống.")
+                .MaximumLength(200).WithMessage("Tên sản phẩm không được vượt quá 200 ký tự.");
 
-        RuleFor(v => v.SKU)
-            .NotEmpty().WithMessage("Mã SKU không được để trống.")
-            .MaximumLength(50).WithMessage("Mã SKU không được vượt quá 50 ký tự.")
-            .MustAsync(BeUniqueSKU).WithMessage("Mã SKU này đã tồn tại trên hệ thống.");
-    }
-
-    private async Task<bool> BeUniqueSKU(string sku, CancellationToken cancellationToken)
-    {
-        // Chặn trùng SKU toàn hệ thống (không phân biệt chữ hoa/chữ thường)
-        return await _context.Products
-            .AllAsync(p => p.SKU.ToLower() != sku.ToLower(), cancellationToken);
+            RuleFor(x => x.RequestData.SKU)
+                .NotEmpty().WithMessage("Mã SKU không được để trống.")
+                .MaximumLength(50).WithMessage("Mã SKU không được vượt quá 50 ký tự.");
+        });
     }
 }

@@ -2,8 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using SmartWMS.Application.Common.Interfaces;
 using SmartWMS.Application.Common.Models;
-using SmartWMS.Application.Features.Dashboard.Queries.GetWarehouseDashboard.Dtos;
-using System;
+using SmartWMS.Application.Features.Dashboard.DTOs.Queries;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,30 +20,34 @@ public class GetWarehouseDashboardQueryHandler : IRequestHandler<GetWarehouseDas
 
     public async Task<Result<WarehouseDashboardDto>> Handle(GetWarehouseDashboardQuery request, CancellationToken cancellationToken)
     {
-        var dto = new WarehouseDashboardDto();
+        // 1. Đếm tổng sản phẩm và ô kệ active
+        var totalProducts = await _context.Products
+            .AsNoTracking()
+            .CountAsync(p => !p.IsDeleted, cancellationToken);
 
-        // 1. Thu thập các chỉ số đếm cơ bản (Master Data Counters)
-        dto.TotalProducts = await _context.Products.CountAsync(cancellationToken);
+        var totalBins = await _context.Bins
+            .AsNoTracking()
+            .CountAsync(b => !b.IsDeleted, cancellationToken);
 
-        var activeBins = await _context.Bins
+        // 2. Tính tỷ lệ lấp đầy tổng kho
+        var bins = await _context.Bins
+            .AsNoTracking()
             .Where(b => !b.IsDeleted)
+            .Select(b => new { b.MaxCapacity, b.CurrentOccupancy })
             .ToListAsync(cancellationToken);
 
-        dto.TotalActiveBins = activeBins.Count;
+        double totalMaxCapacity = bins.Sum(b => b.MaxCapacity);
+        double totalCurrentOccupancy = bins.Sum(b => b.CurrentOccupancy);
 
-        // 2. Tính toán tỷ lệ lấp đầy hình học tổng kho (Global Occupancy Rate)
-        double totalMaxCapacity = activeBins.Sum(b => b.MaxCapacity);
-        double totalCurrentOccupancy = activeBins.Sum(b => b.CurrentOccupancy);
+        double globalOccupancyRate = totalMaxCapacity > 0
+            ? System.Math.Round((totalCurrentOccupancy / totalMaxCapacity) * 100, 2)
+            : 0.0;
 
-        dto.GlobalOccupancyRate = totalMaxCapacity > 0
-            ? Math.Round((totalCurrentOccupancy / totalMaxCapacity) * 100, 2)
-            : 0;
-
-        // 3. Quét hệ thống tìm kiếm hàng có nguy cơ đứt gãy chuỗi cung ứng (Tồn kho < 10 đơn vị)
-        dto.LowStockAlerts = await _context.BinInventories
-            .Include(x => x.Product)
-            .Where(x => x.Bin != null && !x.Bin.IsDeleted)
-            .GroupBy(x => new { x.ProductId, x.Product!.SKU, x.Product.Name })
+        // 3. Truy vấn danh sách cảnh báo tồn kho thấp (< 20 sản phẩm) từ Database
+        var lowStockAlerts = await _context.BinInventories
+            .AsNoTracking()
+            .Where(inv => inv.Product != null && !inv.Product.IsDeleted)
+            .GroupBy(inv => new { inv.ProductId, inv.Product!.SKU, inv.Product.Name })
             .Select(g => new LowStockAlertDto
             {
                 ProductId = g.Key.ProductId,
@@ -52,25 +55,35 @@ public class GetWarehouseDashboardQueryHandler : IRequestHandler<GetWarehouseDas
                 ProductName = g.Key.Name ?? string.Empty,
                 CurrentStock = g.Sum(x => x.Quantity)
             })
-            .Where(x => x.CurrentStock <= 10)
-            .Take(5) // Khống chế lấy 5 mặt hàng nguy cấp nhất
+            .Where(x => x.CurrentStock < 20)
+            .Take(10)
             .ToListAsync(cancellationToken);
 
-        // 4. Trích xuất 5 vết giao dịch biến động số cơ sở sổ cái kho mới nhất (Audit Trail)
-        dto.RecentTransactions = await _context.InventoryTransactions
+        // 4. Truy vấn 10 giao dịch xuất/nhập/dịch chuyển mới nhất từ Sổ cái
+        var recentTransactions = await _context.InventoryTransactions
+            .AsNoTracking()
             .Include(t => t.Product)
             .OrderByDescending(t => t.CreatedAt)
-            .Take(5)
+            .Take(10)
             .Select(t => new RecentTransactionDto
             {
-                SKU = t.Product != null ? t.Product.SKU : "SYSTEM",
-                TransactionType = t.TransactionType ?? "UNKNOWN",
+                SKU = t.Product != null ? t.Product.SKU : "N/A",
+                TransactionType = t.TransactionType,
                 QuantityChanged = t.QuantityChanged,
-                Location = t.SourceBinCode ?? "N/A",
+                Location = !string.IsNullOrEmpty(t.DestinationBinCode) ? t.DestinationBinCode : t.SourceBinCode,
                 CreatedAt = t.CreatedAt
             })
             .ToListAsync(cancellationToken);
 
-        return Result<WarehouseDashboardDto>.Success(dto);
+        var dto = new WarehouseDashboardDto
+        {
+            TotalProducts = totalProducts,
+            TotalActiveBins = totalBins,
+            GlobalOccupancyRate = globalOccupancyRate,
+            LowStockAlerts = lowStockAlerts,
+            RecentTransactions = recentTransactions
+        };
+
+        return Result<WarehouseDashboardDto>.Success(dto, "Lấy dữ liệu Dashboard thực tế thành công.");
     }
 }

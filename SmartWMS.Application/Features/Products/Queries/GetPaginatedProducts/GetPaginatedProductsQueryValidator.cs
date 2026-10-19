@@ -1,23 +1,23 @@
 ﻿using FluentValidation;
-using Microsoft.Extensions.Localization;
-using SmartWMS.Domain.Localization;
 
 namespace SmartWMS.Application.Features.Products.Queries.GetPaginatedProducts;
 
-public class GetPaginatedProductsQueryValidator : AbstractValidator<GetPaginatedProductsQuery>
+public sealed class GetPaginatedProductsQueryValidator : AbstractValidator<GetPaginatedProductsQuery>
 {
-    public GetPaginatedProductsQueryValidator(IStringLocalizer<SharedResource> localizer)
+    public GetPaginatedProductsQueryValidator()
     {
-        // 1. Khóa số trang: Phải lớn hơn hoặc bằng 1
-        RuleFor(v => v.PageNumber)
-            .GreaterThanOrEqualTo(1)
-            .WithMessage(_ => localizer["PageNumber_Invalid"]);
+        RuleFor(x => x.RequestData)
+            .NotNull()
+            .WithMessage("Dữ liệu đầu vào không được để trống.");
 
-        // 2. Khóa kích thước trang: Giới hạn an toàn từ 1 đến tối đa 100 bản ghi/lượt gọi để tránh tràn RAM Server
-        RuleFor(v => v.PageSize)
-            .GreaterThanOrEqualTo(1)
-            .WithMessage(_ => localizer["PageSize_MinInvalid"])
-            .LessThanOrEqualTo(100)
-            .WithMessage(_ => localizer["PageSize_MaxInvalid"]);
+        When(x => x.RequestData != null, () =>
+        {
+            RuleFor(x => x.RequestData.PageIndex)
+                .GreaterThan(0).WithMessage("Số trang phải lớn hơn 0.");
+
+            RuleFor(x => x.RequestData.PageSize)
+                .GreaterThan(0).WithMessage("Kích thước trang phải lớn hơn 0.")
+                .LessThanOrEqualTo(100).WithMessage("Kích thước trang không được vượt quá 100.");
+        });
     }
 }

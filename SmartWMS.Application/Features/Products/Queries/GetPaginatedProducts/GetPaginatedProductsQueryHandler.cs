@@ -2,15 +2,14 @@
 using Microsoft.EntityFrameworkCore;
 using SmartWMS.Application.Common.Interfaces;
 using SmartWMS.Application.Common.Models;
-using SmartWMS.Application.Features.Products.Dtos;
-using System;
+using SmartWMS.Application.Features.Products.DTOs;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace SmartWMS.Application.Features.Products.Queries.GetPaginatedProducts;
 
-public class GetPaginatedProductsQueryHandler : IRequestHandler<GetPaginatedProductsQuery, Result<ProductPaginationDto>>
+public sealed class GetPaginatedProductsQueryHandler : IRequestHandler<GetPaginatedProductsQuery, Result<PaginatedResult<ProductDto>>>
 {
     private readonly IApplicationDbContext _context;
 
@@ -19,45 +18,39 @@ public class GetPaginatedProductsQueryHandler : IRequestHandler<GetPaginatedProd
         _context = context;
     }
 
-    public async Task<Result<ProductPaginationDto>> Handle(GetPaginatedProductsQuery request, CancellationToken cancellationToken)
+    public async Task<Result<PaginatedResult<ProductDto>>> Handle(GetPaginatedProductsQuery request, CancellationToken cancellationToken)
     {
-        var query = _context.Products.AsNoTracking().AsQueryable();
+        var req = request.RequestData;
 
-        // Lọc theo từ khóa (Đã loại bỏ hoàn toàn .ToLower() để bảo vệ an toàn cho Index Database)
-        if (!string.IsNullOrWhiteSpace(request.SearchKeyword))
+        // Truy vấn trực tiếp từ cơ sở dữ liệu qua EF Core
+        var query = _context.Products
+            .AsNoTracking()
+            .Where(x => !x.IsDeleted);
+
+        if (!string.IsNullOrWhiteSpace(req.SearchKeyword))
         {
-            var keyword = request.SearchKeyword.Trim();
-            query = query.Where(p => p.Name.Contains(keyword) ||
-                                     p.SKU.Contains(keyword) ||
-                                     p.Barcode.Contains(keyword));
+            var search = req.SearchKeyword.Trim().ToLower();
+            query = query.Where(x => x.SKU.ToLower().Contains(search) || x.Name.ToLower().Contains(search));
         }
 
-        // Đếm tổng số bản ghi thỏa mãn điều kiện lọc
-        var totalRecords = await query.CountAsync(cancellationToken);
+        var totalCount = await query.CountAsync(cancellationToken);
 
-        // Thực thi phân trang và chiếu dữ liệu (Projection) sang DTO bản ghi gọn nhẹ
         var items = await query
-            .OrderByDescending(p => p.CreatedAt) // Ưu tiên đưa hàng mới khởi tạo lên đầu danh sách
-            .Skip((request.PageNumber - 1) * request.PageSize)
-            .Take(request.PageSize)
-            .Select(p => new ProductDto
+            .OrderBy(x => x.Name)
+            .Skip((req.PageIndex - 1) * req.PageSize)
+            .Take(req.PageSize)
+            .Select(x => new ProductDto
             {
-                Id = p.Id,
-                SKU = p.SKU,
-                Barcode = p.Barcode,
-                Name = p.Name,
-                Description = p.Description ?? string.Empty,
-                Unit = p.Unit ?? string.Empty
+                Id = x.Id,
+                SKU = x.SKU ?? string.Empty,
+                Name = x.Name ?? string.Empty,
+                Description = x.Description ?? string.Empty,
+                Unit = x.Unit ?? string.Empty
             })
             .ToListAsync(cancellationToken);
 
-        var resultDto = new ProductPaginationDto
-        {
-            TotalRecords = totalRecords,
-            TotalPages = (int)Math.Ceiling(totalRecords / (double)request.PageSize),
-            Items = items
-        };
+        var result = PaginatedResult<ProductDto>.Create(items, totalCount, req.PageIndex, req.PageSize);
 
-        return Result<ProductPaginationDto>.Success(resultDto);
+        return Result<PaginatedResult<ProductDto>>.Success(result);
     }
 }

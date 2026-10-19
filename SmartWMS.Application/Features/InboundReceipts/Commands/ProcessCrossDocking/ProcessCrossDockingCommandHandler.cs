@@ -1,85 +1,84 @@
 ﻿using MediatR;
-using Microsoft.EntityFrameworkCore;
+using SmartWMS.Application.Common.Events;
 using SmartWMS.Application.Common.Interfaces;
 using SmartWMS.Application.Common.Models;
-using SmartWMS.Application.Features.InboundReceipts.Commands.ProcessCrossDocking.Dtos;
+using SmartWMS.Application.Features.InboundReceipts.DTOs.Commands;
+using SmartWMS.Application.Features.InboundReceipts.Specifications.Commands;
+using SmartWMS.Domain.Entities;
+using SmartWMS.Domain.Enums;
 using System;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace SmartWMS.Application.Features.InboundReceipts.Commands.ProcessCrossDocking;
 
-public class ProcessCrossDockingCommandHandler : IRequestHandler<ProcessCrossDockingCommand, Result<CrossDockDirectiveDto>>
+public class ProcessCrossDockingCommandHandler : IRequestHandler<ProcessCrossDockingCommand, Result<CrossDockResultDto>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly IMediator _mediator;
 
-    public ProcessCrossDockingCommandHandler(IApplicationDbContext context)
+    public ProcessCrossDockingCommandHandler(IUnitOfWork unitOfWork, IMediator mediator)
     {
-        _context = context;
+        _unitOfWork = unitOfWork;
+        _mediator = mediator;
     }
 
-    public async Task<Result<CrossDockDirectiveDto>> Handle(ProcessCrossDockingCommand request, CancellationToken cancellationToken)
+    public async Task<Result<CrossDockResultDto>> Handle(ProcessCrossDockingCommand request, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.SKU))
+        var req = request.RequestData;
+        var pendingLines = await _unitOfWork.Repository<OutboundOrderItem>().ListAsync(new PendingOutboundOrderItemsSpec(req.ProductId), cancellationToken);
+
+        var resultDto = new CrossDockResultDto { ProductId = req.ProductId, TotalIncomingQuantity = req.IncomingQuantity };
+        int availableToCrossDock = req.IncomingQuantity;
+
+        foreach (var outboundLine in pendingLines)
         {
-            return Result<CrossDockDirectiveDto>.Failure("Mã SKU không được để trống.");
+            if (availableToCrossDock <= 0) break;
+
+            int matchQuantity = Math.Min(outboundLine.Quantity, availableToCrossDock);
+
+            if (matchQuantity == outboundLine.Quantity) { outboundLine.Status = "Allocated"; }
+            else
+            {
+                outboundLine.Quantity -= matchQuantity;
+                await _unitOfWork.Repository<OutboundOrderItem>().AddAsync(new OutboundOrderItem
+                {
+                    Id = Guid.NewGuid(),
+                    OrderId = outboundLine.OrderId,
+                    ProductId = outboundLine.ProductId,
+                    Quantity = matchQuantity,
+                    Status = "Allocated",
+                    CreatedAt = DateTime.UtcNow
+                }, cancellationToken);
+            }
+
+            await _unitOfWork.Repository<InventoryTransaction>().AddAsync(new InventoryTransaction
+            {
+                Id = Guid.NewGuid(),
+                ProductId = req.ProductId,
+                TransactionType = TransactionType.Transfer.ToString().ToUpper(),
+                QuantityChanged = matchQuantity,
+                SourceBinCode = req.SourceDockCode,
+                DestinationBinCode = "SHIPPING_DOCK",
+                ReasonCode = $"CROSS_DOCK_MATCHED_ORDER_{outboundLine.OrderId}",
+                CreatedBy = "WMS_CrossDockEngine",
+                CreatedAt = DateTime.UtcNow
+            }, cancellationToken);
+
+            availableToCrossDock -= matchQuantity;
         }
 
-        if (request.ReceivedQuantity <= 0)
+        resultDto.CrossDockedQuantity = req.IncomingQuantity - availableToCrossDock;
+        resultDto.RemainderForPutaway = availableToCrossDock;
+
+        if (resultDto.CrossDockedQuantity > 0)
         {
-            return Result<CrossDockDirectiveDto>.Failure("Số lượng hàng nhập thực tế phải lớn hơn 0.");
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await _mediator.Publish(new InventoryChangedEvent { EventType = "CROSS_DOCK_EXEC", Message = $"Kích hoạt Cross-Dock! Xuất thẳng {resultDto.CrossDockedQuantity} sản phẩm đi đóng gói." }, cancellationToken);
+            resultDto.ExecutionSummary = $"Thành công! Xuất thẳng {resultDto.CrossDockedQuantity} sản phẩm. Dư {resultDto.RemainderForPutaway} sản phẩm cần cất lên kệ.";
         }
+        else resultDto.ExecutionSummary = "Không tìm thấy đơn hàng xuất đang chờ. Luồng cất kho truyền thống sẽ được kích hoạt.";
 
-        var product = await _context.Products
-            .AsNoTracking()
-            .FirstOrDefaultAsync(p => p.SKU == request.SKU, cancellationToken);
-
-        if (product == null)
-        {
-            return Result<CrossDockDirectiveDto>.Failure($"Sản phẩm có mã SKU {request.SKU} không tồn tại.");
-        }
-
-        // ============================================================================
-        // 🌟 ĐÃ SỬA: Sử dụng SelectMany để làm phẳng danh sách và tính tổng ở bảng con
-        // ============================================================================
-        var pendingOutboundQuantity = await _context.OutboundIssues
-            .AsNoTracking()
-            .SelectMany(x => x.Items) // Bóp phẳng tập hợp con OutboundOrderItems
-            .Where(item => item.Product != null && item.Product.SKU == request.SKU)
-            .SumAsync(item => item.Quantity, cancellationToken);
-        // ============================================================================
-
-        var directive = new CrossDockDirectiveDto();
-
-        if (pendingOutboundQuantity == 0)
-        {
-            directive.IsCrossDockEligible = false;
-            directive.CrossDockQuantity = 0;
-            directive.RemainingPutawayQuantity = request.ReceivedQuantity;
-            directive.TargetOutboundDock = "N/A";
-            directive.Message = "Không có nhu cầu xuất trùng khớp. Hãy mang toàn bộ hàng đi cất vào ô kệ (Put-away).";
-
-            return Result<CrossDockDirectiveDto>.Success(directive);
-        }
-
-        directive.IsCrossDockEligible = true;
-
-        if (request.ReceivedQuantity <= pendingOutboundQuantity)
-        {
-            directive.CrossDockQuantity = request.ReceivedQuantity;
-            directive.RemainingPutawayQuantity = 0;
-            directive.Message = $"🔥 KHỚP CROSS-DOCK HOÀN TOÀN! Chuyển ngay {directive.CrossDockQuantity} thùng ra thẳng xe xuất.";
-        }
-        else
-        {
-            directive.CrossDockQuantity = pendingOutboundQuantity;
-            directive.RemainingPutawayQuantity = request.ReceivedQuantity - pendingOutboundQuantity;
-            directive.Message = $"⚡ KHỚP CROSS-DOCK MỘT PHẦN! Chuyển {directive.CrossDockQuantity} thùng ra xe xuất, mang {directive.RemainingPutawayQuantity} thùng còn lại cất lên kệ.";
-        }
-
-        directive.TargetOutboundDock = "Gate-Outbound-04";
-
-        return Result<CrossDockDirectiveDto>.Success(directive);
+        return Result<CrossDockResultDto>.Success(resultDto);
     }
 }

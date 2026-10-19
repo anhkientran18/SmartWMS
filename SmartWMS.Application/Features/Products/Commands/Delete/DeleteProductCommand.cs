@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using SmartWMS.Application.Common.Models;
+using SmartWMS.Application.Features.Products.DTOs.Commands;
 
-namespace SmartWMS.Application.Features.Products.Commands;
+namespace SmartWMS.Application.Features.Products.Commands.Delete;
 
-public record DeleteProductCommand(Guid Id) : IRequest<Result<bool>>;
+public record DeleteProductCommand(DeleteProductRequest RequestData) : IRequest<Result<bool>>;

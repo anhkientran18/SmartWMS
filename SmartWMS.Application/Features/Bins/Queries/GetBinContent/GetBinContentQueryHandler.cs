@@ -1,10 +1,10 @@
 ﻿using MediatR;
-using Microsoft.EntityFrameworkCore;
 using SmartWMS.Application.Common.Interfaces;
 using SmartWMS.Application.Common.Models;
-using SmartWMS.Application.Features.Bins.Queries.GetBinContent.Dtos;
+using SmartWMS.Application.Features.Bins.DTOs;
+using SmartWMS.Application.Features.Bins.Specifications.Queries;
+using SmartWMS.Domain.Entities;
 using System;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -12,29 +12,26 @@ namespace SmartWMS.Application.Features.Bins.Queries.GetBinContent;
 
 public class GetBinContentQueryHandler : IRequestHandler<GetBinContentQuery, Result<BinContentHeaderDto>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public GetBinContentQueryHandler(IApplicationDbContext context)
+    public GetBinContentQueryHandler(IUnitOfWork unitOfWork)
     {
-        _context = context;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<Result<BinContentHeaderDto>> Handle(GetBinContentQuery request, CancellationToken cancellationToken)
     {
-        var bin = await _context.Bins
-            .AsNoTracking()
-            .FirstOrDefaultAsync(b => b.Id == request.BinId, cancellationToken);
+        var binRepo = _unitOfWork.Repository<Bin>();
+        var invRepo = _unitOfWork.Repository<BinInventory>();
+
+        var binSpec = new BinByIdSpec(request.RequestData.BinId);
+        var bin = await binRepo.GetEntityWithSpecAsync(binSpec, cancellationToken);
 
         if (bin == null)
-        {
-            return Result<BinContentHeaderDto>.Failure("Không tìm thấy ô kệ yêu cầu trên sơ đồ kho bãi.");
-        }
+            return Result<BinContentHeaderDto>.Failure("BIN_NOT_FOUND", "Không tìm thấy ô kệ yêu cầu trên sơ đồ kho bãi.");
 
-        var inventories = await _context.BinInventories
-            .Include(x => x.Product)
-            .Where(x => x.BinId == request.BinId)
-            .AsNoTracking()
-            .ToListAsync(cancellationToken);
+        var invSpec = new BinInventoriesByBinIdSpec(request.RequestData.BinId);
+        var inventories = await invRepo.ListAsync(invSpec, cancellationToken);
 
         var headerDto = new BinContentHeaderDto
         {
@@ -42,9 +39,7 @@ public class GetBinContentQueryHandler : IRequestHandler<GetBinContentQuery, Res
             BinCode = bin.Code ?? string.Empty,
             MaxCapacity = bin.MaxCapacity,
             CurrentOccupancy = bin.CurrentOccupancy,
-            UtilizationPercentage = bin.MaxCapacity > 0
-                ? Math.Round((bin.CurrentOccupancy / bin.MaxCapacity) * 100, 2)
-                : 0.0
+            UtilizationPercentage = bin.MaxCapacity > 0 ? Math.Round((bin.CurrentOccupancy / bin.MaxCapacity) * 100, 2) : 0.0
         };
 
         foreach (var inv in inventories)
@@ -56,10 +51,7 @@ public class GetBinContentQueryHandler : IRequestHandler<GetBinContentQuery, Res
                 ProductName = inv.Product != null ? (inv.Product.Name ?? string.Empty) : "Sản phẩm đã bị xóa",
                 LotNumber = inv.LotNumber ?? string.Empty,
                 Quantity = inv.Quantity,
-                ExpirationDate = inv.ExpirationDate.HasValue
-                    ? inv.ExpirationDate.Value.ToString("yyyy-MM-dd")
-                    : "Không có hạn dùng",
-                // 🌟 ĐÃ SỬA: Chuyển đổi Enum sang định dạng String để map khớp với cấu trúc DTO hiển thị
+                ExpirationDate = inv.ExpirationDate.HasValue ? inv.ExpirationDate.Value.ToString("yyyy-MM-dd") : "Không có hạn dùng",
                 Status = inv.Status.ToString()
             });
         }

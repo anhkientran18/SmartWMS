@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using SmartWMS.Application.Common.Models;
+using SmartWMS.Application.Features.Warehouses.DTOs.Commands;
 
-namespace SmartWMS.Application.Features.Warehouses.Commands;
+namespace SmartWMS.Application.Features.Warehouses.Commands.UpdateWarehouse;
 
-public record UpdateWarehouseCommand(Guid Id, string Code, string Name, string Address) : IRequest<Result<bool>>;
+public record UpdateWarehouseCommand(UpdateWarehouseRequest RequestData) : IRequest<Result<bool>>;

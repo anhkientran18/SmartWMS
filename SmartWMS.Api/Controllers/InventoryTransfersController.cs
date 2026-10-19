@@ -1,13 +1,22 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SmartWMS.Application.Features.InventoryTransfers.Commands.Create;
+using SmartWMS.Api.Extensions;
+using SmartWMS.Application.Features.InventoryTransfers.Commands.CreateInventoryTransfer;
+using SmartWMS.Application.Features.InventoryTransfers.DTOs.Commands;
+using SmartWMS.Application.Features.InventoryTransfers.DTOs.Queries;
+using SmartWMS.Application.Features.InventoryTransfers.Queries.GetById;
+using SmartWMS.Application.Features.InventoryTransfers.Queries.GetList;
+using SmartWMS.Application.Features.InventoryTransfers.Queries.GetPaginatedInventoryTransfers;
+using System;
+using System.Threading.Tasks;
 
 namespace SmartWMS.Api.Controllers;
 
-[Authorize(Roles = "Admin,Manager,Staff")] // Nhân viên kho cũng được quyền thực hiện luân chuyển
+[Authorize(Roles = "Admin,WarehouseManager,Staff")]
 [ApiController]
-[Route("api/v1/[controller]")]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/[controller]")]
 public class InventoryTransfersController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -17,24 +26,33 @@ public class InventoryTransfersController : ControllerBase
         _mediator = mediator;
     }
 
-    [HttpPost]
-    public async Task<IActionResult> Transfer([FromBody] CreateInventoryTransferCommand command)
-    {
-        var result = await _mediator.Send(command);
-
-        if (result.IsSuccess)
+    [HttpGet]
+    public async Task<IActionResult> GetPaginated(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] Guid? productId = null,
+        [FromQuery] string? searchKeyword = null)
+        => (await _mediator.Send(new GetPaginatedInventoryTransfersQuery(new InventoryTransferPaginatedQueryRequest
         {
-            return Ok(result);
-        }
+            PageIndex = pageNumber,
+            PageSize = pageSize,
+            ProductId = productId,
+            SearchKeyword = searchKeyword
+        }))).ToActionResult();
 
-        return BadRequest(result);
-    }
-    /// API thực thi lệnh điều chuyển hàng hóa giữa các ô kệ nội bộ, bọc cấu hình chống tranh chấp concurrency
-    [HttpPost("move-bin-to-bin")]
-    public async Task<IActionResult> MoveInventory([FromBody] SmartWMS.Application.Features.InventoryManagement.Commands.MoveInventory.MoveInventoryCommand command)
-    {
-        var result = await _mediator.Send(command);
-        if (result.IsSuccess) return Ok(result);
-        return BadRequest(result);
-    }
+    [HttpGet("list")]
+    public async Task<IActionResult> GetList([FromQuery] Guid? productId = null, [FromQuery] string? searchKeyword = null)
+        => (await _mediator.Send(new GetInventoryTransferListQuery(new InventoryTransferListQueryRequest
+        {
+            ProductId = productId,
+            SearchKeyword = searchKeyword
+        }))).ToActionResult();
+
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetById(Guid id)
+        => (await _mediator.Send(new GetInventoryTransferByIdQuery(new InventoryTransferByIdRequest { Id = id }))).ToActionResult();
+
+    [HttpPost]
+    public async Task<IActionResult> Transfer([FromBody] CreateInventoryTransferRequest request)
+        => (await _mediator.Send(new CreateInventoryTransferCommand(request))).ToActionResult();
 }

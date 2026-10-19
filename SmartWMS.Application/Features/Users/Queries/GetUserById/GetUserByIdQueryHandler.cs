@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using SmartWMS.Application.Common.Interfaces;
 using SmartWMS.Application.Common.Models;
-using SmartWMS.Application.Features.Users.Dtos;
+using SmartWMS.Application.Features.Users.DTOs;
 
 namespace SmartWMS.Application.Features.Users.Queries;
 
