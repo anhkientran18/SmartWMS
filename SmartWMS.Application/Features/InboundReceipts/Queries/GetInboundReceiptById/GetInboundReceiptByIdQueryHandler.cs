@@ -28,6 +28,7 @@ public sealed class GetInboundReceiptByIdQueryHandler : IRequestHandler<GetInbou
         var dto = new InboundReceiptDto
         {
             Id = receipt.Id,
+            BinId = receipt.BinId,
             ReceiptNumber = receipt.ReceiptNumber,
             Status = receipt.Status,
             ExpectedDeliveryDate = receipt.ExpectedDeliveryDate,
