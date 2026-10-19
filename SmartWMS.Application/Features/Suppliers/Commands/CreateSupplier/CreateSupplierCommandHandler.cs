@@ -1,6 +1,8 @@
 ﻿using MediatR;
 using SmartWMS.Application.Common.Interfaces;
+using SmartWMS.Application.Common.Constants;
 using SmartWMS.Application.Common.Models;
+using SmartWMS.Application.Features.Suppliers.Specifications.Commands;
 using SmartWMS.Domain.Entities;
 using System;
 using System.Threading;
@@ -21,6 +23,10 @@ public sealed class CreateSupplierCommandHandler : IRequestHandler<CreateSupplie
     {
         var repo = _unitOfWork.Repository<Supplier>();
         var req = request.RequestData;
+
+        var codeSpec = new SupplierByCodeForCreateSpec(req.Code);
+        if (await repo.AnyAsync(codeSpec, cancellationToken))
+            return Result<Guid>.Failure(ErrorCodeConstants.Conflict, $"Mã nhà cung cấp '{req.Code}' đã tồn tại trong hệ thống.");
 
         var supplier = new Supplier
         {
