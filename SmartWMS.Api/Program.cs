@@ -1,37 +1,48 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using SmartWMS.Application;
-using SmartWMS.Infrastructure;
+using System;
+using System.Linq;
 using System.Text;
-using SmartWMS.Infrastructure.SignalR;
-using SmartWMS.Application.Common.Interfaces;
-using SmartWMS.Infrastructure.Services;
-using SmartWMS.Infrastructure.Persistence.DbContext;
-using SmartWMS.Domain.Entities;
+using System.Threading.Tasks;
 using Hangfire;
-using Serilog;
+using Hangfire.SqlServer;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.IdentityModel.Tokens;
+using Serilog;
+using SmartWMS.Api.Extensions;
+using SmartWMS.Api.Middleware;
+using SmartWMS.Api.Middlewares;
+using SmartWMS.Application;
+using SmartWMS.Application.Common.Interfaces;
+using SmartWMS.Domain.Entities;
+using SmartWMS.Infrastructure;
+using SmartWMS.Infrastructure.Persistence.DbContext;
 using SmartWMS.Infrastructure.Persistence.Initializers;
+using SmartWMS.Infrastructure.Services;
+using SmartWMS.Infrastructure.SignalR;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // ============================================================================
-// 1. CẤU HÌNH SERILOG: Ghi log có cấu trúc song song ra Console và File JSON
+// 1. GHI LOG HỆ THỐNG VỚI SERILOG
 // ============================================================================
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .Enrich.FromLogContext()
     .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}")
-    .WriteTo.File("Logs/smartwms-log-.txt", rollingInterval: RollingInterval.Day, outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}")
+    .WriteTo.File("Logs/smartwms-log-.txt", rollingInterval: RollingInterval.Day)
     .CreateLogger();
 
 builder.Host.UseSerilog();
 
-// --- CẤU HÌNH HỆ THỐNG BẢO MẬT JWT TOKEN ---
-var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var secretKey = Encoding.UTF8.GetBytes(jwtSettings["Secret"]!);
-
+// ============================================================================
+// 2. KẾT NỐI DATABASE VÀ ĐĂNG KÝ DEPENDENCY INJECTION
+// ============================================================================
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -40,7 +51,46 @@ builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IApplicationDbContext>(provider =>
     provider.GetRequiredService<ApplicationDbContext>());
 
-builder.Services.AddHttpClient<IAgentCapacityService, AgentCapacityService>();
+// Cấu hình Gemini Settings và tầng lõi
+builder.Services.Configure<SmartWMS.Application.Common.Models.Configurations.GeminiSettings>(
+    builder.Configuration.GetSection(SmartWMS.Application.Common.Models.Configurations.GeminiSettings.SectionName));
+
+builder.Services.AddInfrastructureServices(builder.Configuration);
+builder.Services.AddApplicationServices();
+
+builder.Services.AddScoped<IBarcodeService, BarcodeService>();
+builder.Services.AddScoped<IInventoryJobService, InventoryJobService>();
+
+// Đăng ký dịch vụ Hangfire Storage (Ưu tiên HangfireConnection độc lập nếu có)
+string hangfireConnectionString = builder.Configuration.GetConnectionString("HangfireConnection")
+    ?? builder.Configuration.GetConnectionString("DefaultConnection")!;
+
+builder.Services.AddHangfire(config => config
+    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+    .UseSimpleAssemblyNameTypeSerializer()
+    .UseRecommendedSerializerSettings()
+    .UseSqlServerStorage(hangfireConnectionString, new SqlServerStorageOptions
+    {
+        CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
+        SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
+        QueuePollInterval = TimeSpan.Zero,
+        UseRecommendedIsolationLevel = true,
+        DisableGlobalLocks = true
+    }));
+
+builder.Services.AddHangfireServer(options =>
+{
+    options.WorkerCount = Environment.ProcessorCount * 2;
+});
+
+// ============================================================================
+// 3. CẤU HÌNH JWT AUTHENTICATION
+// ============================================================================
+var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+var jwtSecret = jwtSettings["Secret"];
+if (string.IsNullOrWhiteSpace(jwtSecret) || Encoding.UTF8.GetByteCount(jwtSecret) < 32)
+    throw new InvalidOperationException("Cần cấu hình JwtSettings:Secret bên ngoài source với ít nhất 32 byte.");
+var secretKey = Encoding.UTF8.GetBytes(jwtSecret);
 
 builder.Services.AddAuthentication(options =>
 {
@@ -57,34 +107,57 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         ValidIssuer = jwtSettings["Issuer"],
         ValidAudience = jwtSettings["Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(secretKey)
+        IssuerSigningKey = new SymmetricSecurityKey(secretKey),
+        ClockSkew = TimeSpan.Zero
+    };
+
+    // Chuẩn thực tế cho SignalR: Trích xuất JWT Token từ Query String khi kết nối WebSockets
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+            {
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        }
     };
 });
 
-// --- ĐĂNG KÝ CÁC PHÂN TẦNG KIẾN TRÚC VÀ TIỆN ÍCH LÕI ---
-builder.Services.Configure<SmartWMS.Application.Common.Models.Configurations.GeminiSettings>(
-    builder.Configuration.GetSection(SmartWMS.Application.Common.Models.Configurations.GeminiSettings.SectionName));
+// ============================================================================
+// 4. CẤU HÌNH CORS
+// ============================================================================
+const string SmartWmsCorsPolicy = "SmartWmsCorsPolicy";
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(SmartWmsCorsPolicy, policy =>
+    {
+        policy.SetIsOriginAllowed(origin =>
+        {
+            if (string.IsNullOrWhiteSpace(origin)) return false;
+            var uri = new Uri(origin);
+            return uri.Host == "localhost" || uri.Host == "127.0.0.1";
+        })
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials(); // Bắt buộc cho SignalR Hub
+    });
+});
 
-builder.Services.AddInfrastructureServices(builder.Configuration);
-builder.Services.AddApplicationServices();
-
-builder.Services.AddScoped<IBarcodeService, BarcodeService>();
-builder.Services.AddScoped<IInventoryJobService, InventoryJobService>();
-
+// ============================================================================
+// 5. TIỆN ÍCH LÕI, CONTROLLERS & OPENAPI GỐC
+// ============================================================================
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddSignalR();
-
-// Đăng ký dịch vụ Caching hỗ trợ Handlers và tối ưu tài nguyên hệ thống
 builder.Services.AddMemoryCache();
-
-// Đăng ký dịch vụ xử lý lỗi tập trung .NET 8 và cấu hình Problem Details mặc định
 builder.Services.AddExceptionHandler<SmartWMS.Api.Middlewares.GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
+builder.Services.AddApiVersioningConfig();
 
-// ============================================================================
-// 2. ĐĂNG KÝ HEALTH CHECKS: Giám sát toàn diện tài nguyên lõi hệ thống
-// ============================================================================
 builder.Services.AddHealthChecks()
     .AddTypeActivatedCheck<SmartWMS.Infrastructure.HealthChecks.SqlStorageHealthCheck>("SQL-Server-Storage")
     .AddTypeActivatedCheck<SmartWMS.Infrastructure.HealthChecks.GeminiHealthCheck>("Google-Gemini-AI-Hub");
@@ -92,18 +165,29 @@ builder.Services.AddHealthChecks()
 var app = builder.Build();
 
 // ============================================================================
-// CẤU HÌNH HTTP REQUEST PIPELINE (MIDDLEWARES ORDER)
+// 6. THỨ TỰ THI HÀNH PIPELINE & MIDDLEWARES
 // ============================================================================
-app.UseExceptionHandler(); // 🌟 GIỮ LẠI: Lớp bọc lỗi tối cao của .NET 8 kết hợp với GlobalExceptionHandler
+app.UseExceptionHandler();
 app.UseSerilogRequestLogging();
 
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/openapi/v1.json", "SmartWMS API Center v1");
+        c.RoutePrefix = "swagger";
+    });
 }
 
 app.UseInfrastructureLocalization();
 app.UseHttpsRedirection();
+
+// CORS bắt buộc đứng trước Middleware Tracking, Authentication & Authorization
+app.UseCors(SmartWmsCorsPolicy);
+
+// Bổ sung Middleware theo dõi vết Request
+app.UseMiddleware<CorrelationIdMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -112,9 +196,7 @@ app.UseHangfireDashboard("/hangfire");
 app.MapControllers();
 app.MapHub<InventoryHub>("/hubs/inventory");
 
-// ============================================================================
-// 3. MAPPING ENDPOINT HEALTH CHECKS
-// ============================================================================
+// Endpoint Health Check
 app.MapHealthChecks("/healthz", new HealthCheckOptions
 {
     ResponseWriter = async (context, report) =>
@@ -129,97 +211,63 @@ app.MapHealthChecks("/healthz", new HealthCheckOptions
                 Component = x.Key,
                 Status = x.Value.Status.ToString(),
                 Description = x.Value.Description ?? "Không có mô tả.",
-                Error = x.Value.Exception?.Message
+                Error = app.Environment.IsDevelopment() ? x.Value.Exception?.Message : null
             })
         };
         await context.Response.WriteAsJsonAsync(responseJson);
     }
 });
 
-// --- ĐOẠN CODE TỰ ĐỘNG KIỂM TRA & SEED DATA MỒI ---
-using (var scope = app.Services.CreateScope())
+// ============================================================================
+// 7. MIGRATION DATABASE, SEED DATA VÀ RECURRING JOBS
+// ============================================================================
+try
 {
+    await SeedDatabaseAsync(app);
+    RegisterBackgroundJobs(app);
+    Log.Information("🚀 Đang khởi chạy máy chủ Web API SmartWMS Center...");
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Máy chủ Web API đột ngột dừng hoạt động.");
+    throw;
+}
+finally
+{
+    Log.CloseAndFlush();
+}
+
+// ============================================================================
+// CÁC HÀM TIỆN ÍCH BỔ TRỢ
+// ============================================================================
+static async Task SeedDatabaseAsync(WebApplication app)
+{
+    using var scope = app.Services.CreateScope();
     var services = scope.ServiceProvider;
     try
     {
         var context = services.GetRequiredService<ApplicationDbContext>();
 
-        // 1. Tự động kiểm tra và cập nhật Database cấu trúc mới nhất
-        context.Database.Migrate(); 
-
-        // 🌟 BỔ SUNG: Khởi tạo tài khoản Admin hệ thống (Dùng file DbInitializer của bạn)
-        await DbInitializer.SeedAsync(context);
-        Console.WriteLine("---> [SmartWMS] Kiểm tra/Khởi tạo tài khoản Admin hệ thống thành công!");
-
-        // 2. Tự động tạo dữ liệu mẫu cho Kho bãi và Ô kệ (Bins) nếu trống
-        if (!context.Warehouses.Any())
+        if (app.Environment.IsDevelopment())
         {
-            var warehouseId = Guid.Parse("7a9089f2-2b22-4211-912b-28562d2925a1");
-            var dryZoneId = Guid.Parse("e84988e0-087e-40f4-904d-771804d9c02a");
-            var coldZoneId = Guid.Parse("f2e96440-1996-4e5b-9d41-3b7c0604b087");
-            var fixedDate = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-
-            var warehouse = new Warehouse
-            {
-                Id = warehouseId,
-                Name = "Kho Tổng Thông Minh - SmartWMS Center",
-                Address = "Khu Công Nghệ Cao, Quận 9, TP. Thủ Đức",
-                CreatedAt = fixedDate,
-                CreatedBy = "SystemAdmin"
-            };
-            context.Warehouses.Add(warehouse);
-
-            context.Zones.AddRange(
-                new Zone { Id = dryZoneId, Name = "Khu Khô (Dry Zone)", WarehouseId = warehouseId, CreatedAt = fixedDate, CreatedBy = "SystemAdmin" },
-                new Zone { Id = coldZoneId, Name = "Khu Mát (Cold Zone)", WarehouseId = warehouseId, CreatedAt = fixedDate, CreatedBy = "SystemAdmin" }
-            );
-
-            for (int i = 1; i <= 5; i++)
-            {
-                context.Bins.Add(new Bin
-                {
-                    Id = Guid.Parse($"c1000000-0000-0000-0000-00000000000{i}"),
-                    Code = $"C-Z1-R{i}-L1",
-                    ZoneId = coldZoneId,
-                    MaxCapacity = 100,
-                    CurrentOccupancy = 0,
-                    CreatedAt = fixedDate,
-                    CreatedBy = "SystemAdmin"
-                });
-            }
-
-            for (int i = 1; i <= 5; i++)
-            {
-                context.Bins.Add(new Bin
-                {
-                    Id = Guid.Parse($"d2000000-0000-0000-0000-00000000000{i}"),
-                    Code = $"D-Z2-R{i}-L1",
-                    ZoneId = dryZoneId,
-                    MaxCapacity = 500,
-                    CurrentOccupancy = 0,
-                    CreatedAt = fixedDate,
-                    CreatedBy = "SystemAdmin"
-                });
-            }
-
-            context.SaveChanges();
-            Console.WriteLine("---> [SmartWMS] Khởi tạo dữ liệu mồi kho bãi thành công!");
+            await context.Database.MigrateAsync();
         }
 
-        // 3. Tự động đồng bộ danh mục sản phẩm và AI Vector thông minh
         var embeddingService = services.GetRequiredService<IEmbeddingService>();
-        await SmartWMS.Infrastructure.Persistence.Initializers.InitialDbSeed.SeedDataAsync(context, embeddingService);
-        Console.WriteLine("---> [SmartWMS] Đồng bộ danh mục sản phẩm và AI Vector thành công!");
+        var passwordHasher = services.GetRequiredService<IPasswordHasher>();
+        await DbInitializer.SeedAsync(context, passwordHasher, app.Configuration, embeddingService);
     }
     catch (Exception ex)
     {
-        Log.Error(ex, "Có lỗi xảy ra khi tự động seed dữ liệu kho và AI Vector.");
+        Log.Error(ex, "Lỗi xảy ra trong quá trình khởi tạo dữ liệu CSDL ban đầu.");
+        throw;
     }
 }
 
-// --- ĐĂNG KÝ CHẠY ĐỊNH KỲ CHO TÁC NHÂN ẢO VÀ NGHIỆP VỤ NỀN HANGFIRE ---
-using (var scope = app.Services.CreateScope())
+static void RegisterBackgroundJobs(WebApplication app)
 {
+    using var scope = app.Services.CreateScope();
     var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
 
     recurringJobManager.AddOrUpdate<IAIAgentJobService>(
@@ -231,18 +279,4 @@ using (var scope = app.Services.CreateScope())
         "SmartWMS-Inventory-FEFO-AutoLock",
         job => job.RunExpiredStockLockJobAsync(),
         Cron.Daily);
-}
-
-try
-{
-    Log.Information("🚀 Đang khởi động máy chủ Web API SmartWMS Center...");
-    app.Run();
-}
-catch (Exception ex)
-{
-    Log.Fatal(ex, "Máy chủ Web API đột ngột sập nguồn khi đang khởi chạy.");
-}
-finally
-{
-    Log.CloseAndFlush();
 }

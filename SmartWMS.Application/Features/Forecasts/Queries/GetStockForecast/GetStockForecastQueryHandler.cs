@@ -1,10 +1,12 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
+using SmartWMS.Application.Common.Constants;
 using SmartWMS.Application.Common.Interfaces;
 using SmartWMS.Application.Common.Models;
-using SmartWMS.Application.Features.Forecasts.Queries.GetStockForecast.Dtos;
+using SmartWMS.Application.Features.Forecasts.DTOs.Queries;
+using SmartWMS.Application.Features.InventoryManagement.Specifications.Queries;
 using System;
-using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text.Json;
 using System.Threading;
@@ -12,67 +14,60 @@ using System.Threading.Tasks;
 
 namespace SmartWMS.Application.Features.Forecasts.Queries.GetStockForecast;
 
-public class GetStockForecastQueryHandler : IRequestHandler<GetStockForecastQuery, Result<StockForecastDto>>
+public class GetStockForecastQueryHandler(IApplicationDbContext context, IAiInsightService aiInsightService)
+    : IRequestHandler<GetStockForecastQuery, Result<StockForecastDto>>
 {
-    private readonly IApplicationDbContext _context;
-    private readonly IAiForecastingService _forecastingService;
-
-    public GetStockForecastQueryHandler(IApplicationDbContext context, IAiForecastingService forecastingService)
-    {
-        _context = context;
-        _forecastingService = forecastingService;
-    }
-
     public async Task<Result<StockForecastDto>> Handle(GetStockForecastQuery request, CancellationToken cancellationToken)
     {
-        // 1. Kiểm tra sản phẩm tồn tại trong danh mục hệ thống
-        var productExists = await _context.Products
-            .AnyAsync(p => p.SKU == request.SKU, cancellationToken);
+        var product = await context.Products.AsNoTracking()
+            .FirstOrDefaultAsync(p => p.SKU == request.RequestData.Sku && !p.IsDeleted, cancellationToken);
+        if (product == null)
+            return Result<StockForecastDto>.Failure(ErrorCodeConstants.ProductNotFound, "Không tìm thấy sản phẩm có mã SKU này trên hệ thống.");
 
-        if (!productExists)
-        {
-            return Result<StockForecastDto>.Failure($"Không tìm thấy sản phẩm có mã SKU: {request.SKU}");
-        }
-
-        // ============================================================================
-        // 🌟 ĐÃ SỬA: Thu thập lịch sử xuất kho thông qua bảng chi tiết 1-N (SelectMany)
-        // Kiên dùng cách này để bóc tách đúng số lượng từ bảng con và ngày từ bảng cha.
-        // ============================================================================
-        var historicalMovements = await _context.OutboundIssues
-            .AsNoTracking()
-            .SelectMany(issue => issue.Items
-                .Where(item => item.Product != null && item.Product.SKU == request.SKU)
-                .Select(item => new ForecastPointDto
-                {
-                    Date = issue.CreatedAt,  // Lấy mốc thời gian xuất kho thực tế từ phiếu cha
-                    Quantity = item.Quantity // Lấy số lượng xuất thực tế từ bảng chi tiết con
-                }))
+        var demand = new OutboundDemandTransactionsSpec(DateTime.UtcNow.AddDays(-90));
+        var dailyTotals = await context.InventoryTransactions.AsNoTracking()
+            .Where(demand.Criteria!).Where(t => t.ProductId == product.Id)
+            .GroupBy(t => t.CreatedAt.Date)
+            .Select(g => new { Date = g.Key, TotalPickedQty = g.Sum(t => -(long)t.QuantityChanged) })
+            .OrderBy(x => x.Date)
             .ToListAsync(cancellationToken);
-        // ============================================================================
+        if (dailyTotals.Count == 0)
+            return Result<StockForecastDto>.Failure(ErrorCodeConstants.ValidationError, "Hệ thống chưa có đủ dữ liệu xuất kho của sản phẩm này trong 90 ngày qua để AI tiến hành dự báo.");
 
-        // 3. Đóng gói dữ liệu lịch sử thành chuỗi JSON sạch để gửi sang Python Microservice
-        var payload = new
+        var payload = JsonSerializer.Serialize(new
         {
-            Sku = request.SKU,
-            HistoricalMovements = historicalMovements.Select(m => new { m.Date, m.Quantity })
-        };
+            SKU = product.SKU,
+            ProductName = product.Name,
+            History = dailyTotals.Select(x => new
+            {
+                Date = x.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                x.TotalPickedQty
+            })
+        });
 
-        string historicalDataJson = JsonSerializer.Serialize(payload);
-
-        // 4. Gọi Service kết nối AI nhận chuỗi kết quả tính toán mô hình Time-series từ Python
-        string forecastJsonResult = await _forecastingService.Get30DaysDemandForecastAsync(historicalDataJson);
-
-        // 5. Giải mã chuỗi JSON từ Python ngược về bộ DTO định kiểu tĩnh cho C#
-        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-        var forecastedPoints = JsonSerializer.Deserialize<List<ForecastPointDto>>(forecastJsonResult, options) ?? new();
-
-        var finalResult = new StockForecastDto
+        // HTTP/time-out failures propagate to the existing API exception handler; no synthetic forecast.
+        try
         {
-            SKU = request.SKU,
-            HistoricalMovements = historicalMovements,
-            ForecastedDemand = forecastedPoints
-        };
+            var raw = await aiInsightService.PredictDemandAsync(payload);
+            if (string.IsNullOrWhiteSpace(raw)) return InvalidResponse();
+            var forecast = JsonSerializer.Deserialize<StockForecastDto>(raw, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+            if (forecast == null || forecast.SKU != product.SKU || forecast.HistoricalMovements == null ||
+                forecast.ForecastedDemand == null || forecast.ForecastedDemand.Count == 0 ||
+                forecast.HistoricalMovements.Concat(forecast.ForecastedDemand)
+                    .Any(x => x == null || x.Date == default || x.Quantity < 0))
+                return InvalidResponse();
 
-        return Result<StockForecastDto>.Success(finalResult);
+            return Result<StockForecastDto>.Success(forecast, "Dự báo tồn kho thành công.");
+        }
+        catch (JsonException)
+        {
+            return InvalidResponse();
+        }
     }
+
+    private static Result<StockForecastDto> InvalidResponse() =>
+        Result<StockForecastDto>.Failure("AI_RESPONSE_INVALID", "Phản hồi AI không khớp dữ liệu dự báo hợp lệ.");
 }

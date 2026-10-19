@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SmartWMS.Application.Common.Interfaces;
 using SmartWMS.Domain.Entities;
+using SmartWMS.Domain.Common;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,6 +38,8 @@ public class ApplicationDbContext : Microsoft.EntityFrameworkCore.DbContext, IAp
     public DbSet<InventoryTransaction> InventoryTransactions { get; set; }
     public DbSet<OutboundOrderItem> OutboundOrderItems { get; set; }
     public DbSet<ProductSerialNumber> ProductSerialNumbers { get; set; }
+    public DbSet<CycleCountSheet> CycleCountSheets { get; set; }
+    public DbSet<CycleCountItem> CycleCountItems { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -80,16 +83,10 @@ public class ApplicationDbContext : Microsoft.EntityFrameworkCore.DbContext, IAp
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        // 1. Lập tức chạy bộ máy điền thông tin kiểm toán ngầm và trích xuất log thay đổi
         var auditEntries = OnBeforeSaveChanges();
-
-        // 2. Lưu các thay đổi chính thức vào SQL Server
+        AddAuditLogs(auditEntries);
         var result = await base.SaveChangesAsync(cancellationToken);
-
-        // 3. Xử lý lưu lịch sử Log chi tiết vào database
-        await OnAfterSaveChangesAsync(auditEntries);
-
-        return result;
+        return result - auditEntries.Count;
     }
 
     private List<AuditEntry> OnBeforeSaveChanges()
@@ -113,10 +110,19 @@ public class ApplicationDbContext : Microsoft.EntityFrameworkCore.DbContext, IAp
 
             if (entry.State == EntityState.Added || entry.State == EntityState.Modified)
             {
-                SetPropertyValue(entry.Entity, "UpdatedAt", utcNow);
-                SetPropertyValue(entry.Entity, "UpdatedBy", userId);
+                if (entry.Entity is BaseEntity entity)
+                {
+                    entity.LastModifiedAt = utcNow;
+                    entity.LastModifiedBy = userId;
+                }
+                else
+                {
+                    SetPropertyValue(entry.Entity, "UpdatedAt", utcNow);
+                    SetPropertyValue(entry.Entity, "UpdatedBy", userId);
+                }
             }
 
+            entry.DetectChanges();
             var auditEntry = new AuditEntry(entry)
             {
                 TableName = entry.Metadata.GetTableName() ?? entry.Metadata.Name,
@@ -128,6 +134,7 @@ public class ApplicationDbContext : Microsoft.EntityFrameworkCore.DbContext, IAp
             {
                 if (property.IsTemporary) continue;
                 string propertyName = property.Metadata.Name;
+                if (propertyName == nameof(User.PasswordHash)) continue;
                 if (property.Metadata.IsPrimaryKey()) continue;
 
                 switch (entry.State)
@@ -154,7 +161,7 @@ public class ApplicationDbContext : Microsoft.EntityFrameworkCore.DbContext, IAp
         return auditEntries;
     }
 
-    private async Task OnAfterSaveChangesAsync(List<AuditEntry> auditEntries)
+    private void AddAuditLogs(List<AuditEntry> auditEntries)
     {
         if (auditEntries == null || auditEntries.Count == 0) return;
 
@@ -178,7 +185,6 @@ public class ApplicationDbContext : Microsoft.EntityFrameworkCore.DbContext, IAp
 
             AuditLogs.Add(log);
         }
-        await base.SaveChangesAsync();
     }
 
     private void SetPropertyValue(object entity, string propertyName, object value)

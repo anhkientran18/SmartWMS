@@ -2,8 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using SmartWMS.Application.Common.Interfaces;
 using SmartWMS.Application.Common.Models;
-using SmartWMS.Application.Features.CycleCounting.Queries.GetPendingCountTasks.Dtos;
-using System;
+using SmartWMS.Application.Features.CycleCounting.DTOs.Queries;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -22,54 +21,42 @@ public class GetPendingCountTasksQueryHandler : IRequestHandler<GetPendingCountT
 
     public async Task<Result<List<CycleCountTaskDto>>> Handle(GetPendingCountTasksQuery request, CancellationToken cancellationToken)
     {
-        var products = await _context.Products
+        // 1. Truy vấn các phiếu kiểm kê chưa hoàn thành từ Database
+        var pendingSheets = await _context.CycleCountSheets
             .AsNoTracking()
+            .Include(s => s.Zone)
+            .Include(s => s.Items).ThenInclude(i => i.Bin)
+            .Include(s => s.Items)
+                .ThenInclude(i => i.Product)
+            .Where(s => !s.IsDeleted && (s.Status == "Pending" || s.Status == "Counting"))
             .ToListAsync(cancellationToken);
 
         var pendingTasks = new List<CycleCountTaskDto>();
-        var random = new Random();
 
-        foreach (var product in products)
+        foreach (var sheet in pendingSheets)
         {
-            string abcClass = "C";
-            int intervalDays = 90;
-            string priority = "Thấp (Kiểm kê định kỳ 3 tháng)";
-            string skuUpper = (product.SKU ?? string.Empty).ToUpper();
-
-            if (skuUpper.Contains("ASUS") || skuUpper.Contains("LOGI"))
-            {
-                abcClass = "A";
-                intervalDays = 7;
-                priority = "🔥 CAO KHẨN CẤP (Chu kỳ 7 ngày - Tránh thất thoát linh kiện giá trị)";
-            }
-            else if (skuUpper.Contains("MILK") || skuUpper.Contains("COCA"))
-            {
-                abcClass = "B";
-                intervalDays = 30;
-                priority = "Trung Bình (Chu kỳ 30 ngày - Kiểm soát hạn dùng FEFO)";
-            }
-
-            int daysSinceLastCount = random.Next(1, 120);
-
-            if (daysSinceLastCount >= intervalDays)
+            foreach (var item in sheet.Items)
             {
                 pendingTasks.Add(new CycleCountTaskDto
                 {
-                    ProductId = product.Id,
-                    SKU = product.SKU ?? string.Empty,
-                    ProductName = product.Name ?? string.Empty,
-                    ABCClassification = abcClass,
-                    ScheduledIntervalDays = intervalDays,
-                    TargetZone = abcClass == "B" ? "Khu Mát (Cold Zone)" : "Khu Khô (Dry Zone)",
-                    PriorityMessage = priority
+                    CountSheetId = sheet.Id,
+                    ItemId = item.Id,
+                    SheetNumber = sheet.SheetNumber,
+                    BinId = item.BinId,
+                    BinCode = item.Bin?.Code ?? string.Empty,
+                    LotNumber = item.LotNumber,
+                    SystemQuantity = item.SystemQuantity,
+                    ProductId = item.ProductId,
+                    SKU = item.Product?.SKU ?? string.Empty,
+                    ProductName = item.Product?.Name ?? string.Empty,
+                    ABCClassification = item.Product?.Unit ?? "C",
+                    ScheduledIntervalDays = 30,
+                    TargetZone = sheet.Zone?.Name ?? "Khu vực chung",
+                    PriorityMessage = $"Mã phiếu: {sheet.BatchCode} | Trạng thái: {sheet.Status}"
                 });
             }
         }
 
-        var orderedTasks = pendingTasks
-            .OrderBy(x => x.ABCClassification)
-            .ToList();
-
-        return Result<List<CycleCountTaskDto>>.Success(orderedTasks);
+        return Result<List<CycleCountTaskDto>>.Success(pendingTasks);
     }
 }

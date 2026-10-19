@@ -1,8 +1,10 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
+using SmartWMS.Application.Common.Constants;
 using SmartWMS.Application.Common.Interfaces;
 using SmartWMS.Application.Common.Models;
 using SmartWMS.Domain.Entities;
+using SmartWMS.Domain.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,72 +22,96 @@ public class PickWithSerialCommandHandler : IRequestHandler<PickWithSerialComman
         _context = context;
     }
 
-    public async Task<Result<List<string>>> Handle(PickWithSerialCommand request, CancellationToken cancellationToken)
+    public async Task<Result<List<string>>> Handle(PickWithSerialCommand command, CancellationToken cancellationToken)
     {
-        if (request.ScannedSerials == null || !request.ScannedSerials.Any())
-        {
-            return Result<List<string>>.Failure("Yêu cầu bị từ chối. Phải quét tối thiểu một mã Serial/IMEI để xuất kho.");
-        }
+        var request = command.RequestData;
+        if (request.OrderId == Guid.Empty || request.ProductId == Guid.Empty || request.BinId == Guid.Empty ||
+            request.ScannedSerials == null || request.ScannedSerials.Count == 0 ||
+            request.ScannedSerials.Any(string.IsNullOrWhiteSpace) ||
+            request.ScannedSerials.Distinct(StringComparer.Ordinal).Count() != request.ScannedSerials.Count)
+            return Result<List<string>>.Failure(ErrorCodeConstants.ValidationError, "Đơn hàng, sản phẩm, ô kệ và danh sách serial không trùng lặp là bắt buộc.");
 
-        // 1. Quét đối chiếu danh sách Serial trong kho máy chủ
-        var serialsInDb = await _context.ProductSerialNumbers
-            .Where(s => s.ProductId == request.ProductId && request.ScannedSerials.Contains(s.SerialCode))
+        var order = await _context.OutboundIssues.Include(x => x.Items)
+            .FirstOrDefaultAsync(x => x.Id == request.OrderId && !x.IsDeleted, cancellationToken);
+        if (order == null)
+            return Result<List<string>>.Failure(ErrorCodeConstants.ValidationError, "Không tìm thấy đơn hàng xuất.");
+        if (order.Status != "Allocated" && order.Status != "Waved")
+            return Result<List<string>>.Failure(ErrorCodeConstants.ValidationError, "Đơn hàng phải được phân bổ trước khi picking và chưa được pick hoàn tất.");
+        if (string.IsNullOrWhiteSpace(order.OrderNumber) ||
+            (!string.IsNullOrEmpty(request.OrderCode) && request.OrderCode != order.OrderNumber) ||
+            await _context.OutboundIssues.AnyAsync(x => x.Id != order.Id && x.OrderNumber == order.OrderNumber, cancellationToken))
+            return Result<List<string>>.Failure(ErrorCodeConstants.ValidationError, "Mã đơn hàng không khớp, bị trống hoặc không duy nhất; không thể xác định tiến độ serial.");
+
+        var lines = order.Items.Where(x => x.ProductId == request.ProductId).OrderBy(x => x.Id).ToList();
+        if (lines.Count == 0 || lines.Any(x => x.Quantity <= 0 ||
+            (x.Status != "Allocated" && x.Status != "Waved" && x.Status != "Picked")))
+            return Result<List<string>>.Failure(ErrorCodeConstants.ValidationError, "Sản phẩm không thuộc dòng đơn hàng được phép picking.");
+
+        // The current model stores progress through serials linked by the unique order number.
+        var previouslyPicked = await _context.ProductSerialNumbers.LongCountAsync(x =>
+            x.ProductId == request.ProductId && x.OutboundOrderCode == order.OrderNumber &&
+            (x.Status == "Allocated" || x.Status == "Shipped"), cancellationToken);
+        var remaining = lines.Sum(x => (long)x.Quantity) - previouslyPicked;
+        if (remaining <= 0 || request.ScannedSerials.Count > remaining)
+            return Result<List<string>>.Failure(ErrorCodeConstants.ValidationError, "Số lượng serial vượt số lượng còn cần pick của đơn hàng.");
+
+        var serials = await _context.ProductSerialNumbers
+            .Where(x => x.ProductId == request.ProductId && request.ScannedSerials.Contains(x.SerialCode))
             .ToListAsync(cancellationToken);
+        if (serials.Count != request.ScannedSerials.Count ||
+            serials.Select(x => x.SerialCode).Distinct(StringComparer.Ordinal).Count() != request.ScannedSerials.Count ||
+            serials.Any(x => x.Status != "InStock" || !string.IsNullOrEmpty(x.OutboundOrderCode) || !x.BinInventoryId.HasValue))
+            return Result<List<string>>.Failure(ErrorCodeConstants.ValidationError, "Serial không tồn tại, không thuộc sản phẩm, đã sử dụng hoặc thiếu liên kết tồn kho.");
 
-        // Phát hiện mã Serial lạ hoặc đã bị xuất bán trước đó
-        var invalidSerials = request.ScannedSerials
-            .Except(serialsInDb.Where(s => s.Status == "InStock").Select(s => s.SerialCode))
-            .ToList();
-
-        if (invalidSerials.Any())
+        var inventoryIds = serials.Select(x => x.BinInventoryId!.Value).Distinct().ToList();
+        var stocks = await _context.BinInventories.Include(x => x.Bin).ThenInclude(x => x!.Zone).ThenInclude(x => x!.Warehouse)
+            .Where(x => inventoryIds.Contains(x.Id)).ToListAsync(cancellationToken);
+        var stockById = stocks.ToDictionary(x => x.Id);
+        foreach (var group in serials.GroupBy(x => x.BinInventoryId!.Value))
         {
-            return Result<List<string>>.Failure($"Từ chối xuất kho. Phát hiện mã Serial không hợp lệ hoặc đã rời kho: {string.Join(", ", invalidSerials)}");
+            if (!stockById.TryGetValue(group.Key, out var stock) || stock.ProductId != request.ProductId ||
+                stock.BinId != request.BinId || stock.Status != InventoryStatus.Available ||
+                stock.Bin == null || stock.Bin.IsDeleted || stock.Bin.Zone == null ||
+                stock.Bin.Zone.IsDeleted || stock.Bin.Zone.Warehouse == null || stock.Bin.Zone.Warehouse.IsDeleted ||
+                stock.Quantity < group.Count())
+                return Result<List<string>>.Failure(ErrorCodeConstants.ValidationError, "Serial không ở ô kệ yêu cầu hoặc tồn kho không hợp lệ/không khả dụng/không đủ số lượng.");
         }
+        if (stocks.GroupBy(x => x.BinId).Any(g => g.First().Bin!.CurrentOccupancy < serials.Count(x => g.Any(s => s.Id == x.BinInventoryId))))
+            return Result<List<string>>.Failure(ErrorCodeConstants.ValidationError, "Số lượng occupancy của ô kệ không đủ để picking; cần đối soát tồn kho.");
 
-        // 2. Chuyển đổi trạng thái đóng băng Serial phục vụ bảo hành hành trình
-        foreach (var serial in serialsInDb)
+        // Validate the entire batch before changing any serial, inventory or order state.
+        foreach (var serial in serials)
         {
+            var stock = stockById[serial.BinInventoryId!.Value];
             serial.Status = "Allocated";
-            serial.OutboundOrderCode = request.OrderCode;
-
-            // Hạ cấp số dư tồn kho tổng tại ô kệ chứa thiết bị đó
-            if (serial.BinInventoryId.HasValue)
+            serial.OutboundOrderCode = order.OrderNumber;
+            stock.Quantity--;
+            stock.Bin!.CurrentOccupancy--;
+            // Retain zero-quantity rows because serials still reference this inventory record.
+            _context.InventoryTransactions.Add(new InventoryTransaction
             {
-                var binInventory = await _context.BinInventories
-                    .Include(x => x.Bin)
-                    .FirstOrDefaultAsync(x => x.Id == serial.BinInventoryId, cancellationToken);
-
-                if (binInventory != null)
-                {
-                    binInventory.Quantity -= 1;
-                    if (binInventory.Bin != null)
-                    {
-                        binInventory.Bin.CurrentOccupancy -= 1;
-                    }
-
-                    if (binInventory.Quantity <= 0)
-                    {
-                        _context.BinInventories.Remove(binInventory);
-                    }
-
-                    // Ghi sổ cái giao dịch biến động kho tổng
-                    _context.InventoryTransactions.Add(new InventoryTransaction
-                    {
-                        Id = Guid.NewGuid(),
-                        ProductId = request.ProductId,
-                        TransactionType = "OUTBOUND_SERIAL",
-                        QuantityChanged = -1,
-                        SourceBinCode = binInventory.Bin?.Code ?? "UNKNOWN",
-                        DestinationBinCode = "SHIPPING_DOCK",
-                        ReasonCode = $"SERIAL_PICKED_{serial.SerialCode}",
-                        CreatedBy = "Serial_Scanner",
-                        CreatedAt = DateTime.UtcNow
-                    });
-                }
-            }
+                Id = Guid.NewGuid(),
+                ProductId = request.ProductId,
+                TransactionType = "OUTBOUND_SERIAL",
+                QuantityChanged = -1,
+                SourceBinCode = stock.Bin.Code,
+                DestinationBinCode = "SHIPPING_DOCK",
+                ReasonCode = $"SERIAL_PICKED_{serial.SerialCode}",
+                CreatedBy = "Serial_Scanner",
+                CreatedAt = DateTime.UtcNow
+            });
         }
+
+        var pickedForLines = previouslyPicked + serials.Count;
+        foreach (var line in lines)
+        {
+            line.Status = pickedForLines >= line.Quantity ? "Picked" : order.Status;
+            pickedForLines = Math.Max(0, pickedForLines - line.Quantity);
+        }
+        if (order.Items.All(x => x.Status == "Picked"))
+            order.Status = "Picked";
 
         await _context.SaveChangesAsync(cancellationToken);
-        return Result<List<string>>.Success(request.ScannedSerials, $"Đã xác thực và giữ chỗ thành công {request.ScannedSerials.Count} mã Serial cho đơn hàng {request.OrderCode}.");
+        return Result<List<string>>.Success(request.ScannedSerials, $"Đã pick và trừ tồn {serials.Count} serial cho đơn hàng {order.OrderNumber}.");
     }
 }

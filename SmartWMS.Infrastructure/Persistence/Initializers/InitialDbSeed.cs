@@ -2,11 +2,7 @@
 using SmartWMS.Application.Common.Interfaces;
 using SmartWMS.Domain.Entities;
 using SmartWMS.Infrastructure.Persistence.DbContext; // BỔ SUNG: Để sử dụng concrete class ApplicationDbContext
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace SmartWMS.Infrastructure.Persistence.Initializers;
 
@@ -18,12 +14,6 @@ public static class InitialDbSeed
     // SỬA ĐỔI: Thay thế IApplicationDbContext bằng ApplicationDbContext để lấy quyền gọi .Database
     public static async Task SeedDataAsync(ApplicationDbContext context, IEmbeddingService embeddingService)
     {
-        // 1. Thực thi Tự động cập nhật các bản chỉnh sửa cấu trúc bảng (Migration) nếu chưa khớp DB
-        if (context.Database.IsSqlServer())
-        {
-            await context.Database.MigrateAsync();
-        }
-
         // 2. GIEO DỮ LIỆU DANH MỤC SẢN PHẨM MẪU CHUẨN KHO VẬN (MDM Products Seeding)
         if (!await context.Products.AnyAsync())
         {

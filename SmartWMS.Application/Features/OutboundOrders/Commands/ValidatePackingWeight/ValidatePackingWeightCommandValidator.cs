@@ -1,4 +1,5 @@
 ﻿using FluentValidation;
+using System;
 using Microsoft.Extensions.Localization;
 using SmartWMS.Domain.Localization;
 
@@ -8,14 +9,19 @@ public class ValidatePackingWeightCommandValidator : AbstractValidator<ValidateP
 {
     public ValidatePackingWeightCommandValidator(IStringLocalizer<SharedResource> localizer)
     {
-        // 1. Kiểm tra ID đơn hàng bắt buộc phải có thông tin
-        RuleFor(v => v.OrderId)
-            .NotEmpty()
-            .WithMessage(_ => localizer["OrderId_Required"]);
+        RuleFor(x => x.RequestData).NotNull().WithMessage("Dữ liệu không được để trống.");
+        When(x => x.RequestData != null, () =>
+        {
+            RuleFor(v => v.RequestData.OrderId)
+                .NotEmpty()
+                .WithMessage(_ => localizer["OrderId_Required"]);
 
-        // 2. Kiểm tra tính hợp lệ của trọng lượng kiện hàng thực tế
-        RuleFor(v => v.ActualWeight)
-            .GreaterThan(0)
-            .WithMessage(_ => localizer["Weight_GreaterThanZero"]); // Bản dịch: "Trọng lượng kiểm thử thùng hàng đóng gói bắt buộc phải lớn hơn 0"
+            RuleFor(v => v.RequestData.SKU).NotEmpty();
+            RuleFor(v => v.RequestData.Quantity).GreaterThan(0);
+
+            RuleFor(v => v.RequestData.ActualWeightGrams)
+                .GreaterThan(0).Must(double.IsFinite)
+                .WithMessage(_ => localizer["Weight_GreaterThanZero"]);
+        });
     }
 }

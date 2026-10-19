@@ -1,18 +1,19 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SmartWMS.Api.Extensions;
 using SmartWMS.Application.Features.InventoryManagement.Commands.AdjustStock;
 using SmartWMS.Application.Features.InventoryManagement.Commands.AutoReplenish;
 using SmartWMS.Application.Features.InventoryManagement.Commands.ChangeStockStatus;
-using SmartWMS.Application.Features.InventoryManagement.Commands.CreateCountSheet;
-using SmartWMS.Application.Features.InventoryManagement.Commands.MoveInventory;
+using SmartWMS.Application.Features.InventoryManagement.DTOs.Commands;
+using SmartWMS.Application.Features.InventoryManagement.DTOs.Queries;
+using SmartWMS.Application.Features.InventoryManagement.Queries.GetInventorySummary;
+using SmartWMS.Application.Features.InventoryManagement.Queries.GetLowStockAlerts;
 using SmartWMS.Application.Features.InventoryManagement.Queries.GetStockHistory;
-using System;
-using System.Threading.Tasks;
 
-namespace SmartWMS.Api.Controllers;
+namespace SmartWMS.Api.Controllers.V1;
 
-[Authorize(Roles = "Admin,Manager,Staff")] // Quyền mặc định cấp Class áp dụng cho luồng vận hành thông thường
+[Authorize]
 [ApiController]
 [Route("api/v1/[controller]")]
 public class InventoryController : ControllerBase
@@ -24,78 +25,27 @@ public class InventoryController : ControllerBase
         _mediator = mediator;
     }
 
-    /// <summary>
-    /// API Lệnh điều chuyển vị trí hàng hóa nội bộ kho bãi (Bin-to-Bin Transfer)
-    /// </summary>
-    [HttpPost("move-stock")]
-    public async Task<IActionResult> MoveStock([FromBody] MoveInventoryCommand command)
-    {
-        var result = await _mediator.Send(command);
-        if (result.IsSuccess) return Ok(result);
-        return BadRequest(result);
-    }
+    [HttpGet("stock-summary")]
+    public async Task<IActionResult> GetStockSummary()
+        => (await _mediator.Send(new GetInventorySummaryQuery())).ToActionResult();
 
-    /// <summary>
-    /// API Lệnh điều chỉnh, cân đối sai lệch tồn kho thực tế do thất thoát/hư hỏng (Stock Adjustment)
-    /// </summary>
-    [Authorize(Roles = "Admin,Manager")] // Ghi đè bảo mật cao cấp: Loại bỏ quyền Staff để chống gian lận số liệu
+    [HttpGet("low-stock-alerts")]
+    public async Task<IActionResult> GetLowStockAlerts([FromQuery] GetLowStockAlertsQuery query)
+        => (await _mediator.Send(query)).ToActionResult();
+
     [HttpPost("adjust-stock")]
-    public async Task<IActionResult> AdjustStock([FromBody] AdjustStockCommand command)
-    {
-        var result = await _mediator.Send(command);
-        if (result.IsSuccess) return Ok(result);
-        return BadRequest(result);
-    }
+    public async Task<IActionResult> AdjustStock([FromBody] AdjustStockRequest request)
+        => (await _mediator.Send(new AdjustStockCommand(request))).ToActionResult();
 
-    /// <summary>
-    /// API Endpoint tra cứu lịch sử và vết tích biến động tồn kho (Inventory Audit Trail Ledger)
-    /// </summary>
     [HttpGet("stock-history")]
-    public async Task<IActionResult> GetStockHistory([FromQuery] Guid? productId, [FromQuery] string? transactionType)
-    {
-        var query = new GetStockHistoryQuery
-        {
-            ProductId = productId,
-            TransactionType = transactionType ?? string.Empty
-        };
+    public async Task<IActionResult> GetStockHistory([FromQuery] StockHistoryPaginatedRequest request)
+        => (await _mediator.Send(new GetStockHistoryQuery(request))).ToActionResult();
 
-        var result = await _mediator.Send(query);
-        if (result.IsSuccess) return Ok(result);
-        return BadRequest(result);
-    }
+    [HttpPost("change-status")]
+    public async Task<IActionResult> ChangeStockStatus([FromBody] ChangeStockStatusRequest request)
+        => (await _mediator.Send(new ChangeStockStatusCommand(request))).ToActionResult();
 
-    /// <summary>
-    /// API Kích hoạt bộ máy tự động rà soát và nạp bù hàng tiền phương (Auto-Replenishment Engine)
-    /// </summary>
     [HttpPost("run-auto-replenish")]
     public async Task<IActionResult> RunAutoReplenish()
-    {
-        var result = await _mediator.Send(new AutoReplenishCommand());
-        if (result.IsSuccess) return Ok(result);
-        return BadRequest(result);
-    }
-
-    /// <summary>
-    /// API Khởi tạo phiếu kiểm kho và đóng băng vị trí phục vụ kiểm toán hiện trường (Physical Count Sheet)
-    /// </summary>
-    [Authorize(Roles = "Admin,Manager")]
-    [HttpPost("create-count-sheet")]
-    public async Task<IActionResult> CreateCountSheet([FromBody] CreateCountSheetCommand command) // 🌟 ĐÃ RÚT GỌN: Nhờ sử dụng using namespace ở trên
-    {
-        var result = await _mediator.Send(command);
-        if (result.IsSuccess) return Ok(result);
-        return BadRequest(result);
-    }
-
-    /// <summary>
-    /// API Thay đổi trạng thái chất lượng tồn kho - Khóa hoặc mở khóa hàng xuất kho (QC Status Transition)
-    /// </summary>
-    [Authorize(Roles = "Admin,Manager")] // Chỉ cấp quản lý hoặc bộ phận kiểm định chất lượng mới được thực thi
-    [HttpPost("change-status")]
-    public async Task<IActionResult> ChangeStockStatus([FromBody] ChangeStockStatusCommand command)
-    {
-        var result = await _mediator.Send(command);
-        if (result.IsSuccess) return Ok(result);
-        return BadRequest(result);
-    }
+        => (await _mediator.Send(new AutoReplenishCommand())).ToActionResult();
 }

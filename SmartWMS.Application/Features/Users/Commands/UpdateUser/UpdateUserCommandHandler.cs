@@ -1,15 +1,19 @@
 ﻿using MediatR;
 using SmartWMS.Application.Common.Interfaces;
 using SmartWMS.Application.Common.Models;
-using SmartWMS.Application.Common.Utils;
 
 namespace SmartWMS.Application.Features.Users.Commands;
 
 public class UpdateUserCommandHandler : IRequestHandler<UpdateUserCommand, Result<bool>>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IPasswordHasher _passwordHasher;
 
-    public UpdateUserCommandHandler(IApplicationDbContext context) => _context = context;
+    public UpdateUserCommandHandler(IApplicationDbContext context, IPasswordHasher passwordHasher)
+    {
+        _context = context;
+        _passwordHasher = passwordHasher;
+    }
 
     public async Task<Result<bool>> Handle(UpdateUserCommand request, CancellationToken cancellationToken)
     {
@@ -28,7 +32,7 @@ public class UpdateUserCommandHandler : IRequestHandler<UpdateUserCommand, Resul
         // Nếu admin gõ mật khẩu mới thì tiến hành đổi, nếu không thì giữ nguyên mật khẩu cũ
         if (!string.IsNullOrWhiteSpace(request.NewPassword))
         {
-            user.PasswordHash = SecurityUtils.HashPassword(request.NewPassword);
+            user.PasswordHash = _passwordHasher.HashPassword(request.NewPassword);
         }
 
         // Hệ thống Audit Log tự động sẽ ghi nhận chính xác trường nào bị đổi 

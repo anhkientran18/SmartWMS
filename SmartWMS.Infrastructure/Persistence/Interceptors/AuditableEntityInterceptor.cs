@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using SmartWMS.Application.Common.Interfaces;
+using SmartWMS.Domain.Common;
 using System;
 using System.Linq;
 using System.Threading;
@@ -56,8 +57,16 @@ public class AuditableEntityInterceptor : SaveChangesInterceptor
                 entry.State == EntityState.Modified ||
                 entry.References.Any(r => r.TargetEntry != null && r.TargetEntry.State == EntityState.Modified))
             {
-                SetPropertyValue(entry.Entity, "UpdatedAt", utcNow);
-                SetPropertyValue(entry.Entity, "UpdatedBy", userId);
+                if (entry.Entity is BaseEntity entity)
+                {
+                    entity.LastModifiedAt = utcNow;
+                    entity.LastModifiedBy = userId;
+                }
+                else
+                {
+                    SetPropertyValue(entry.Entity, "UpdatedAt", utcNow);
+                    SetPropertyValue(entry.Entity, "UpdatedBy", userId);
+                }
             }
         }
     }

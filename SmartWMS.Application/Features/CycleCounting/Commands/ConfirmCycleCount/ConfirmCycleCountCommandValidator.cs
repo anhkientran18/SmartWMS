@@ -1,26 +1,29 @@
 ﻿using FluentValidation;
-using Microsoft.Extensions.Localization;
-using SmartWMS.Domain.Localization;
+using System;
+using System.Linq;
 
-namespace SmartWMS.Application.Features.InventoryManagement.Commands.ConfirmCycleCount;
+namespace SmartWMS.Application.Features.CycleCounting.Commands.ConfirmCycleCount;
 
 public class ConfirmCycleCountCommandValidator : AbstractValidator<ConfirmCycleCountCommand>
 {
-    public ConfirmCycleCountCommandValidator(IStringLocalizer<SharedResource> localizer)
+    public ConfirmCycleCountCommandValidator()
     {
-        // 1. Kiểm tra vị trí ô kệ thực hiện kiểm kê
-        RuleFor(v => v.BinId)
-            .NotEmpty()
-            .WithMessage(_ => localizer["BinId_Required"]);
+        RuleFor(x => x.RequestData).NotNull().WithMessage("Dữ liệu không được trống.");
+        When(x => x.RequestData != null, () =>
+        {
+            RuleFor(x => x.RequestData.CountSheetId).NotEmpty().NotEqual(Guid.Empty).WithMessage("ID phiếu kiểm kê không hợp lệ.");
 
-        // 2. Kiểm tra mã sản phẩm được đếm thực tế
-        RuleFor(v => v.ProductId)
-            .NotEmpty()
-            .WithMessage(_ => localizer["ProductId_Required"]);
+            RuleFor(x => x.RequestData.CountedItems)
+                .NotEmpty().WithMessage("Vui lòng cung cấp kết quả kiểm đếm.")
+                .Must(items => items != null && items.Any()).WithMessage("Danh sách kiểm đếm trống.")
+                .Must(items => items == null || items.Where(i => i != null).Select(i => i.ItemId).Distinct().Count() == items.Count)
+                .WithMessage("Danh sách detail kiểm kê không được trùng lặp hoặc chứa phần tử null.");
 
-        // 3. RÀNG BUỘC SỐ LƯỢNG THỰC TẾ: Bắt buộc phải lớn hơn hoặc bằng 0
-        RuleFor(v => v.PhysicalQuantity)
-            .GreaterThanOrEqualTo(0)
-            .WithMessage(_ => localizer["PhysicalQuantity_Invalid"]); // Bản dịch đề xuất: "Số lượng kiểm kê thực tế không được là số âm."
+            RuleForEach(x => x.RequestData.CountedItems).NotNull().ChildRules(item =>
+            {
+                item.RuleFor(i => i.ItemId).NotEmpty().NotEqual(Guid.Empty);
+                item.RuleFor(i => i.CountedQuantity).NotNull().GreaterThanOrEqualTo(0).WithMessage("Số lượng kiểm đếm không được là số âm.");
+            });
+        });
     }
 }

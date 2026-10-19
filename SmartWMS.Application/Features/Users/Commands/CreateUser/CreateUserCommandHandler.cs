@@ -1,7 +1,6 @@
 ﻿using MediatR;
 using SmartWMS.Application.Common.Interfaces;
 using SmartWMS.Application.Common.Models;
-using SmartWMS.Application.Common.Utils; // Nhận diện SecurityUtils
 using SmartWMS.Domain.Entities;
 
 namespace SmartWMS.Application.Features.Users.Commands.CreateUser;
@@ -9,17 +8,17 @@ namespace SmartWMS.Application.Features.Users.Commands.CreateUser;
 public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand, Result<Guid>>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IPasswordHasher _passwordHasher;
 
-    public CreateUserCommandHandler(IApplicationDbContext context)
+    public CreateUserCommandHandler(IApplicationDbContext context, IPasswordHasher passwordHasher)
     {
         _context = context;
+        _passwordHasher = passwordHasher;
     }
 
     public async Task<Result<Guid>> Handle(CreateUserCommand request, CancellationToken cancellationToken)
     {
-        // 1. Mã hóa mật khẩu thô thành Hash chuỗi bảo mật bằng SecurityUtils của project
-        // (Giúp bảo mật tài khoản, không lưu mật khẩu thô xuống database)
-        string hashedPassword = SecurityUtils.HashPassword(request.Password);
+        string hashedPassword = _passwordHasher.HashPassword(request.Password);
 
         // 2. Khởi tạo thực thể User mới
         var user = new User

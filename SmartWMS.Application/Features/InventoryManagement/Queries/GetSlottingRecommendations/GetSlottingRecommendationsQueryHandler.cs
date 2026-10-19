@@ -1,8 +1,10 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
+using SmartWMS.Application.Common.Constants;
 using SmartWMS.Application.Common.Interfaces;
 using SmartWMS.Application.Common.Models;
-using SmartWMS.Application.Features.InventoryManagement.Queries.GetSlottingRecommendations.Dtos;
+using SmartWMS.Application.Features.InventoryManagement.DTOs.Queries;
+using SmartWMS.Application.Features.InventoryManagement.Specifications.Queries;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,80 +14,78 @@ using System.Threading.Tasks;
 
 namespace SmartWMS.Application.Features.InventoryManagement.Queries.GetSlottingRecommendations;
 
-public class GetSlottingRecommendationsQueryHandler : IRequestHandler<GetSlottingRecommendationsQuery, Result<List<SlottingRecommendationDto>>>
+public class GetSlottingRecommendationsQueryHandler(IApplicationDbContext context, IAiInsightService aiInsightService)
+    : IRequestHandler<GetSlottingRecommendationsQuery, Result<List<SlottingRecommendationDto>>>
 {
-    private readonly IApplicationDbContext _context;
-    private readonly IAiInsightService _aiInsightService;
-
-    public GetSlottingRecommendationsQueryHandler(IApplicationDbContext context, IAiInsightService aiInsightService)
-    {
-        _context = context;
-        _aiInsightService = aiInsightService;
-    }
-
     public async Task<Result<List<SlottingRecommendationDto>>> Handle(GetSlottingRecommendationsQuery request, CancellationToken cancellationToken)
     {
-        var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
+        var zoneId = request.RequestData.ZoneId;
+        if (zoneId.HasValue && (zoneId.Value == Guid.Empty || !await context.Zones.AsNoTracking()
+            .AnyAsync(x => x.Id == zoneId.Value && !x.IsDeleted && !x.Warehouse.IsDeleted, cancellationToken)))
+            return Result<List<SlottingRecommendationDto>>.Failure(ErrorCodeConstants.ValidationError, "Zone không tồn tại hoặc không còn hoạt động.");
 
-        // 1. Thu thập dữ liệu biến động tần suất bốc hàng thực tế trong 30 ngày qua (Outbound Transactions)
-        var movementData = await _context.InventoryTransactions
-            .Where(t => t.CreatedAt >= thirtyDaysAgo && (t.TransactionType == "OUTBOUND" || t.TransactionType == "WAVE_OUTBOUND"))
-            .GroupBy(t => new { t.ProductId, t.Product!.SKU, t.Product.Name })
-            .Select(g => new
-            {
-                g.Key.SKU,
-                g.Key.Name,
-                TotalPickedQty = Math.Abs(g.Sum(t => t.QuantityChanged)),
-                TransactionCount = g.Count()
-            })
-            .OrderByDescending(x => x.TransactionCount)
-            .ToListAsync(cancellationToken);
+        var stockQuery = context.BinInventories.AsNoTracking()
+            .Include(x => x.Product).Include(x => x.Bin).ThenInclude(x => x!.Zone)
+            .Where(x => x.Product != null && !x.Product.IsDeleted && x.Bin != null && !x.Bin.IsDeleted &&
+                x.Bin.Zone != null && !x.Bin.Zone.IsDeleted && !x.Bin.Zone.Warehouse.IsDeleted);
+        if (zoneId.HasValue)
+            stockQuery = stockQuery.Where(x => x.Bin!.ZoneId == zoneId.Value);
 
-        if (!movementData.Any())
+        var demand = new OutboundDemandTransactionsSpec(DateTime.UtcNow.AddDays(-30));
+        var movements = context.InventoryTransactions.AsNoTracking().Where(demand.Criteria!)
+            .Where(x => x.Product != null && !x.Product.IsDeleted);
+        if (zoneId.HasValue)
         {
-            return Result<List<SlottingRecommendationDto>>.Failure("Hệ thống chưa tích lũy đủ dữ liệu giao dịch xuất kho trong vòng 30 ngày để AI tiến hành phân tích Slotting.");
+            // Scope both the product population and the historical source bin, not just the displayed locations.
+            var zoneBinCodes = context.Bins.Where(x => x.ZoneId == zoneId.Value && !x.IsDeleted).Select(x => x.Code);
+            movements = movements.Where(t => stockQuery.Any(s => s.ProductId == t.ProductId) &&
+                zoneBinCodes.Contains(t.SourceBinCode));
         }
 
-        // 2. Lấy thông tin sơ đồ vùng chứa hiện tại của các sản phẩm để đối chiếu cấu trúc hình học
-        var currentStockLocations = await _context.BinInventories
-            .Include(x => x.Product)
-            .Include(x => x.Bin).ThenInclude(b => b!.Zone)
-            .Where(x => x.Bin != null && x.Bin.Zone != null && x.Product != null)
+        var movementData = await movements.GroupBy(t => new { t.ProductId, t.Product!.SKU, t.Product.Name })
+            .Select(g => new
+            {
+                g.Key.ProductId,
+                g.Key.SKU,
+                g.Key.Name,
+                TotalPickedQty = g.Sum(t => -(long)t.QuantityChanged),
+                TransactionCount = g.Count()
+            }).OrderByDescending(x => x.TransactionCount).ThenBy(x => x.SKU)
             .ToListAsync(cancellationToken);
+        if (movementData.Count == 0)
+            return Result<List<SlottingRecommendationDto>>.Failure(ErrorCodeConstants.ValidationError,
+                "Chưa có dữ liệu xuất kho phù hợp trong 30 ngày cho phạm vi Slotting được chọn.");
 
-        // 3. Tạo Payload nén dữ liệu sạch gửi lên AI làm căn cứ quyết định layout
-        var aiPayload = movementData.Select(m => new
+        var currentLocations = await stockQuery.ToListAsync(cancellationToken);
+        var payload = JsonSerializer.Serialize(movementData.Select(m => new
         {
             m.SKU,
             m.Name,
             m.TotalPickedQty,
             m.TransactionCount,
-            CurrentZones = currentStockLocations
-                .Where(s => s.Product!.SKU == m.SKU)
-                .Select(s => s.Bin!.Zone!.Name)
-                .Distinct()
-                .ToList()
-        }).ToList();
-
-        string jsonPayload = JsonSerializer.Serialize(aiPayload);
-
-        // 4. Triệu hồi bộ não AI Gemini bóc tách và phân phối lại vị trí kệ hàng tối ưu
-        string aiRawResult = await _aiInsightService.AnalyzeSlottingOptimizationAsync(jsonPayload);
+            CurrentZones = currentLocations.Where(s => s.ProductId == m.ProductId)
+                .Select(s => s.Bin!.Zone!.Name).Distinct().ToList()
+        }));
 
         try
         {
-            var recommendations = JsonSerializer.Deserialize<List<SlottingRecommendationDto>>(aiRawResult, new JsonSerializerOptions
+            var raw = await aiInsightService.AnalyzeSlottingOptimizationAsync(payload);
+            if (string.IsNullOrWhiteSpace(raw)) return InvalidResponse();
+            var recommendations = JsonSerializer.Deserialize<List<SlottingRecommendationDto>>(raw, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
             });
+            if (recommendations == null || recommendations.Any(x => x == null || !movementData.Any(m => m.SKU == x.SKU)))
+                return InvalidResponse();
 
-            return Result<List<SlottingRecommendationDto>>.Success(
-                recommendations ?? new List<SlottingRecommendationDto>(),
-                "AI đã hoàn tất càn quét lịch sử giao dịch và xuất sơ đồ Slotting khuyến nghị thành công.");
+            return Result<List<SlottingRecommendationDto>>.Success(recommendations, "Đã phân tích Slotting khuyến nghị.");
         }
         catch (JsonException)
         {
-            return Result<List<SlottingRecommendationDto>>.Failure("Định dạng phản hồi từ cấu trúc dịch vụ AI không khớp với mô hình dữ liệu Slotting JSON mong đợi.");
+            return InvalidResponse();
         }
     }
+
+    private static Result<List<SlottingRecommendationDto>> InvalidResponse() =>
+        Result<List<SlottingRecommendationDto>>.Failure("AI_RESPONSE_INVALID", "Phản hồi AI không khớp dữ liệu hoặc phạm vi Slotting.");
 }

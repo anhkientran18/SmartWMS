@@ -1,14 +1,19 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SmartWMS.Application.Features.Dashboard.Queries.GetDashboardInsightQuery;
-using SmartWMS.Application.Features.Dashboard.Queries.GetWarehouseDashboard;
+using SmartWMS.Api.Extensions;
+using SmartWMS.Application.Features.Dashboard.Queries.GetAIAgentMetrics;
+using SmartWMS.Application.Features.Dashboard.Queries.GetExecutiveDashboard;
+using SmartWMS.Application.Features.Dashboard.Queries.GetInboundOutboundChart;
+using SmartWMS.Application.Features.Dashboard.Queries.GetWarehouseOccupancy;
+using SmartWMS.Application.Features.InventoryManagement.DTOs.Queries;
+using SmartWMS.Application.Features.InventoryManagement.Queries.GetSlottingRecommendations;
 
-namespace SmartWMS.Api.Controllers;
+namespace SmartWMS.Api.Controllers; // Giữ nguyên namespace gốc
 
-[Authorize(Roles = "Admin,Manager")]
-[ApiController]
+[Authorize]
 [Route("api/v1/[controller]")]
+[ApiController]
 public class DashboardController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -18,37 +23,29 @@ public class DashboardController : ControllerBase
         _mediator = mediator;
     }
 
-    [HttpGet("insight")]
-    public async Task<IActionResult> GetInsight()
-    {
-        var result = await _mediator.Send(new GetDashboardInsightQuery());
-        if (result.IsSuccess) return Ok(result);
-        return BadRequest(result);
-    }
-    /// API truy vấn toàn bộ chỉ số KPI cốt lõi phục vụ biểu diễn biểu đồ Frontend
-    [HttpGet("metrics")]
-    public async Task<IActionResult> GetDashboardMetrics()
-    {
-        var result = await _mediator.Send(new GetWarehouseDashboardQuery());
+    [HttpGet("executive")]
+    public async Task<IActionResult> GetExecutiveDashboard()
+        => (await _mediator.Send(new GetExecutiveDashboardQuery())).ToActionResult();
 
-        if (result.IsSuccess)
-        {
-            return Ok(result);
-        }
+    [HttpGet("inbound-outbound-chart")]
+    public async Task<IActionResult> GetInboundOutboundChart([FromQuery] int days = 7)
+        => (await _mediator.Send(new GetInboundOutboundChartQuery { Days = days })).ToActionResult();
 
-        return BadRequest(result);
-    }
-    /// API kích hoạt trí tuệ nhân tạo AI tự động càn quét lịch sử giao dịch để đề xuất sắp xếp lại vị trí ô kệ tối ưu (Slotting)
+    [HttpGet("warehouse-occupancy")]
+    public async Task<IActionResult> GetWarehouseOccupancy()
+        => (await _mediator.Send(new GetWarehouseOccupancyQuery())).ToActionResult();
+
+    [HttpGet("ai-agent-metrics")]
+    public async Task<IActionResult> GetAIAgentMetrics()
+        => (await _mediator.Send(new GetAIAgentMetricsQuery())).ToActionResult();
+
     [HttpGet("ai-slotting-recommendations")]
-    public async Task<IActionResult> GetAiSlottingRecommendations()
+    public async Task<IActionResult> GetAiSlottingRecommendations([FromQuery] Guid? zoneId = null)
     {
-        var result = await _mediator.Send(new SmartWMS.Application.Features.InventoryManagement.Queries.GetSlottingRecommendations.GetSlottingRecommendationsQuery());
-
-        if (result.IsSuccess)
+        var requestData = new SlottingRecommendationRequest
         {
-            return Ok(result);
-        }
-
-        return BadRequest(result);
+            ZoneId = zoneId
+        };
+        return (await _mediator.Send(new GetSlottingRecommendationsQuery(requestData))).ToActionResult();
     }
 }

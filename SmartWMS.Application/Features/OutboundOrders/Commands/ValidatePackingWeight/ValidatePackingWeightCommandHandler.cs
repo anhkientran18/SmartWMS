@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using SmartWMS.Application.Common.Interfaces;
 using SmartWMS.Application.Common.Models;
-using SmartWMS.Application.Features.OutboundOrders.Commands.ValidatePackingWeight.Dtos;
+using SmartWMS.Application.Features.OutboundOrders.DTOs.Commands;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,9 +18,11 @@ public class ValidatePackingWeightCommandHandler : IRequestHandler<ValidatePacki
         _context = context;
     }
 
-    public async Task<Result<WeightValidationResultDto>> Handle(ValidatePackingWeightCommand request, CancellationToken cancellationToken)
+    public async Task<Result<WeightValidationResultDto>> Handle(ValidatePackingWeightCommand command, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.SKU))
+        var request = command.RequestData;
+
+        if (request == null || string.IsNullOrWhiteSpace(request.SKU))
         {
             return Result<WeightValidationResultDto>.Failure("Mã SKU không được để trống.");
         }
@@ -30,25 +32,24 @@ public class ValidatePackingWeightCommandHandler : IRequestHandler<ValidatePacki
             return Result<WeightValidationResultDto>.Failure("Số lượng hàng kiểm tra phải lớn hơn 0.");
         }
 
+        if (!double.IsFinite(request.ActualWeightGrams) || request.ActualWeightGrams <= 0)
+            return Result<WeightValidationResultDto>.Failure("Trọng lượng thực tế theo grams phải hữu hạn và lớn hơn 0.");
+
+        // 1. Lấy thông tin sản phẩm thực tế từ Database
         var product = await _context.Products
             .AsNoTracking()
-            .FirstOrDefaultAsync(p => p.SKU == request.SKU, cancellationToken);
+            .FirstOrDefaultAsync(p => p.SKU == request.SKU && !p.IsDeleted, cancellationToken);
 
         if (product == null)
         {
             return Result<WeightValidationResultDto>.Failure($"Mã sản phẩm SKU {request.SKU} không tồn tại.");
         }
 
-        double unitWeightGrams = 250;
-        string skuUpper = (product.SKU ?? string.Empty).ToUpper();
+        // 2. Sử dụng trọng lượng sản phẩm lưu trữ trong Database (mặc định 250g nếu chưa thiết lập)
+        double unitWeightGrams = product.Weight > 0 ? (double)product.Weight : 250.0;
 
-        if (skuUpper.Contains("COCA")) unitWeightGrams = 340;
-        else if (skuUpper.Contains("MILK")) unitWeightGrams = 1030;
-        else if (skuUpper.Contains("LOGI")) unitWeightGrams = 141;
-        else if (skuUpper.Contains("ASUS")) unitWeightGrams = 2200;
-
-        double expectedTotalWeight = unitWeightGrams * request.Quantity;
-        expectedTotalWeight += 150; // Trọng lượng bao bì thùng rỗng
+        // Trọng lượng dự kiến = (Trọng lượng đơn vị * Số lượng) + 150g vỏ thùng/đóng gói
+        double expectedTotalWeight = (unitWeightGrams * request.Quantity) + 150.0;
 
         double weightDifference = Math.Abs(request.ActualWeightGrams - expectedTotalWeight);
         double deviationPercentage = (weightDifference / expectedTotalWeight) * 100;
@@ -63,14 +64,14 @@ public class ValidatePackingWeightCommandHandler : IRequestHandler<ValidatePacki
         if (deviationPercentage <= 5.0)
         {
             resultDto.IsValid = true;
-            resultDto.StatusMessage = "✅ KIỆN HÀNG HỢP LỆ! Trọng lượng nằm trong sai số cho phép. Hệ thống kích hoạt in nhãn vận chuyển tự động.";
+            resultDto.StatusMessage = "✅ KIỆN HÀNG HỢP LỆ! Trọng lượng nằm trong sai số cho phép.";
         }
         else
         {
             resultDto.IsValid = false;
             resultDto.StatusMessage = request.ActualWeightGrams > expectedTotalWeight
-                ? "❌ CẢNH BÁO: Kiện hàng thừa trọng lượng vượt ngưỡng! Kiểm tra lại số lượng hoặc phụ kiện."
-                : "⚠️ CẢNH BÁO: Kiện hàng thiếu trọng lượng nghiêm trọng! Kiểm tra lại vật tư bốc xếp.";
+                ? "❌ CẢNH BÁO: Kiện hàng thừa trọng lượng vượt ngưỡng cho phép!"
+                : "⚠️ CẢNH BÁO: Kiện hàng thiếu trọng lượng nghiêm trọng!";
         }
 
         return Result<WeightValidationResultDto>.Success(resultDto);

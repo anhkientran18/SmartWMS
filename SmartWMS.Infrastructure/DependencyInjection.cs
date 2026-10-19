@@ -3,13 +3,21 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using MediatR;
 using Polly;
 using Polly.Extensions.Http;
 using SmartWMS.Application.Common.Interfaces;
+using SmartWMS.Application.Common.Models.Configurations;
+using SmartWMS.Application.Common.Models;
+using SmartWMS.Application.Features.Dashboard.DTOs.Queries;
+using SmartWMS.Application.Features.Dashboard.Queries.GetAIAgentMetrics;
 using SmartWMS.Infrastructure.Persistence.Interceptors;
+using SmartWMS.Infrastructure.Persistence.Repositories;
 using SmartWMS.Infrastructure.Services;
 using SmartWMS.Infrastructure.SignalR;
+using System;
 using System.Globalization;
+using System.Net.Http;
 
 namespace SmartWMS.Infrastructure;
 
@@ -17,30 +25,29 @@ public static class InfrastructureConfiguration
 {
     public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
     {
-        // 1. Cấu hình dịch vụ Localization
+        // 1. Cấu hình Gemini Settings từ appsettings.json
+        services.Configure<GeminiSettings>(configuration.GetSection(GeminiSettings.SectionName));
+
+        // 2. Cấu hình dịch vụ Localization
         services.AddLocalization(options => options.ResourcesPath = "Localization");
 
-        // 2. Đăng ký dịch vụ thông báo Real-time SignalR
+        // 3. Đăng ký dịch vụ Authentication & Password Hashing
+        services.AddScoped<ITokenService, JwtTokenService>();
+        services.AddScoped<IPasswordHasher, PasswordHasher>();
+
+        // 4. Đăng ký dịch vụ thông báo Real-time SignalR
         services.AddScoped<IInventoryNotificationService, InventoryNotificationService>();
-        // Đăng ký dịch vụ điều phối phát sóng SignalR thời gian thực
         services.AddScoped<IInventoryHubService, SmartWMS.Infrastructure.SignalR.InventoryHubService>();
 
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
 
-        // 3. Cấu hình Hangfire cho AI Virtual Agent
-        services.AddHangfire(config => config
-            .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
-            .UseSimpleAssemblyNameTypeSerializer()
-            .UseRecommendedSerializerSettings()
-            .UseSqlServerStorage(configuration.GetConnectionString("DefaultConnection")));
-
-        services.AddHangfireServer();
         services.AddScoped<IAIAgentJobService>(provider => provider.GetRequiredService<AIAgentJobService>());
         services.AddScoped<AIAgentJobService>();
+        services.AddScoped<IRequestHandler<GetAIAgentMetricsQuery, Result<AIAgentMetricsDto>>, GetAIAgentMetricsQueryHandler>();
 
-        // 4. BỔ SUNG QUAN TRỌNG: Đăng ký các HttpClients gọi AI kèm theo cấu hình bảo vệ Polly 
-        services.AddHttpClient<IAiChatService, GeminiChatService>()
+        // 6. Cấu hình HttpClients gọi Gemini AI kèm cơ chế bảo vệ Polly (Retry & Circuit Breaker)
+        services.AddHttpClient<IAiInsightService, GeminiInsightService>()
             .AddPolicyHandler(GetRetryPolicy())
             .AddPolicyHandler(GetCircuitBreakerPolicy());
 
@@ -48,45 +55,49 @@ public static class InfrastructureConfiguration
             .AddPolicyHandler(GetRetryPolicy())
             .AddPolicyHandler(GetCircuitBreakerPolicy());
 
-        services.AddHttpClient<IAiInsightService, GeminiInsightService>()
+        services.AddHttpClient<IAiChatService, GeminiChatService>()
             .AddPolicyHandler(GetRetryPolicy())
             .AddPolicyHandler(GetCircuitBreakerPolicy());
-        // Đăng ký cổng kết nối Engine dự báo chuỗi thời gian kèm cơ chế bảo vệ ngắt mạch tự động của Polly
+
         services.AddHttpClient<IAiForecastingService, AiForecastingService>()
             .AddPolicyHandler(GetRetryPolicy())
             .AddPolicyHandler(GetCircuitBreakerPolicy());
-        // Đăng ký bộ đánh chặn kiểm toán vào thùng chứa Scoped IoC
-        services.AddScoped<AuditableEntityInterceptor>();
-        // Đăng ký bộ máy tối ưu hóa định tuyến bốc hàng thông minh S-Shape
+
+        // 7. Đăng ký AI Agent Services & Utility Services
+        services.AddScoped<IAgentCapacityService, AgentCapacityService>();
         services.AddSingleton<IPickingRouteOptimizer, SmartWMS.Infrastructure.Services.PickingRouteOptimizer>();
+
+        // 8. Đăng ký bộ đánh chặn kiểm toán (Audit Interceptor)
+        services.AddScoped<AuditableEntityInterceptor>();
+
+        // 9. Đăng ký Generic Repository và UnitOfWork
+        services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         return services;
     }
 
-    // Cơ chế 1: Tự động thử lại (Retry Policy) khi gặp lỗi HTTP 5xx hoặc 408
     private static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy()
     {
         return HttpPolicyExtensions
-            .HandleTransientHttpError() // Bắt các lỗi HTTP 5xx, 408 hoặc lỗi kết nối mạng vật lý
-            .OrResult(msg => msg.StatusCode == System.Net.HttpStatusCode.TooManyRequests) // Bắt thêm lỗi Rate Limit (429)
+            .HandleTransientHttpError()
+            .OrResult(msg => msg.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
             .WaitAndRetryAsync(
-                retryCount: 3, // Thử lại tối đa 3 lần
-                sleepDurationProvider: retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)), // Thời gian chờ tăng dần: 2s, 4s, 8s
+                retryCount: 3,
+                sleepDurationProvider: retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
                 onRetry: (outcome, timespan, retryAttempt, context) =>
                 {
-                    // Bạn có thể đặt log ở đây để theo dõi hệ thống đang tự thử lại
                     Console.WriteLine($"---> [Polly Retry] Lỗi kết nối AI. Đang thử lại lần thứ {retryAttempt} sau {timespan.TotalSeconds} giây...");
                 });
     }
 
-    // Cơ chế 2: Ngắt mạch tự động (Circuit Breaker Policy) bảo vệ hệ thống
     private static IAsyncPolicy<HttpResponseMessage> GetCircuitBreakerPolicy()
     {
         return HttpPolicyExtensions
             .HandleTransientHttpError()
             .CircuitBreakerAsync(
-                handledEventsAllowedBeforeBreaking: 5, // Nếu bị lỗi liên tiếp 5 lần
-                durationOfBreak: TimeSpan.FromSeconds(30), // Mạch sẽ NGẮT hoàn toàn trong 30 giây (Từ chối gọi lên Google để đỡ tốn tài nguyên)
+                handledEventsAllowedBeforeBreaking: 5,
+                durationOfBreak: TimeSpan.FromSeconds(30),
                 onBreak: (exception, timespan) =>
                 {
                     Console.WriteLine($"---> [Polly CircuitBreaker] API Gemini gặp lỗi liên tiếp! NGẮT MẠCH trong {timespan.TotalSeconds} giây.");

@@ -1,18 +1,17 @@
 ﻿using FluentValidation;
-using Microsoft.Extensions.Localization;
-using SmartWMS.Domain.Localization;
 
 namespace SmartWMS.Application.Features.Products.Queries.ParseBarcode;
 
-public class ParseBarcodeQueryValidator : AbstractValidator<ParseBarcodeQuery>
+public sealed class ParseBarcodeQueryValidator : AbstractValidator<ParseBarcodeQuery>
 {
-    public ParseBarcodeQueryValidator(IStringLocalizer<SharedResource> localizer)
+    public ParseBarcodeQueryValidator()
     {
-        // Chặn đứng trường hợp công nhân vô tình bấm quét trượt hoặc thiết bị gửi chuỗi trống lên Server
-        RuleFor(v => v.RawBarcodeData)
-            .NotEmpty()
-            .WithMessage(_ => localizer["RawBarcodeData_Required"])
-            .MaximumLength(150)
-            .WithMessage(_ => localizer["RawBarcodeData_TooLong"]);
+        RuleFor(x => x.RequestData).NotNull().WithMessage("Dữ liệu không được để trống.");
+        When(x => x.RequestData != null, () =>
+        {
+            RuleFor(v => v.RequestData.RawBarcodeData)
+                .NotEmpty().WithMessage("Dữ liệu mã vạch quét từ thiết bị trống.")
+                .MaximumLength(163).WithMessage("Dữ liệu quá dài.");
+        });
     }
 }

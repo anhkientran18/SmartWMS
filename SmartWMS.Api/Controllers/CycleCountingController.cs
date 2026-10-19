@@ -1,70 +1,51 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SmartWMS.Api.Extensions;
+using SmartWMS.Application.Common.Interfaces;
+using SmartWMS.Application.Features.CycleCounting.Commands.CreateCountSheet;
+using SmartWMS.Application.Features.CycleCounting.Commands.ConfirmCycleCount;
+using SmartWMS.Application.Features.CycleCounting.DTOs.Commands;
+using SmartWMS.Application.Features.CycleCounting.DTOs.Queries;
+using SmartWMS.Application.Features.CycleCounting.Queries.GetCountSheetById;
 using SmartWMS.Application.Features.CycleCounting.Queries.GetPendingCountTasks;
-using SmartWMS.Application.Features.InventoryManagement.Commands.CreateCountSheet;
-using System.Threading.Tasks;
 
-namespace SmartWMS.Api.Controllers;
+namespace SmartWMS.Api.Controllers; // Giữ nguyên namespace gốc của bạn nếu các controller khác đang dùng namespace này
 
-[Authorize(Roles = "Admin,Manager,Staff")]
-[ApiController]
+[Authorize]
 [Route("api/v1/[controller]")]
+[ApiController]
 public class CycleCountingController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly ICurrentUserService _currentUserService;
 
-    public CycleCountingController(IMediator mediator)
+    public CycleCountingController(IMediator mediator, ICurrentUserService currentUserService)
     {
         _mediator = mediator;
+        _currentUserService = currentUserService;
     }
 
-    // API Endpoint lấy danh sách các mặt hàng đến hạn phải đi kiểm kê cuốn chiếu
-    [HttpGet("pending-tasks")]
-    public async Task<IActionResult> GetPendingTasks([FromQuery] string operatorName)
-    {
-        var query = new GetPendingCountTasksQuery { OperatorName = operatorName ?? "WarehouseStaff" };
-        var result = await _mediator.Send(query);
-
-        if (result.IsSuccess)
-        {
-            return Ok(result);
-        }
-
-        return BadRequest(result);
-    }
-    /// API kích hoạt lập chỉ thị kiểm kho hiện trường
     [HttpPost("create-sheet")]
-    public async Task<IActionResult> CreateCountSheet([FromBody] CreateCountSheetCommand command)
+    public async Task<IActionResult> CreateSheet([FromBody] CreateCountSheetCommand command)
+        => (await _mediator.Send(command)).ToActionResult();
+
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetDetails(Guid id, CancellationToken cancellationToken)
+        => (await _mediator.Send(new GetCountSheetByIdQuery(new CountSheetByIdRequest { Id = id }), cancellationToken)).ToActionResult();
+
+    [HttpPost("confirm")]
+    public async Task<IActionResult> Confirm([FromBody] ConfirmCycleCountRequest request, CancellationToken cancellationToken)
+        => (await _mediator.Send(new ConfirmCycleCountCommand(request), cancellationToken)).ToActionResult();
+
+    [HttpGet("pending-tasks")]
+    public async Task<IActionResult> GetPendingTasks([FromQuery] string? operatorName = null)
     {
-        var result = await _mediator.Send(command);
+        // Sử dụng HttpContext.User nếu ICurrentUserService không có sẵn thuộc tính tên
+        var currentOperator = !string.IsNullOrWhiteSpace(operatorName)
+            ? operatorName
+            : User.Identity?.Name ?? "WarehouseStaff";
 
-        if (result.IsSuccess)
-        {
-            return Ok(result);
-        }
-
-        return BadRequest(result);
-    }
-    /// API Kích hoạt bộ máy AI tự động phân tích rủi ro biến động giao dịch và lập lịch kiểm kê cuốn chiếu
-    [HttpPost("trigger-auto-schedule")]
-    public async Task<IActionResult> TriggerAutoCycleCount([FromBody] SmartWMS.Application.Features.InventoryManagement.Commands.ScheduleAutoCycleCount.ScheduleAutoCycleCountCommand command)
-    {
-        var result = await _mediator.Send(command);
-
-        if (result.IsSuccess)
-        {
-            return Ok(result);
-        }
-
-        return BadRequest(result);
-    }
-    /// API Đối chiếu và phê duyệt số liệu kiểm kê cuốn chiếu thực tế từ hiện trường, tự động xử lý lệch Sổ cái
-    [HttpPost("confirm-result")]
-    public async Task<IActionResult> ConfirmCycleCount([FromBody] SmartWMS.Application.Features.InventoryManagement.Commands.ConfirmCycleCount.ConfirmCycleCountCommand command)
-    {
-        var result = await _mediator.Send(command);
-        if (result.IsSuccess) return Ok(result);
-        return BadRequest(result);
+        return (await _mediator.Send(new GetPendingCountTasksQuery { OperatorName = currentOperator })).ToActionResult();
     }
 }

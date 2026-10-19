@@ -1,7 +1,8 @@
 ﻿using MediatR;
-using Microsoft.EntityFrameworkCore;
 using SmartWMS.Application.Common.Interfaces;
+using SmartWMS.Application.Common.Constants;
 using SmartWMS.Application.Common.Models;
+using SmartWMS.Application.Features.CycleCounting.Specifications.Commands;
 using SmartWMS.Domain.Entities;
 using System;
 using System.Collections.Generic;
@@ -9,52 +10,71 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SmartWMS.Application.Features.InventoryManagement.Commands.CreateCountSheet;
+namespace SmartWMS.Application.Features.CycleCounting.Commands.CreateCountSheet;
 
 public class CreateCountSheetCommandHandler : IRequestHandler<CreateCountSheetCommand, Result<Guid>>
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public CreateCountSheetCommandHandler(IApplicationDbContext context)
+    public CreateCountSheetCommandHandler(IUnitOfWork unitOfWork)
     {
-        _context = context;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<Result<Guid>> Handle(CreateCountSheetCommand request, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.AssignedOperator))
+        var req = request.RequestData;
+        var inventoryRepo = _unitOfWork.Repository<BinInventory>();
+        var countSheetRepo = _unitOfWork.Repository<CycleCountSheet>(); // Tạm giả định Entity của bạn tên là CycleCountSheet
+
+        // 1. Kéo tồn kho thực tế hiện tại theo Khu vực / Ô kệ
+        var spec = new BinInventoryForCountSheetSpec(req.ZoneId, req.BinId);
+        var inventoriesToCount = await inventoryRepo.ListAsync(spec, cancellationToken);
+
+        if (!inventoriesToCount.Any())
         {
-            return Result<Guid>.Failure("Bắt buộc phải chỉ định nhân viên hiện trường thực hiện kiểm đếm.");
+            return Result<Guid>.Failure("Không có tồn kho nào được ghi nhận tại vị trí này để thực hiện kiểm kê.");
         }
 
-        if (!request.TargetBinIds.Any())
+        if (inventoriesToCount.GroupBy(x => new { x.BinId, x.ProductId, x.LotNumber }).Any(g => g.Count() > 1))
+            return Result<Guid>.Failure(ErrorCodeConstants.Conflict,
+                "Không thể lập snapshot duy nhất: có nhiều status tồn cho cùng Bin/Product/Lot; model kiểm kê chưa lưu status.");
+
+        // 2. Khởi tạo Header Phiếu kiểm kê
+        var countSheet = new CycleCountSheet
         {
-            return Result<Guid>.Failure("Danh sách ô kệ cần kiểm kê không được phép trống.");
+            Id = Guid.NewGuid(),
+            SheetNumber = $"CC-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString().Substring(0, 5).ToUpper()}",
+            ZoneId = req.ZoneId,
+            BinId = req.BinId,
+            AssignedUserId = req.AssignedUserId,
+            Status = "Pending", // Pending, Counting, Completed, Cancelled
+            Notes = req.Notes,
+            CreatedAt = DateTime.UtcNow,
+            CreatedBy = "WarehouseManager",
+            Items = new List<CycleCountItem>()
+        };
+
+        // 3. Khởi tạo danh sách Line Items (Snapshots tồn kho hiện tại)
+        foreach (var inv in inventoriesToCount)
+        {
+            countSheet.Items.Add(new CycleCountItem
+            {
+                Id = Guid.NewGuid(),
+                CountSheetId = countSheet.Id,
+                BinId = inv.BinId,
+                ProductId = inv.ProductId,
+                LotNumber = inv.LotNumber,
+                SystemQuantity = inv.Quantity, // Chốt số lượng hệ thống tại thời điểm tạo phiếu
+                CountedQuantity = 0, // Chờ nhân viên điền
+                Status = "Pending"
+            });
         }
 
-        // 1. Tạo thực thể phiếu kiểm kê gốc (Giả định bạn đã cấu hình thực thể StockCountSheet trong hệ thống)
-        // Để demo kiến trúc chạy sạch lỗi ngay lập tức, chúng ta giả lập bản ghi hoặc lưu trực tiếp nếu đã tạo thực thể.
+        // 4. Lưu giao dịch
+        await countSheetRepo.AddAsync(countSheet, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        // Tạo chuỗi mã phiếu ngẫu nhiên dạng Mã vạch công nghiệp: CNT-2026-XXXX
-        string countSheetCode = $"CNT-{DateTime.UtcNow.Year}-{new Random().Next(1000, 9999)}";
-
-        // Khởi chạy vòng lặp đọc thông tin hệ thống của các kệ để tạo chỉ thị nhặt đếm
-        var targetedBins = await _context.Bins
-            .Where(b => request.TargetBinIds.Contains(b.Id))
-            .AsNoTracking()
-            .ToListAsync(cancellationToken);
-
-        // Nghiệp vụ thực tế: Hệ thống WMS sẽ đóng băng (Lock) trạng thái các kệ này 
-        // không cho phép làm lệnh Xuất/Nhập trong lúc công nhân đang cầm phiếu đi đếm hàng.
-        foreach (var bin in targetedBins)
-        {
-            // Tích hợp ghi log cấu trúc chỉ thị kiểm kê hiện trường
-            Console.WriteLine($"---> [WMS AUDIT KEEPER] Kệ {bin.Code} đã được đưa vào diện đóng băng kiểm đếm bởi {request.AssignedOperator}.");
-        }
-
-        // Giả lập lưu trữ thành công ID của lệnh làm việc (Work Directive Order ID)
-        Guid syntheticSheetId = Guid.NewGuid();
-
-        return Result<Guid>.Success(syntheticSheetId, $"Khởi tạo thành công phiếu kiểm kho {countSheetCode}. Nhiệm vụ đã được đẩy lên thiết bị PDA của {request.AssignedOperator}.");
+        return Result<Guid>.Success(countSheet.Id, $"Đã tạo phiếu kiểm kê {countSheet.SheetNumber} với {countSheet.Items.Count} dòng mặt hàng cần đếm.");
     }
 }
