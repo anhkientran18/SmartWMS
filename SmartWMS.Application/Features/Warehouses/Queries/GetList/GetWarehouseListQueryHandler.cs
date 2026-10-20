@@ -28,7 +28,7 @@ public sealed class GetWarehouseListQueryHandler : IRequestHandler<GetWarehouseL
             .OrderBy(x => x.Name)
             .Select(x => new WarehouseDto
             {
-                Id = x.Id,
+                DefaultStagingBinId = x.DefaultStagingBinId, Id = x.Id,
                 Code = x.Code ?? string.Empty,
                 Name = x.Name ?? string.Empty,
                 Address = x.Address ?? string.Empty

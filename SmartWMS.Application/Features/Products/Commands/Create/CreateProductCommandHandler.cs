@@ -50,6 +50,7 @@ public sealed class CreateProductCommandHandler : IRequestHandler<CreateProductC
         var product = new Product
         {
             Id = Guid.NewGuid(),
+            TrackingMode = reqData.TrackingMode,
             SKU = reqData.SKU,
             Barcode = reqData.Barcode,
             Name = reqData.Name,

@@ -29,6 +29,7 @@ public sealed class GetProductListQueryHandler : IRequestHandler<GetProductListQ
 
         var result = data.Select(p => new ProductDto
         {
+            TrackingMode = p.TrackingMode,
             Id = p.Id,
             SKU = p.SKU,
             Barcode = p.Barcode,

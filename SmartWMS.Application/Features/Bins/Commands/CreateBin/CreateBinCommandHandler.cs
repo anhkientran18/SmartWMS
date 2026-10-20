@@ -34,6 +34,7 @@ public sealed class CreateBinCommandHandler : IRequestHandler<CreateBinCommand, 
         var bin = new Bin
         {
             Id = Guid.NewGuid(),
+            Purpose = reqData.Purpose,
             Code = reqData.Code,
             ZoneId = reqData.ZoneId,
             MaxCapacity = reqData.MaxCapacity,

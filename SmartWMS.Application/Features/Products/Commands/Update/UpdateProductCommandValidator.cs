@@ -11,6 +11,9 @@ public class UpdateProductCommandValidator : AbstractValidator<UpdateProductComm
 
         When(x => x.RequestData != null, () =>
         {
+            RuleFor(x => x.RequestData.TrackingMode)
+                .Must(value => !value.HasValue || System.Enum.IsDefined(value.Value))
+                .WithMessage("Giá trị TrackingMode không hợp lệ.");
             RuleFor(v => v.RequestData.Id)
                 .NotEmpty().WithMessage("Mã định danh (Id) sản phẩm không được trống.");
 

@@ -10,6 +10,9 @@ public class UpdateBinCommandValidator : AbstractValidator<UpdateBinCommand>
         RuleFor(x => x.RequestData).NotNull().WithMessage("Dữ liệu không được trống.");
         When(x => x.RequestData != null, () =>
         {
+            RuleFor(x => x.RequestData.Purpose)
+                .Must(value => !value.HasValue || System.Enum.IsDefined(value.Value))
+                .WithMessage("Giá trị Purpose không hợp lệ.");
             RuleFor(v => v.RequestData.Id).NotEmpty().WithMessage("Mã định danh ô kệ không được trống.");
             RuleFor(v => v.RequestData.Code)
                 .NotEmpty().WithMessage("Mã ô kệ không được để trống.")

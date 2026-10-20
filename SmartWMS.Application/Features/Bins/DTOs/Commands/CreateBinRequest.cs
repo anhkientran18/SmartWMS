@@ -4,6 +4,7 @@ namespace SmartWMS.Application.Features.Bins.DTOs.Commands;
 
 public class CreateBinRequest
 {
+    public SmartWMS.Domain.Enums.BinPurpose Purpose { get; set; } = SmartWMS.Domain.Enums.BinPurpose.Storage;
     public string Code { get; set; } = string.Empty;
     public Guid ZoneId { get; set; }
     public double Width { get; set; }

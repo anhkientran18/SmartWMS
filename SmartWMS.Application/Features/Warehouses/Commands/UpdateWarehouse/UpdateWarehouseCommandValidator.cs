@@ -9,6 +9,9 @@ public class UpdateWarehouseCommandValidator : AbstractValidator<UpdateWarehouse
         RuleFor(x => x.RequestData).NotNull().WithMessage("Dữ liệu không được trống.");
         When(x => x.RequestData != null, () =>
         {
+            RuleFor(v => v.RequestData.DefaultStagingBinId)
+                .Must(value => !value.HasValue || value.Value != System.Guid.Empty)
+                .WithMessage("Mã ô kệ staging không được là Guid.Empty.");
             RuleFor(v => v.RequestData.Id).NotEmpty().WithMessage("Mã định danh kho không được trống.");
             RuleFor(v => v.RequestData.Code).NotEmpty().MaximumLength(50);
             RuleFor(v => v.RequestData.Name).NotEmpty().MaximumLength(200);

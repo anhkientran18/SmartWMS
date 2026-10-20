@@ -31,6 +31,7 @@ public sealed class GetProductByIdQueryHandler : IRequestHandler<GetProductByIdQ
 
         var dto = new ProductDto
         {
+            TrackingMode = product.TrackingMode,
             Id = product.Id,
             SKU = product.SKU ?? string.Empty,
             Name = product.Name ?? string.Empty,

@@ -5,6 +5,7 @@ namespace SmartWMS.Application.Features.Bins.DTOs;
 
 public class BinContentHeaderDto
 {
+    public SmartWMS.Domain.Enums.BinPurpose Purpose { get; set; }
     public Guid BinId { get; set; }
     public string BinCode { get; set; } = string.Empty;
     public double MaxCapacity { get; set; }

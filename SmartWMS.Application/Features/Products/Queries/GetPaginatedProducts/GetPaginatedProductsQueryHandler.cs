@@ -41,6 +41,7 @@ public sealed class GetPaginatedProductsQueryHandler : IRequestHandler<GetPagina
             .Take(req.PageSize)
             .Select(x => new ProductDto
             {
+                TrackingMode = x.TrackingMode,
                 Id = x.Id,
                 SKU = x.SKU ?? string.Empty,
                 Name = x.Name ?? string.Empty,

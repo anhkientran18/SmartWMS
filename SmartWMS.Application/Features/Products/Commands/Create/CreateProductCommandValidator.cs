@@ -12,6 +12,7 @@ public sealed class CreateProductCommandValidator : AbstractValidator<CreateProd
 
         When(x => x.RequestData != null, () =>
         {
+            RuleFor(x => x.RequestData.TrackingMode).IsInEnum();
             RuleFor(x => x.RequestData.Name)
                 .NotEmpty().WithMessage("Tên sản phẩm không được để trống.")
                 .MaximumLength(200).WithMessage("Tên sản phẩm không được vượt quá 200 ký tự.");

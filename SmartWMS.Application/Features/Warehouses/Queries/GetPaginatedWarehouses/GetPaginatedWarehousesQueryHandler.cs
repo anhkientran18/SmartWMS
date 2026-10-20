@@ -26,7 +26,7 @@ public sealed class GetPaginatedWarehousesQueryHandler : IRequestHandler<GetPagi
         var items = await repo.ListAsync(listSpec, cancellationToken);
         var total = await repo.CountAsync(countSpec, cancellationToken);
 
-        var dtoItems = items.Select(w => new WarehouseDto { Id = w.Id, Code = w.Code, Name = w.Name, Address = w.Address }).ToList();
+        var dtoItems = items.Select(w => new WarehouseDto { DefaultStagingBinId = w.DefaultStagingBinId, Id = w.Id, Code = w.Code, Name = w.Name, Address = w.Address }).ToList();
         var result = PaginatedResult<WarehouseDto>.Create(dtoItems, total, req.PageIndex, req.PageSize);
 
         return Result<PaginatedResult<WarehouseDto>>.Success(result);

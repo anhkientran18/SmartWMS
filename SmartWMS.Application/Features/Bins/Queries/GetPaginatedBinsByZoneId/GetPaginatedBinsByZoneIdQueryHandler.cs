@@ -51,6 +51,7 @@ public class GetPaginatedBinsByZoneIdQueryHandler : IRequestHandler<GetPaginated
             .Take(reqData.PageSize)
             .Select(b => new BinDto
             {
+                Purpose = b.Purpose,
                 Id = b.Id,
                 Code = b.Code,
                 ZoneId = b.ZoneId,

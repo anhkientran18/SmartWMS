@@ -29,6 +29,7 @@ public sealed class GetBinListQueryHandler : IRequestHandler<GetBinListQuery, Re
 
         var dtos = bins.Select(b => new BinDto
         {
+            Purpose = b.Purpose,
             Id = b.Id,
             Code = b.Code,
             ZoneId = b.ZoneId,

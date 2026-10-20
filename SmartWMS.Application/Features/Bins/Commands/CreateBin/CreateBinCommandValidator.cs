@@ -10,6 +10,7 @@ public class CreateBinCommandValidator : AbstractValidator<CreateBinCommand>
         RuleFor(x => x.RequestData).NotNull().WithMessage("Dữ liệu không được trống.");
         When(x => x.RequestData != null, () =>
         {
+            RuleFor(x => x.RequestData.Purpose).IsInEnum();
             RuleFor(v => v.RequestData.Code)
                 .NotEmpty().WithMessage("Mã ô kệ không được để trống.")
                 .MaximumLength(50).WithMessage("Mã ô kệ không được quá 50 ký tự.");

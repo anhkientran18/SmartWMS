@@ -31,7 +31,7 @@ public sealed class GetWarehouseByIdQueryHandler : IRequestHandler<GetWarehouseB
 
         var dto = new WarehouseDto
         {
-            Id = warehouse.Id,
+            DefaultStagingBinId = warehouse.DefaultStagingBinId, Id = warehouse.Id,
             Code = warehouse.Code,
             Name = warehouse.Name,
             Address = warehouse.Address

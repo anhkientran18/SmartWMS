@@ -31,6 +31,7 @@ public class GetBinByIdQueryHandler : IRequestHandler<GetBinByIdQuery, Result<Bi
 
         var dto = new BinDto
         {
+            Purpose = bin.Purpose,
             Id = bin.Id,
             Code = bin.Code,
             ZoneId = bin.ZoneId,

@@ -35,6 +35,7 @@ public class GetBinContentQueryHandler : IRequestHandler<GetBinContentQuery, Res
 
         var headerDto = new BinContentHeaderDto
         {
+            Purpose = bin.Purpose,
             BinId = bin.Id,
             BinCode = bin.Code ?? string.Empty,
             MaxCapacity = bin.MaxCapacity,
