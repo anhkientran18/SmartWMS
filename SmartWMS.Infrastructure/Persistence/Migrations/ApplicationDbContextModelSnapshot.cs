@@ -363,6 +363,94 @@ namespace SmartWMS.Infrastructure.Migrations
                     b.ToTable("CycleCountSheets");
                 });
 
+            modelBuilder.Entity("SmartWMS.Domain.Entities.FulfilmentOperationRequest", b =>
+                {
+                    b.Property<Guid>("RequestId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("AllocationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CanonicalPayload")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CompletedResponseJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("InboundReceiptId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("NaturalOperationKey")
+                        .HasColumnType("varchar(64)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<string>("OperationKind")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<Guid?>("OrderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("PayloadHash")
+                        .IsRequired()
+                        .HasColumnType("varchar(64)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<string>("ScopeKey")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<Guid?>("ShipmentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(24)
+                        .HasColumnType("nvarchar(24)");
+
+                    b.Property<Guid?>("WaveId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("RequestId");
+
+                    b.HasIndex("InboundReceiptId");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("ShipmentId");
+
+                    b.HasIndex("WaveId");
+
+                    b.HasIndex("AllocationId", "OrderId");
+
+                    b.HasIndex("OperationKind", "ScopeKey", "NaturalOperationKey")
+                        .IsUnique()
+                        .HasFilter("[NaturalOperationKey] IS NOT NULL");
+
+                    b.ToTable("FulfilmentOperationRequests", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_FulfilmentOperationRequests_Operation", "[OperationKind] IN (N'ReceiveInbound', N'Allocate', N'CreateWave', N'ConfirmStaging', N'ReleaseAllocation', N'Ship')");
+
+                            t.HasCheckConstraint("CK_FulfilmentOperationRequests_Result", "[Status] = N'Completed' AND LEN([CanonicalPayload]) > 0 AND LEN([CompletedResponseJson]) > 0 AND DATALENGTH([PayloadHash]) = 64 AND [PayloadHash] NOT LIKE '%[^0-9a-f]%' AND ([NaturalOperationKey] IS NULL OR DATALENGTH([NaturalOperationKey]) = 64 AND [NaturalOperationKey] NOT LIKE '%[^0-9a-f]%')");
+
+                            t.HasCheckConstraint("CK_FulfilmentOperationRequests_Scope", "([OperationKind] = N'ReceiveInbound' AND [InboundReceiptId] IS NOT NULL AND [AllocationId] IS NULL AND [ScopeKey] = N'inbound:' + LOWER(CONVERT(nvarchar(36), [InboundReceiptId]))) OR ([OperationKind] = N'CreateWave' AND [WaveId] IS NOT NULL AND [AllocationId] IS NULL AND [ScopeKey] LIKE N'wave:%' AND LEN([ScopeKey]) = 69) OR ([OperationKind] IN (N'Allocate', N'ConfirmStaging', N'ReleaseAllocation', N'Ship') AND [AllocationId] IS NOT NULL AND [OrderId] IS NOT NULL AND [ScopeKey] = N'allocation:' + LOWER(CONVERT(nvarchar(36), [AllocationId])) AND ([OperationKind] <> N'Ship' OR [ShipmentId] IS NOT NULL))");
+                        });
+                });
+
             modelBuilder.Entity("SmartWMS.Domain.Entities.InboundReceipt", b =>
                 {
                     b.Property<Guid>("Id")
@@ -482,10 +570,95 @@ namespace SmartWMS.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("SmartWMS.Domain.Entities.InventoryReservation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AllocationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("OrderItemId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("PickedQuantity")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ReleasedQuantity")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int>("ShippedQuantity")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("SourceBinInventoryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("StagingBinInventoryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(24)
+                        .HasColumnType("nvarchar(24)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SourceBinInventoryId");
+
+                    b.HasIndex("StagingBinInventoryId");
+
+                    b.HasIndex("AllocationId", "OrderId");
+
+                    b.HasIndex("OrderItemId", "OrderId");
+
+                    b.HasIndex("AllocationId", "OrderItemId", "SourceBinInventoryId")
+                        .IsUnique();
+
+                    b.ToTable("InventoryReservations", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_InventoryReservations_Progress", "[Quantity] > 0 AND [PickedQuantity] >= 0 AND [ReleasedQuantity] >= 0 AND CAST([PickedQuantity] AS bigint) + [ReleasedQuantity] <= [Quantity] AND [ShippedQuantity] >= 0 AND [ShippedQuantity] <= [PickedQuantity]");
+
+                            t.HasCheckConstraint("CK_InventoryReservations_Staging", "([StagingBinInventoryId] IS NULL OR [StagingBinInventoryId] <> [SourceBinInventoryId]) AND ([PickedQuantity] = 0 OR [StagingBinInventoryId] IS NOT NULL)");
+
+                            t.HasCheckConstraint("CK_InventoryReservations_Status", "[Status] IN (N'Active', N'PartiallyPicked', N'Picked', N'Shipped', N'Released')");
+                        });
+                });
+
             modelBuilder.Entity("SmartWMS.Domain.Entities.InventoryTransaction", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("BinInventoryId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAt")
@@ -499,6 +672,24 @@ namespace SmartWMS.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<Guid?>("DestinationBinInventoryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("FulfilmentOperationRequestId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("InventoryReservationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("OutboundOrderItemId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("OutboundPickRequestId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("PickTaskId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uniqueidentifier");
 
@@ -508,6 +699,9 @@ namespace SmartWMS.Infrastructure.Migrations
                     b.Property<string>("ReasonCode")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("ShipmentId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("SourceBinCode")
                         .IsRequired()
@@ -519,9 +713,107 @@ namespace SmartWMS.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("BinInventoryId");
+
+                    b.HasIndex("DestinationBinInventoryId");
+
+                    b.HasIndex("FulfilmentOperationRequestId");
+
+                    b.HasIndex("InventoryReservationId");
+
+                    b.HasIndex("OutboundOrderItemId");
+
+                    b.HasIndex("PickTaskId");
+
                     b.HasIndex("ProductId");
 
-                    b.ToTable("InventoryTransactions");
+                    b.HasIndex("OutboundPickRequestId", "PickTaskId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_InventoryTransactions_PickMovement")
+                        .HasFilter("[OutboundPickRequestId] IS NOT NULL AND [PickTaskId] IS NOT NULL");
+
+                    b.HasIndex("ShipmentId", "InventoryReservationId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_InventoryTransactions_ShipmentMovement")
+                        .HasFilter("[ShipmentId] IS NOT NULL AND [InventoryReservationId] IS NOT NULL");
+
+                    b.ToTable("InventoryTransactions", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_InventoryTransactions_PickTrace", "[OutboundPickRequestId] IS NULL OR ([PickTaskId] IS NOT NULL AND [InventoryReservationId] IS NOT NULL AND [OutboundOrderItemId] IS NOT NULL AND [BinInventoryId] IS NOT NULL AND [DestinationBinInventoryId] IS NOT NULL AND [BinInventoryId] <> [DestinationBinInventoryId] AND [ShipmentId] IS NULL AND [QuantityChanged] <> 0)");
+
+                            t.HasCheckConstraint("CK_InventoryTransactions_ShipmentTrace", "[ShipmentId] IS NULL OR ([InventoryReservationId] IS NOT NULL AND [OutboundOrderItemId] IS NOT NULL AND [BinInventoryId] IS NOT NULL AND [OutboundPickRequestId] IS NULL AND [QuantityChanged] <> 0)");
+                        });
+                });
+
+            modelBuilder.Entity("SmartWMS.Domain.Entities.OutboundAllocation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Generation")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<Guid>("SourceBinId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("StagingBinId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(24)
+                        .HasColumnType("nvarchar(24)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_OutboundAllocations_ActiveOrder")
+                        .HasFilter("[IsActive] = 1");
+
+                    b.HasIndex("SourceBinId");
+
+                    b.HasIndex("StagingBinId");
+
+                    b.HasIndex("OrderId", "Generation")
+                        .IsUnique();
+
+                    b.ToTable("OutboundAllocations", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_OutboundAllocations_Bins", "[SourceBinId] <> [StagingBinId]");
+
+                            t.HasCheckConstraint("CK_OutboundAllocations_Generation", "[Generation] > 0");
+
+                            t.HasCheckConstraint("CK_OutboundAllocations_State", "([IsActive] = 1 AND [Status] IN (N'Active', N'Picking', N'Picked', N'Staged')) OR ([IsActive] = 0 AND [Status] IN (N'Released', N'Shipped'))");
+                        });
                 });
 
             modelBuilder.Entity("SmartWMS.Domain.Entities.OutboundIssue", b =>
@@ -597,9 +889,6 @@ namespace SmartWMS.Infrastructure.Migrations
                     b.Property<Guid>("OrderId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("OutboundIssueId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<int>("PickedQuantity")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
@@ -641,7 +930,7 @@ namespace SmartWMS.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("OutboundIssueId");
+                    b.HasIndex("OrderId");
 
                     b.HasIndex("ProductId");
 
@@ -650,6 +939,195 @@ namespace SmartWMS.Infrastructure.Migrations
                             t.HasCheckConstraint("CK_OutboundOrderItems_Progress", "[ReservedQuantity] >= 0 AND [ShippedQuantity] >= 0 AND [ShippedQuantity] <= [StagedQuantity] AND [StagedQuantity] <= [PickedQuantity] AND [PickedQuantity] <= [Quantity] AND [ReservedQuantity] <= [Quantity] - [ShippedQuantity]");
 
                             t.HasCheckConstraint("CK_OutboundOrderItems_TrackingMode", "[TrackingModeSnapshot] IS NULL OR [TrackingModeSnapshot] IN (0, 1, 2)");
+                        });
+                });
+
+            modelBuilder.Entity("SmartWMS.Domain.Entities.OutboundPickRequest", b =>
+                {
+                    b.Property<Guid>("RequestId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AllocationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("BinId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CanonicalPayload")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LotNumber")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("NaturalPickKey")
+                        .HasColumnType("varchar(64)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("OrderItemId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("PayloadHash")
+                        .IsRequired()
+                        .HasColumnType("varchar(64)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("QuantityPicked")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("StagingBinId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(24)
+                        .HasColumnType("nvarchar(24)");
+
+                    b.Property<int>("TrackingMode")
+                        .HasColumnType("int");
+
+                    b.HasKey("RequestId");
+
+                    b.HasIndex("BinId");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("StagingBinId");
+
+                    b.HasIndex("AllocationId", "NaturalPickKey")
+                        .IsUnique()
+                        .HasFilter("[NaturalPickKey] IS NOT NULL");
+
+                    b.HasIndex("AllocationId", "OrderId");
+
+                    b.HasIndex("OrderItemId", "OrderId");
+
+                    b.ToTable("OutboundPickRequests", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_OutboundPickRequests_Payload", "[QuantityPicked] > 0 AND [TrackingMode] IN (0, 1, 2) AND [BinId] <> [StagingBinId] AND ([TrackingMode] <> 1 OR LEN(LTRIM(RTRIM([LotNumber]))) > 0 AND [LotNumber] IS NOT NULL) AND ([TrackingMode] = 2 OR [OrderItemId] IS NOT NULL)");
+
+                            t.HasCheckConstraint("CK_OutboundPickRequests_Result", "[Status] = N'Completed' AND LEN([CanonicalPayload]) > 0 AND DATALENGTH([PayloadHash]) = 64 AND [PayloadHash] NOT LIKE '%[^0-9a-f]%' AND ([NaturalPickKey] IS NULL OR DATALENGTH([NaturalPickKey]) = 64 AND [NaturalPickKey] NOT LIKE '%[^0-9a-f]%')");
+                        });
+                });
+
+            modelBuilder.Entity("SmartWMS.Domain.Entities.OutboundPickRequestItem", b =>
+                {
+                    b.Property<Guid>("RequestId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("PickTaskId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AllocationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("QuantityPicked")
+                        .HasColumnType("int");
+
+                    b.HasKey("RequestId", "PickTaskId");
+
+                    b.HasIndex("PickTaskId", "AllocationId");
+
+                    b.HasIndex("RequestId", "AllocationId");
+
+                    b.ToTable("OutboundPickRequestItems", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_OutboundPickRequestItems_Quantity", "[QuantityPicked] > 0");
+                        });
+                });
+
+            modelBuilder.Entity("SmartWMS.Domain.Entities.PickTask", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AllocationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("AssignedUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("PickedQuantity")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("ReservationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<Guid>("SourceBinId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("StagedQuantity")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("StagingBinId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(24)
+                        .HasColumnType("nvarchar(24)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssignedUserId");
+
+                    b.HasIndex("ReservationId")
+                        .IsUnique();
+
+                    b.HasIndex("SourceBinId");
+
+                    b.HasIndex("StagingBinId");
+
+                    b.HasIndex("ReservationId", "AllocationId");
+
+                    b.ToTable("PickTasks", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_PickTasks_Bins", "[SourceBinId] <> [StagingBinId]");
+
+                            t.HasCheckConstraint("CK_PickTasks_Progress", "[Quantity] > 0 AND [StagedQuantity] >= 0 AND [StagedQuantity] <= [PickedQuantity] AND [PickedQuantity] <= [Quantity]");
+
+                            t.HasCheckConstraint("CK_PickTasks_Status", "[Status] IN (N'Ready', N'Waved', N'Picking', N'Picked', N'Staged', N'Completed', N'Released')");
                         });
                 });
 
@@ -734,15 +1212,35 @@ namespace SmartWMS.Infrastructure.Migrations
                     b.Property<Guid?>("BinInventoryId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("InboundReceiptItemId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("OutboundOrderCode")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime?>("ReceivedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("ReservationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
                     b.Property<string>("SerialCode")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<Guid?>("ShipmentItemId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -750,9 +1248,133 @@ namespace SmartWMS.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ProductId");
+                    b.HasIndex("BinInventoryId");
 
-                    b.ToTable("ProductSerialNumbers");
+                    b.HasIndex("InboundReceiptItemId");
+
+                    b.HasIndex("ReservationId");
+
+                    b.HasIndex("ShipmentItemId");
+
+                    b.HasIndex("ProductId", "SerialCode")
+                        .IsUnique();
+
+                    b.ToTable("ProductSerialNumbers", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_ProductSerialNumbers_SerialCode", "DATALENGTH([SerialCode]) > 0 AND UNICODE(LEFT([SerialCode], 1)) NOT IN (9,10,11,12,13,32,133,160,5760,8192,8193,8194,8195,8196,8197,8198,8199,8200,8201,8202,8232,8233,8239,8287,12288) AND UNICODE(RIGHT([SerialCode], 1)) NOT IN (9,10,11,12,13,32,133,160,5760,8192,8193,8194,8195,8196,8197,8198,8199,8200,8201,8202,8232,8233,8239,8287,12288)");
+                        });
+                });
+
+            modelBuilder.Entity("SmartWMS.Domain.Entities.Shipment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AllocationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CanonicalPackingPayload")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<DateTime>("ShippedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("StagingBinId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_Shipments_OrderId_WholeOrderV1");
+
+                    b.HasIndex("StagingBinId");
+
+                    b.HasIndex("AllocationId", "OrderId");
+
+                    b.ToTable("Shipments", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Shipments_Packing", "LEN([CanonicalPackingPayload]) > 0");
+                        });
+                });
+
+            modelBuilder.Entity("SmartWMS.Domain.Entities.ShipmentItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AllocationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("BinInventoryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("OrderItemId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("ReservationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ShipmentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BinInventoryId");
+
+                    b.HasIndex("ShipmentId", "ReservationId")
+                        .IsUnique();
+
+                    b.HasIndex("ShipmentId", "AllocationId", "OrderId");
+
+                    b.HasIndex("ReservationId", "AllocationId", "OrderId", "OrderItemId");
+
+                    b.ToTable("ShipmentItems", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_ShipmentItems_Quantity", "[Quantity] > 0");
+                        });
                 });
 
             modelBuilder.Entity("SmartWMS.Domain.Entities.Supplier", b =>
@@ -908,6 +1530,117 @@ namespace SmartWMS.Infrastructure.Migrations
                     b.ToTable("Warehouses");
                 });
 
+            modelBuilder.Entity("SmartWMS.Domain.Entities.Wave", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CanonicalTaskSet")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("LastModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Priority")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(24)
+                        .HasColumnType("nvarchar(24)");
+
+                    b.Property<string>("TaskSetHash")
+                        .IsRequired()
+                        .HasColumnType("varchar(64)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<Guid>("WarehouseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("WaveCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TaskSetHash")
+                        .IsUnique();
+
+                    b.HasIndex("WarehouseId");
+
+                    b.HasIndex("WaveCode")
+                        .IsUnique();
+
+                    b.ToTable("Waves", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Waves_Identity", "LEN(LTRIM(RTRIM([WaveCode]))) > 0 AND LEN([CanonicalTaskSet]) > 0 AND DATALENGTH([TaskSetHash]) = 64 AND [TaskSetHash] NOT LIKE '%[^0-9a-f]%'");
+
+                            t.HasCheckConstraint("CK_Waves_Status", "[Status] IN (N'Created', N'InProgress', N'Picked', N'Staged', N'Completed', N'Cancelled')");
+                        });
+                });
+
+            modelBuilder.Entity("SmartWMS.Domain.Entities.WavePickTask", b =>
+                {
+                    b.Property<Guid>("WaveId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("PickTaskId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("RemovedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.HasKey("WaveId", "PickTaskId");
+
+                    b.HasIndex("PickTaskId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_WavePickTasks_ActiveTask")
+                        .HasFilter("[IsActive] = 1");
+
+                    b.ToTable("WavePickTasks", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_WavePickTasks_Membership", "([IsActive] = 1 AND [RemovedAt] IS NULL) OR ([IsActive] = 0 AND [RemovedAt] IS NOT NULL)");
+                        });
+                });
+
             modelBuilder.Entity("SmartWMS.Domain.Entities.Zone", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1026,6 +1759,45 @@ namespace SmartWMS.Infrastructure.Migrations
                     b.Navigation("Zone");
                 });
 
+            modelBuilder.Entity("SmartWMS.Domain.Entities.FulfilmentOperationRequest", b =>
+                {
+                    b.HasOne("SmartWMS.Domain.Entities.InboundReceipt", "InboundReceipt")
+                        .WithMany()
+                        .HasForeignKey("InboundReceiptId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SmartWMS.Domain.Entities.OutboundIssue", "Order")
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SmartWMS.Domain.Entities.Shipment", "Shipment")
+                        .WithMany()
+                        .HasForeignKey("ShipmentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SmartWMS.Domain.Entities.Wave", "Wave")
+                        .WithMany()
+                        .HasForeignKey("WaveId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SmartWMS.Domain.Entities.OutboundAllocation", "Allocation")
+                        .WithMany()
+                        .HasForeignKey("AllocationId", "OrderId")
+                        .HasPrincipalKey("Id", "OrderId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Allocation");
+
+                    b.Navigation("InboundReceipt");
+
+                    b.Navigation("Order");
+
+                    b.Navigation("Shipment");
+
+                    b.Navigation("Wave");
+                });
+
             modelBuilder.Entity("SmartWMS.Domain.Entities.InboundReceipt", b =>
                 {
                     b.HasOne("SmartWMS.Domain.Entities.Bin", "Bin")
@@ -1061,15 +1833,134 @@ namespace SmartWMS.Infrastructure.Migrations
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("SmartWMS.Domain.Entities.InventoryReservation", b =>
+                {
+                    b.HasOne("SmartWMS.Domain.Entities.BinInventory", "SourceBinInventory")
+                        .WithMany()
+                        .HasForeignKey("SourceBinInventoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SmartWMS.Domain.Entities.BinInventory", "StagingBinInventory")
+                        .WithMany()
+                        .HasForeignKey("StagingBinInventoryId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SmartWMS.Domain.Entities.OutboundAllocation", "Allocation")
+                        .WithMany()
+                        .HasForeignKey("AllocationId", "OrderId")
+                        .HasPrincipalKey("Id", "OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SmartWMS.Domain.Entities.OutboundOrderItem", "OrderItem")
+                        .WithMany()
+                        .HasForeignKey("OrderItemId", "OrderId")
+                        .HasPrincipalKey("Id", "OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Allocation");
+
+                    b.Navigation("OrderItem");
+
+                    b.Navigation("SourceBinInventory");
+
+                    b.Navigation("StagingBinInventory");
+                });
+
             modelBuilder.Entity("SmartWMS.Domain.Entities.InventoryTransaction", b =>
                 {
+                    b.HasOne("SmartWMS.Domain.Entities.BinInventory", "BinInventory")
+                        .WithMany()
+                        .HasForeignKey("BinInventoryId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SmartWMS.Domain.Entities.BinInventory", "DestinationBinInventory")
+                        .WithMany()
+                        .HasForeignKey("DestinationBinInventoryId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SmartWMS.Domain.Entities.FulfilmentOperationRequest", "FulfilmentOperationRequest")
+                        .WithMany()
+                        .HasForeignKey("FulfilmentOperationRequestId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SmartWMS.Domain.Entities.InventoryReservation", "InventoryReservation")
+                        .WithMany()
+                        .HasForeignKey("InventoryReservationId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SmartWMS.Domain.Entities.OutboundOrderItem", "OutboundOrderItem")
+                        .WithMany()
+                        .HasForeignKey("OutboundOrderItemId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SmartWMS.Domain.Entities.OutboundPickRequest", "OutboundPickRequest")
+                        .WithMany()
+                        .HasForeignKey("OutboundPickRequestId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SmartWMS.Domain.Entities.PickTask", "PickTask")
+                        .WithMany()
+                        .HasForeignKey("PickTaskId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("SmartWMS.Domain.Entities.Product", "Product")
                         .WithMany()
                         .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("SmartWMS.Domain.Entities.Shipment", "Shipment")
+                        .WithMany()
+                        .HasForeignKey("ShipmentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("BinInventory");
+
+                    b.Navigation("DestinationBinInventory");
+
+                    b.Navigation("FulfilmentOperationRequest");
+
+                    b.Navigation("InventoryReservation");
+
+                    b.Navigation("OutboundOrderItem");
+
+                    b.Navigation("OutboundPickRequest");
+
+                    b.Navigation("PickTask");
+
                     b.Navigation("Product");
+
+                    b.Navigation("Shipment");
+                });
+
+            modelBuilder.Entity("SmartWMS.Domain.Entities.OutboundAllocation", b =>
+                {
+                    b.HasOne("SmartWMS.Domain.Entities.OutboundIssue", "Order")
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SmartWMS.Domain.Entities.Bin", "SourceBin")
+                        .WithMany()
+                        .HasForeignKey("SourceBinId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SmartWMS.Domain.Entities.Bin", "StagingBin")
+                        .WithMany()
+                        .HasForeignKey("StagingBinId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+
+                    b.Navigation("SourceBin");
+
+                    b.Navigation("StagingBin");
                 });
 
             modelBuilder.Entity("SmartWMS.Domain.Entities.OutboundIssue", b =>
@@ -1094,7 +1985,9 @@ namespace SmartWMS.Infrastructure.Migrations
                 {
                     b.HasOne("SmartWMS.Domain.Entities.OutboundIssue", null)
                         .WithMany("Items")
-                        .HasForeignKey("OutboundIssueId");
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.HasOne("SmartWMS.Domain.Entities.Product", "Product")
                         .WithMany()
@@ -1105,15 +1998,198 @@ namespace SmartWMS.Infrastructure.Migrations
                     b.Navigation("Product");
                 });
 
-            modelBuilder.Entity("SmartWMS.Domain.Entities.ProductSerialNumber", b =>
+            modelBuilder.Entity("SmartWMS.Domain.Entities.OutboundPickRequest", b =>
                 {
+                    b.HasOne("SmartWMS.Domain.Entities.Bin", "Bin")
+                        .WithMany()
+                        .HasForeignKey("BinId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("SmartWMS.Domain.Entities.Product", "Product")
                         .WithMany()
                         .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("SmartWMS.Domain.Entities.Bin", "StagingBin")
+                        .WithMany()
+                        .HasForeignKey("StagingBinId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SmartWMS.Domain.Entities.OutboundAllocation", "Allocation")
+                        .WithMany()
+                        .HasForeignKey("AllocationId", "OrderId")
+                        .HasPrincipalKey("Id", "OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SmartWMS.Domain.Entities.OutboundOrderItem", "OrderItem")
+                        .WithMany()
+                        .HasForeignKey("OrderItemId", "OrderId")
+                        .HasPrincipalKey("Id", "OrderId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Allocation");
+
+                    b.Navigation("Bin");
+
+                    b.Navigation("OrderItem");
+
                     b.Navigation("Product");
+
+                    b.Navigation("StagingBin");
+                });
+
+            modelBuilder.Entity("SmartWMS.Domain.Entities.OutboundPickRequestItem", b =>
+                {
+                    b.HasOne("SmartWMS.Domain.Entities.PickTask", "PickTask")
+                        .WithMany()
+                        .HasForeignKey("PickTaskId", "AllocationId")
+                        .HasPrincipalKey("Id", "AllocationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SmartWMS.Domain.Entities.OutboundPickRequest", "Request")
+                        .WithMany()
+                        .HasForeignKey("RequestId", "AllocationId")
+                        .HasPrincipalKey("RequestId", "AllocationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("PickTask");
+
+                    b.Navigation("Request");
+                });
+
+            modelBuilder.Entity("SmartWMS.Domain.Entities.PickTask", b =>
+                {
+                    b.HasOne("SmartWMS.Domain.Entities.User", "AssignedUser")
+                        .WithMany()
+                        .HasForeignKey("AssignedUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SmartWMS.Domain.Entities.Bin", "SourceBin")
+                        .WithMany()
+                        .HasForeignKey("SourceBinId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SmartWMS.Domain.Entities.Bin", "StagingBin")
+                        .WithMany()
+                        .HasForeignKey("StagingBinId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SmartWMS.Domain.Entities.InventoryReservation", "Reservation")
+                        .WithMany()
+                        .HasForeignKey("ReservationId", "AllocationId")
+                        .HasPrincipalKey("Id", "AllocationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("AssignedUser");
+
+                    b.Navigation("Reservation");
+
+                    b.Navigation("SourceBin");
+
+                    b.Navigation("StagingBin");
+                });
+
+            modelBuilder.Entity("SmartWMS.Domain.Entities.ProductSerialNumber", b =>
+                {
+                    b.HasOne("SmartWMS.Domain.Entities.BinInventory", null)
+                        .WithMany()
+                        .HasForeignKey("BinInventoryId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SmartWMS.Domain.Entities.InboundReceiptItem", "InboundReceiptItem")
+                        .WithMany()
+                        .HasForeignKey("InboundReceiptItemId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SmartWMS.Domain.Entities.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SmartWMS.Domain.Entities.InventoryReservation", "Reservation")
+                        .WithMany()
+                        .HasForeignKey("ReservationId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SmartWMS.Domain.Entities.ShipmentItem", "ShipmentItem")
+                        .WithMany()
+                        .HasForeignKey("ShipmentItemId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("InboundReceiptItem");
+
+                    b.Navigation("Product");
+
+                    b.Navigation("Reservation");
+
+                    b.Navigation("ShipmentItem");
+                });
+
+            modelBuilder.Entity("SmartWMS.Domain.Entities.Shipment", b =>
+                {
+                    b.HasOne("SmartWMS.Domain.Entities.OutboundIssue", "Order")
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SmartWMS.Domain.Entities.Bin", "StagingBin")
+                        .WithMany()
+                        .HasForeignKey("StagingBinId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SmartWMS.Domain.Entities.OutboundAllocation", "Allocation")
+                        .WithMany()
+                        .HasForeignKey("AllocationId", "OrderId")
+                        .HasPrincipalKey("Id", "OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Allocation");
+
+                    b.Navigation("Order");
+
+                    b.Navigation("StagingBin");
+                });
+
+            modelBuilder.Entity("SmartWMS.Domain.Entities.ShipmentItem", b =>
+                {
+                    b.HasOne("SmartWMS.Domain.Entities.BinInventory", "BinInventory")
+                        .WithMany()
+                        .HasForeignKey("BinInventoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SmartWMS.Domain.Entities.Shipment", "Shipment")
+                        .WithMany()
+                        .HasForeignKey("ShipmentId", "AllocationId", "OrderId")
+                        .HasPrincipalKey("Id", "AllocationId", "OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SmartWMS.Domain.Entities.InventoryReservation", "Reservation")
+                        .WithMany()
+                        .HasForeignKey("ReservationId", "AllocationId", "OrderId", "OrderItemId")
+                        .HasPrincipalKey("Id", "AllocationId", "OrderId", "OrderItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("BinInventory");
+
+                    b.Navigation("Reservation");
+
+                    b.Navigation("Shipment");
                 });
 
             modelBuilder.Entity("SmartWMS.Domain.Entities.Warehouse", b =>
@@ -1124,6 +2200,36 @@ namespace SmartWMS.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("DefaultStagingBin");
+                });
+
+            modelBuilder.Entity("SmartWMS.Domain.Entities.Wave", b =>
+                {
+                    b.HasOne("SmartWMS.Domain.Entities.Warehouse", "Warehouse")
+                        .WithMany()
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Warehouse");
+                });
+
+            modelBuilder.Entity("SmartWMS.Domain.Entities.WavePickTask", b =>
+                {
+                    b.HasOne("SmartWMS.Domain.Entities.PickTask", "PickTask")
+                        .WithMany()
+                        .HasForeignKey("PickTaskId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SmartWMS.Domain.Entities.Wave", "Wave")
+                        .WithMany()
+                        .HasForeignKey("WaveId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("PickTask");
+
+                    b.Navigation("Wave");
                 });
 
             modelBuilder.Entity("SmartWMS.Domain.Entities.Zone", b =>

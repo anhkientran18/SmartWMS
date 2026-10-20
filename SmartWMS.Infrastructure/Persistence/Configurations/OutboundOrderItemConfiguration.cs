@@ -8,6 +8,7 @@ public sealed class OutboundOrderItemConfiguration : IEntityTypeConfiguration<Ou
 {
     public void Configure(EntityTypeBuilder<OutboundOrderItem> builder)
     {
+        builder.HasAlternateKey(x => new { x.Id, x.OrderId });
         builder.Property(x => x.TrackingModeSnapshot).HasConversion<int>();
         builder.Property(x => x.ReservedQuantity).HasDefaultValue(0);
         builder.Property(x => x.PickedQuantity).HasDefaultValue(0);

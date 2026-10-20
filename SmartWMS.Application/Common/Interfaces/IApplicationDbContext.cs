@@ -21,5 +21,15 @@ public interface IApplicationDbContext
     DbSet<Customer> Customers { get; }
     DbSet<CycleCountSheet> CycleCountSheets { get; }
     DbSet<CycleCountItem> CycleCountItems { get; }
+    DbSet<OutboundAllocation> OutboundAllocations { get; }
+    DbSet<InventoryReservation> InventoryReservations { get; }
+    DbSet<PickTask> PickTasks { get; }
+    DbSet<Wave> Waves { get; }
+    DbSet<Shipment> Shipments { get; }
+    DbSet<ShipmentItem> ShipmentItems { get; }
+    DbSet<WavePickTask> WavePickTasks { get; }
+    DbSet<OutboundPickRequest> OutboundPickRequests { get; }
+    DbSet<OutboundPickRequestItem> OutboundPickRequestItems { get; }
+    DbSet<FulfilmentOperationRequest> FulfilmentOperationRequests { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }

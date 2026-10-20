@@ -40,6 +40,16 @@ public class ApplicationDbContext : Microsoft.EntityFrameworkCore.DbContext, IAp
     public DbSet<ProductSerialNumber> ProductSerialNumbers { get; set; }
     public DbSet<CycleCountSheet> CycleCountSheets { get; set; }
     public DbSet<CycleCountItem> CycleCountItems { get; set; }
+    public DbSet<OutboundAllocation> OutboundAllocations => Set<OutboundAllocation>();
+    public DbSet<InventoryReservation> InventoryReservations => Set<InventoryReservation>();
+    public DbSet<PickTask> PickTasks => Set<PickTask>();
+    public DbSet<Wave> Waves => Set<Wave>();
+    public DbSet<Shipment> Shipments => Set<Shipment>();
+    public DbSet<ShipmentItem> ShipmentItems => Set<ShipmentItem>();
+    public DbSet<WavePickTask> WavePickTasks => Set<WavePickTask>();
+    public DbSet<OutboundPickRequest> OutboundPickRequests => Set<OutboundPickRequest>();
+    public DbSet<OutboundPickRequestItem> OutboundPickRequestItems => Set<OutboundPickRequestItem>();
+    public DbSet<FulfilmentOperationRequest> FulfilmentOperationRequests => Set<FulfilmentOperationRequest>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

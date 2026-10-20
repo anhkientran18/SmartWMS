@@ -4,6 +4,23 @@ namespace SmartWMS.Domain.Entities;
 
 public class InventoryTransaction
 {
+    // Nullable references preserve legacy history; all workflow relationships restrict deletion.
+    public Guid? OutboundOrderItemId { get; set; }
+    public OutboundOrderItem? OutboundOrderItem { get; set; }
+    public Guid? InventoryReservationId { get; set; }
+    public InventoryReservation? InventoryReservation { get; set; }
+    public Guid? PickTaskId { get; set; }
+    public PickTask? PickTask { get; set; }
+    public Guid? OutboundPickRequestId { get; set; }
+    public OutboundPickRequest? OutboundPickRequest { get; set; }
+    public Guid? FulfilmentOperationRequestId { get; set; }
+    public FulfilmentOperationRequest? FulfilmentOperationRequest { get; set; }
+    public Guid? ShipmentId { get; set; }
+    public Shipment? Shipment { get; set; }
+    public Guid? BinInventoryId { get; set; }
+    public BinInventory? BinInventory { get; set; }
+    public Guid? DestinationBinInventoryId { get; set; }
+    public BinInventory? DestinationBinInventory { get; set; }
     public Guid Id { get; set; }
     public Guid ProductId { get; set; }
     public Product? Product { get; set; }

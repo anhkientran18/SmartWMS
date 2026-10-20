@@ -4,6 +4,14 @@ namespace SmartWMS.Domain.Entities;
 
 public class ProductSerialNumber
 {
+    public Guid? InboundReceiptItemId { get; set; }
+    public InboundReceiptItem? InboundReceiptItem { get; set; }
+    public DateTime? ReceivedAt { get; set; }
+    public Guid? ReservationId { get; set; }
+    public InventoryReservation? Reservation { get; set; }
+    public Guid? ShipmentItemId { get; set; }
+    public ShipmentItem? ShipmentItem { get; set; }
+    public byte[] RowVersion { get; set; } = Array.Empty<byte>();
     public Guid Id { get; set; }
     public Guid ProductId { get; set; }
     public Product? Product { get; set; }

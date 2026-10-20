@@ -9,5 +9,10 @@ public sealed class OutboundIssueConfiguration : IEntityTypeConfiguration<Outbou
     public void Configure(EntityTypeBuilder<OutboundIssue> builder)
     {
         builder.Property(x => x.RowVersion).IsRowVersion();
+        builder.HasMany(x => x.Items)
+            .WithOne()
+            .HasForeignKey(x => x.OrderId)
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }
