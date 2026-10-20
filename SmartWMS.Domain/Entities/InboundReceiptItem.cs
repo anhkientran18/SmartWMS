@@ -3,8 +3,12 @@ using System;
 
 namespace SmartWMS.Domain.Entities;
 
+using SmartWMS.Domain.Enums;
+
 public class InboundReceiptItem : BaseEntity
 {
+    public ProductTrackingMode? TrackingModeSnapshot { get; set; }
+    public byte[] RowVersion { get; set; } = Array.Empty<byte>();
     // Khóa ngoại liên kết ngược về Phiếu nhập tổng
     public Guid InboundReceiptId { get; set; }
     public InboundReceipt InboundReceipt { get; set; } = null!;

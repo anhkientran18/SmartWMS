@@ -6,6 +6,7 @@ namespace SmartWMS.Domain.Entities;
 
 public class InboundReceipt : BaseEntity
 {
+    public byte[] RowVersion { get; set; } = Array.Empty<byte>();
     public string ReceiptNumber { get; set; } = string.Empty;
     public string Status { get; set; } = "Pending";
     public DateTime ExpectedDeliveryDate { get; set; }

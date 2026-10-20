@@ -8,7 +8,9 @@ public class BinInventoryConfiguration : IEntityTypeConfiguration<BinInventory>
 {
     public void Configure(EntityTypeBuilder<BinInventory> builder)
     {
-        builder.ToTable("BinInventories");
+        builder.ToTable("BinInventories", table =>
+            table.HasCheckConstraint("CK_BinInventories_QuantityAndReservation",
+                "[Quantity] >= 0 AND [ReservedQuantity] >= 0 AND [ReservedQuantity] <= [Quantity]"));
 
         builder.HasKey(x => x.Id);
 
@@ -19,6 +21,7 @@ public class BinInventoryConfiguration : IEntityTypeConfiguration<BinInventory>
         builder.Property(x => x.Quantity)
             .IsRequired()
             .HasDefaultValue(0);
+        builder.Property(x => x.ReservedQuantity).IsRequired().HasDefaultValue(0);
 
         builder.Property(x => x.Status)
             .HasConversion<int>()

@@ -102,6 +102,17 @@ namespace SmartWMS.Infrastructure.Migrations
                     b.Property<double>("MaxCapacity")
                         .HasColumnType("float");
 
+                    b.Property<int>("Purpose")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
@@ -118,7 +129,12 @@ namespace SmartWMS.Infrastructure.Migrations
 
                     b.HasIndex("ZoneId");
 
-                    b.ToTable("Bins");
+                    b.ToTable("Bins", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Bins_Occupancy", "[MaxCapacity] >= 0 AND [CurrentOccupancy] >= 0 AND [CurrentOccupancy] <= [MaxCapacity]");
+
+                            t.HasCheckConstraint("CK_Bins_Purpose", "[Purpose] IN (0, 1)");
+                        });
                 });
 
             modelBuilder.Entity("SmartWMS.Domain.Entities.BinInventory", b =>
@@ -161,6 +177,11 @@ namespace SmartWMS.Infrastructure.Migrations
                         .HasColumnType("int")
                         .HasDefaultValue(0);
 
+                    b.Property<int>("ReservedQuantity")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
                         .IsRequired()
@@ -181,7 +202,10 @@ namespace SmartWMS.Infrastructure.Migrations
                     b.HasIndex("BinId", "ProductId", "LotNumber", "Status")
                         .IsUnique();
 
-                    b.ToTable("BinInventories", (string)null);
+                    b.ToTable("BinInventories", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_BinInventories_QuantityAndReservation", "[Quantity] >= 0 AND [ReservedQuantity] >= 0 AND [ReservedQuantity] <= [Quantity]");
+                        });
                 });
 
             modelBuilder.Entity("SmartWMS.Domain.Entities.Customer", b =>
@@ -378,6 +402,12 @@ namespace SmartWMS.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -431,13 +461,25 @@ namespace SmartWMS.Infrastructure.Migrations
                     b.Property<int>("QuantityReceived")
                         .HasColumnType("int");
 
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int?>("TrackingModeSnapshot")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("InboundReceiptId");
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("InboundReceiptItems");
+                    b.ToTable("InboundReceiptItems", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_InboundReceiptItems_TrackingMode", "[TrackingModeSnapshot] IS NULL OR [TrackingModeSnapshot] IN (0, 1, 2)");
+                        });
                 });
 
             modelBuilder.Entity("SmartWMS.Domain.Entities.InventoryTransaction", b =>
@@ -524,6 +566,12 @@ namespace SmartWMS.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -552,15 +600,44 @@ namespace SmartWMS.Infrastructure.Migrations
                     b.Property<Guid?>("OutboundIssueId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<int>("PickedQuantity")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
 
+                    b.Property<int>("ReservedQuantity")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int>("ShippedQuantity")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("StagedQuantity")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("TrackingModeSnapshot")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -568,7 +645,12 @@ namespace SmartWMS.Infrastructure.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("OutboundOrderItems");
+                    b.ToTable("OutboundOrderItems", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_OutboundOrderItems_Progress", "[ReservedQuantity] >= 0 AND [ShippedQuantity] >= 0 AND [ShippedQuantity] <= [StagedQuantity] AND [StagedQuantity] <= [PickedQuantity] AND [PickedQuantity] <= [Quantity] AND [ReservedQuantity] <= [Quantity] - [ShippedQuantity]");
+
+                            t.HasCheckConstraint("CK_OutboundOrderItems_TrackingMode", "[TrackingModeSnapshot] IS NULL OR [TrackingModeSnapshot] IN (0, 1, 2)");
+                        });
                 });
 
             modelBuilder.Entity("SmartWMS.Domain.Entities.Product", b =>
@@ -617,6 +699,11 @@ namespace SmartWMS.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int>("TrackingMode")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
                     b.Property<string>("Unit")
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
@@ -632,7 +719,10 @@ namespace SmartWMS.Infrastructure.Migrations
                     b.HasIndex("SKU")
                         .IsUnique();
 
-                    b.ToTable("Products");
+                    b.ToTable("Products", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Products_TrackingMode", "[TrackingMode] IN (0, 1, 2)");
+                        });
                 });
 
             modelBuilder.Entity("SmartWMS.Domain.Entities.ProductSerialNumber", b =>
@@ -794,6 +884,9 @@ namespace SmartWMS.Infrastructure.Migrations
                     b.Property<string>("CreatedBy")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<Guid?>("DefaultStagingBinId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
@@ -809,6 +902,8 @@ namespace SmartWMS.Infrastructure.Migrations
                         .HasColumnType("nvarchar(200)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("DefaultStagingBinId");
 
                     b.ToTable("Warehouses");
                 });
@@ -1019,6 +1114,16 @@ namespace SmartWMS.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("SmartWMS.Domain.Entities.Warehouse", b =>
+                {
+                    b.HasOne("SmartWMS.Domain.Entities.Bin", "DefaultStagingBin")
+                        .WithMany()
+                        .HasForeignKey("DefaultStagingBinId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("DefaultStagingBin");
                 });
 
             modelBuilder.Entity("SmartWMS.Domain.Entities.Zone", b =>

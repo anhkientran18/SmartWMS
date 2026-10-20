@@ -20,6 +20,7 @@ public class BinInventory : BaseEntity
     public DateTime? ExpirationDate { get; set; }
 
     public int Quantity { get; set; }
+    public int ReservedQuantity { get; set; }
 
     // 🌟 TỐI ƯU KIẾN TRÚC: Ép tuân thủ Enum InventoryStatus (Available, Blocked, Damaged...) 
     // Loại bỏ hoàn toàn trường chuỗi thô StockStatus để sạch DB

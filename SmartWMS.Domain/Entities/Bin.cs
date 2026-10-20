@@ -3,8 +3,12 @@ using System.Collections.Generic; // BỔ SUNG: Thư viện quản lý danh sác
 
 namespace SmartWMS.Domain.Entities;
 
+using SmartWMS.Domain.Enums;
+
 public class Bin
 {
+    public BinPurpose Purpose { get; set; } = BinPurpose.Storage;
+    public byte[] RowVersion { get; set; } = Array.Empty<byte>();
     public Guid Id { get; set; }
     public string Code { get; set; } = string.Empty;
     public Guid ZoneId { get; set; }

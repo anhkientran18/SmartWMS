@@ -4,8 +4,11 @@ using System.Collections.Generic;
 
 namespace SmartWMS.Domain.Entities;
 
+using SmartWMS.Domain.Enums;
+
 public class Product : BaseEntity
 {
+    public ProductTrackingMode TrackingMode { get; set; } = ProductTrackingMode.None;
     public string SKU { get; set; } = string.Empty;
     public string Barcode { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;

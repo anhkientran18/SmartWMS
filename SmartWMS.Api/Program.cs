@@ -19,6 +19,7 @@ using SmartWMS.Api.Middleware;
 using SmartWMS.Api.Middlewares;
 using SmartWMS.Application;
 using SmartWMS.Application.Common.Interfaces;
+using SmartWMS.Application.Common.Models.Configurations;
 using SmartWMS.Domain.Entities;
 using SmartWMS.Infrastructure;
 using SmartWMS.Infrastructure.Persistence.DbContext;
@@ -27,6 +28,12 @@ using SmartWMS.Infrastructure.Services;
 using SmartWMS.Infrastructure.SignalR;
 
 var builder = WebApplication.CreateBuilder(args);
+var databaseInitialization = builder.Configuration
+    .GetSection(DatabaseInitializationSettings.SectionName).Get<DatabaseInitializationSettings>() ?? new();
+var prepareHangfireSchema = builder.Configuration.GetValue<bool>("Hangfire:PrepareSchemaIfNecessary");
+var enableHangfireServer = builder.Configuration.GetValue<bool>("Hangfire:EnableServer");
+var registerRecurringJobs = builder.Configuration.GetValue<bool>("Hangfire:RegisterRecurringJobsOnStartup");
+databaseInitialization.Validate(builder.Environment.EnvironmentName, prepareHangfireSchema);
 
 // ============================================================================
 // 1. GHI LOG HỆ THỐNG VỚI SERILOG
@@ -71,6 +78,7 @@ builder.Services.AddHangfire(config => config
     .UseRecommendedSerializerSettings()
     .UseSqlServerStorage(hangfireConnectionString, new SqlServerStorageOptions
     {
+        PrepareSchemaIfNecessary = prepareHangfireSchema,
         CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
         SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
         QueuePollInterval = TimeSpan.Zero,
@@ -78,10 +86,13 @@ builder.Services.AddHangfire(config => config
         DisableGlobalLocks = true
     }));
 
-builder.Services.AddHangfireServer(options =>
+if (enableHangfireServer)
 {
-    options.WorkerCount = Environment.ProcessorCount * 2;
-});
+    builder.Services.AddHangfireServer(options =>
+    {
+        options.WorkerCount = Environment.ProcessorCount * 2;
+    });
+}
 
 // ============================================================================
 // 3. CẤU HÌNH JWT AUTHENTICATION
@@ -164,6 +175,9 @@ builder.Services.AddHealthChecks()
 
 var app = builder.Build();
 
+// Run schema preflight before resolving Hangfire storage, seeding or starting jobs.
+await InitializeDatabaseAsync(app, databaseInitialization);
+
 // ============================================================================
 // 6. THỨ TỰ THI HÀNH PIPELINE & MIDDLEWARES
 // ============================================================================
@@ -223,8 +237,10 @@ app.MapHealthChecks("/healthz", new HealthCheckOptions
 // ============================================================================
 try
 {
-    await SeedDatabaseAsync(app);
-    RegisterBackgroundJobs(app);
+    if (registerRecurringJobs)
+    {
+        RegisterBackgroundJobs(app);
+    }
     Log.Information("🚀 Đang khởi chạy máy chủ Web API SmartWMS Center...");
     app.Run();
 }
@@ -241,7 +257,7 @@ finally
 // ============================================================================
 // CÁC HÀM TIỆN ÍCH BỔ TRỢ
 // ============================================================================
-static async Task SeedDatabaseAsync(WebApplication app)
+static async Task InitializeDatabaseAsync(WebApplication app, DatabaseInitializationSettings settings)
 {
     using var scope = app.Services.CreateScope();
     var services = scope.ServiceProvider;
@@ -249,14 +265,29 @@ static async Task SeedDatabaseAsync(WebApplication app)
     {
         var context = services.GetRequiredService<ApplicationDbContext>();
 
-        if (app.Environment.IsDevelopment())
+        if (!await context.Database.CanConnectAsync())
+            throw new InvalidOperationException("Database is unavailable. Create/update it explicitly with the approved EF command.");
+
+        if (context.Database.HasPendingModelChanges())
+            throw new InvalidOperationException("The EF model differs from its migration snapshot. Review and scaffold the migration before startup.");
+
+        var pending = (await context.Database.GetPendingMigrationsAsync()).ToArray();
+        if (pending.Length > 0 && !settings.ApplyMigrationsOnStartup)
+            throw new InvalidOperationException(
+                "Pending EF migrations: " + string.Join(", ", pending)
+                + ". Apply them explicitly with the approved EF command; automatic migration is disabled.");
+
+        if (pending.Length > 0 && settings.ApplyMigrationsOnStartup)
         {
             await context.Database.MigrateAsync();
         }
 
-        var embeddingService = services.GetRequiredService<IEmbeddingService>();
-        var passwordHasher = services.GetRequiredService<IPasswordHasher>();
-        await DbInitializer.SeedAsync(context, passwordHasher, app.Configuration, embeddingService);
+        if (settings.SeedOnStartup)
+        {
+            var embeddingService = services.GetRequiredService<IEmbeddingService>();
+            var passwordHasher = services.GetRequiredService<IPasswordHasher>();
+            await DbInitializer.SeedAsync(context, passwordHasher, app.Configuration, embeddingService);
+        }
     }
     catch (Exception ex)
     {

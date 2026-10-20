@@ -6,6 +6,7 @@ namespace SmartWMS.Domain.Entities;
 
 public class OutboundIssue : BaseEntity
 {
+    public byte[] RowVersion { get; set; } = Array.Empty<byte>();
     public string OrderNumber { get; set; } = string.Empty;
     public string Status { get; set; } = "Pending";
     public DateTime ExpectedShipDate { get; set; }
