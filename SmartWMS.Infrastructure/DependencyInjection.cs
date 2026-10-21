@@ -73,6 +73,7 @@ public static class InfrastructureConfiguration
         // 9. Đăng ký Generic Repository và UnitOfWork
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<IInventoryMutationCoordinator, InventoryMutationCoordinator>();
 
         return services;
     }

@@ -1,99 +1,88 @@
-﻿using MediatR;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
 using SmartWMS.Application.Common.Constants;
 using SmartWMS.Application.Common.Interfaces;
+using SmartWMS.Application.Common.Inventory;
 using SmartWMS.Application.Common.Models;
-using SmartWMS.Application.Features.InventoryTransfers.Specifications.Commands;
 using SmartWMS.Domain.Entities;
 using SmartWMS.Domain.Enums;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace SmartWMS.Application.Features.InventoryTransfers.Commands.CreateInventoryTransfer;
 
-public sealed class CreateInventoryTransferCommandHandler : IRequestHandler<CreateInventoryTransferCommand, Result<Guid>>
+public sealed class CreateInventoryTransferCommandHandler(
+    IApplicationDbContext context, IInventoryMutationCoordinator coordinator)
+    : IRequestHandler<CreateInventoryTransferCommand, Result<Guid>>
 {
-    private readonly IUnitOfWork _unitOfWork;
-
-    public CreateInventoryTransferCommandHandler(IUnitOfWork unitOfWork)
+    public async Task<Result<Guid>> Handle(CreateInventoryTransferCommand request, CancellationToken ct)
     {
-        _unitOfWork = unitOfWork;
-    }
-
-    public async Task<Result<Guid>> Handle(CreateInventoryTransferCommand request, CancellationToken cancellationToken)
-    {
-        var binRepo = _unitOfWork.Repository<Bin>();
-        var invRepo = _unitOfWork.Repository<BinInventory>();
-        var transRepo = _unitOfWork.Repository<InventoryTransaction>();
-
         var req = request.RequestData;
-        var lotNumber = string.IsNullOrWhiteSpace(req.LotNumber) ? "LOT-DEFAULT" : req.LotNumber;
-
-        // 1. Kiểm tra tồn kho tại Ô Kệ Nguồn
-        var sourceSpec = new SourceBinInventorySpec(req.SourceBinId, req.ProductId, lotNumber);
-        var sourceInv = await invRepo.GetEntityWithSpecAsync(sourceSpec, cancellationToken);
-
-        if (sourceInv == null || sourceInv.Quantity < req.TransferQuantity)
-            return Result<Guid>.Failure(ErrorCodeConstants.ValidationError, "Ô kệ nguồn không đủ số lượng tồn kho khả dụng để thực hiện luân chuyển.");
-
-        // 2. Lấy Ô Kệ Đích để kiểm tra sức chứa
-        var destBinSpec = new DestinationBinWithInventorySpec(req.DestinationBinId);
-        var destBin = await binRepo.GetEntityWithSpecAsync(destBinSpec, cancellationToken);
-
-        if (destBin == null)
-            return Result<Guid>.Failure(ErrorCodeConstants.ValidationError, "Ô kệ đích không tồn tại hoặc đã bị tháo dỡ.");
-
-        if (destBin.CurrentOccupancy + req.TransferQuantity > destBin.MaxCapacity)
-            return Result<Guid>.Failure(ErrorCodeConstants.ValidationError, $"Ô kệ đích {destBin.Code} không đủ sức chứa cho lượng hàng này.");
-
-        // 3. Thực hiện Trừ hàng Kệ Nguồn
-        sourceInv.Quantity -= req.TransferQuantity;
-        if (sourceInv.Bin != null) sourceInv.Bin.CurrentOccupancy -= req.TransferQuantity;
-        invRepo.Update(sourceInv);
-
-        // 4. Thực hiện Cộng hàng Kệ Đích
-        var destInvSpec = new SourceBinInventorySpec(req.DestinationBinId, req.ProductId, lotNumber);
-        var destInv = await invRepo.GetEntityWithSpecAsync(destInvSpec, cancellationToken);
-
-        if (destInv != null)
+        if (req == null || req.TransferQuantity <= 0 || req.SourceBinId == req.DestinationBinId)
+            return Invalid("Số lượng phải dương và ô nguồn phải khác ô đích.");
+        await using var transaction = await coordinator.BeginAsync(ct);
+        try
         {
-            destInv.Quantity += req.TransferQuantity;
-            invRepo.Update(destInv);
-        }
-        else
-        {
-            await invRepo.AddAsync(new BinInventory
+            var product = await context.Products.AsNoTracking().SingleOrDefaultAsync(x => x.Id == req.ProductId && !x.IsDeleted, ct);
+            if (product == null || product.TrackingMode == ProductTrackingMode.Serial)
+                return Invalid("Sản phẩm không hợp lệ hoặc cần hợp đồng luân chuyển chỉ rõ serial.");
+            // Read bins and inventory identities in a stable order for opposing transfers.
+            var bins = new Dictionary<Guid, Bin>();
+            foreach (var id in new[] { req.SourceBinId, req.DestinationBinId }.OrderBy(x => x))
             {
-                Id = Guid.NewGuid(),
-                BinId = req.DestinationBinId,
-                ProductId = req.ProductId,
-                LotNumber = lotNumber,
-                Quantity = req.TransferQuantity,
-                ExpirationDate = sourceInv.ExpirationDate,
-                Status = InventoryStatus.Available
-            }, cancellationToken);
+                var bin = await InventoryMutationRules.ValidBinAsync(context, id, ct);
+                if (bin == null) return Invalid("Hierarchy Bin/Zone/Warehouse không hợp lệ.");
+                bins.Add(id, bin);
+            }
+            var lot = InventoryMutationRules.Lot(req.LotNumber);
+            var rows = new Dictionary<Guid, List<BinInventory>>();
+            foreach (var id in bins.Keys.OrderBy(x => x))
+                rows[id] = await coordinator.LockLotAsync(id, req.ProductId, lot, ct);
+            var sources = rows[req.SourceBinId].Where(x => x.Status == InventoryStatus.Available).ToList();
+            var destinations = rows[req.DestinationBinId].Where(x => x.Status == InventoryStatus.Available).ToList();
+            if (sources.Count != 1 || destinations.Count > 1) return Invalid("Không xác định duy nhất tồn kho nguồn/đích.");
+            var source = sources[0];
+            if (!string.IsNullOrWhiteSpace(source.LpnCode))
+                return Invalid("Không thể luân chuyển theo số lượng đối với tồn kho có LPN.");
+            var destination = destinations.SingleOrDefault();
+            if (!InventoryMutationRules.ValidStock(source) || (long)source.Quantity - source.ReservedQuantity < req.TransferQuantity)
+                return Invalid("Ô nguồn không đủ số lượng khả dụng (Quantity - ReservedQuantity).");
+            if (destination != null && (!InventoryMutationRules.ValidStock(destination) ||
+                destination.ExpirationDate != source.ExpirationDate || !string.Equals(destination.LpnCode, source.LpnCode, StringComparison.Ordinal)))
+                return Invalid("Không thể gộp tồn kho có expiry/LPN khác nhau hoặc reservation không hợp lệ.");
+            long nextDestination = (long)(destination?.Quantity ?? 0) + req.TransferQuantity;
+            var sourceBin = bins[req.SourceBinId];
+            var destinationBin = bins[req.DestinationBinId];
+            double sourceOccupancy = sourceBin.CurrentOccupancy - req.TransferQuantity;
+            double destinationOccupancy = destinationBin.CurrentOccupancy + req.TransferQuantity;
+            if (nextDestination > int.MaxValue || !InventoryMutationRules.ValidOccupancy(sourceBin, sourceOccupancy) ||
+                !InventoryMutationRules.ValidOccupancy(destinationBin, destinationOccupancy))
+                return Invalid("Số lượng hoặc sức chứa/occupancy vượt giới hạn hợp lệ.");
+
+            if (destination == null)
+            {
+                destination = new BinInventory { Id = Guid.NewGuid(), BinId = req.DestinationBinId, ProductId = req.ProductId,
+                    LotNumber = source.LotNumber, Status = InventoryStatus.Available,
+                    ExpirationDate = source.ExpirationDate };
+                context.BinInventories.Add(destination);
+            }
+            source.Quantity -= req.TransferQuantity;
+            destination.Quantity = (int)nextDestination;
+            sourceBin.CurrentOccupancy = sourceOccupancy;
+            destinationBin.CurrentOccupancy = destinationOccupancy;
+            var idTransaction = Guid.NewGuid();
+            context.InventoryTransactions.Add(new InventoryTransaction { Id = idTransaction, ProductId = req.ProductId,
+                BinInventoryId = source.Id, DestinationBinInventoryId = destination.Id,
+                TransactionType = "TRANSFER", QuantityChanged = req.TransferQuantity,
+                SourceBinCode = sourceBin.Code, DestinationBinCode = destinationBin.Code,
+                ReasonCode = req.Reason, CreatedBy = "WarehouseStaff", CreatedAt = DateTime.UtcNow });
+            await context.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+            return Result<Guid>.Success(idTransaction, "Luân chuyển nội bộ thành công.");
         }
-
-        destBin.CurrentOccupancy += req.TransferQuantity;
-        binRepo.Update(destBin);
-
-        // 5. Ghi Sổ cái (InventoryTransaction)
-        var transactionId = Guid.NewGuid();
-        await transRepo.AddAsync(new InventoryTransaction
+        catch (Exception ex) when (coordinator.IsConflict(ex))
         {
-            Id = transactionId,
-            ProductId = req.ProductId,
-            TransactionType = "TRANSFER",
-            QuantityChanged = req.TransferQuantity,
-            SourceBinCode = sourceInv.Bin?.Code ?? req.SourceBinId.ToString(),
-            DestinationBinCode = destBin.Code ?? req.DestinationBinId.ToString(),
-            ReasonCode = req.Reason,
-            CreatedBy = "WarehouseStaff",
-            CreatedAt = DateTime.UtcNow
-        }, cancellationToken);
-
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-        return Result<Guid>.Success(transactionId, "Luân chuyển nội bộ thành công.");
+            await transaction.RollbackAsync();
+            return Result<Guid>.Failure(ErrorCodeConstants.Conflict, "Tồn kho đã thay đổi đồng thời; hãy tải lại dữ liệu.");
+        }
     }
+    private static Result<Guid> Invalid(string message) => Result<Guid>.Failure(ErrorCodeConstants.ValidationError, message);
 }

@@ -1,60 +1,58 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
-using SmartWMS.Application.Common.Interfaces;
-using SmartWMS.Application.Common.Models;
-using SmartWMS.Domain.Enums; // 🌟 BỔ SUNG: Import namespace chứa Enum để xử lý đồng bộ
 using Microsoft.Extensions.Logging;
-using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
+using SmartWMS.Application.Common.Constants;
+using SmartWMS.Application.Common.Interfaces;
+using SmartWMS.Application.Common.Inventory;
+using SmartWMS.Application.Common.Models;
+using SmartWMS.Domain.Enums;
 
 namespace SmartWMS.Application.Features.InventoryManagement.Commands.LockExpiredStock;
 
-// Bộ máy xử lý rà soát thời gian thực hạn dùng của từng mã lô hàng (FEFO Engine)
-public class LockExpiredStockCommandHandler : IRequestHandler<LockExpiredStockCommand, Result<int>>
+public sealed class LockExpiredStockCommandHandler(IApplicationDbContext context,
+    ILogger<LockExpiredStockCommandHandler> logger, IInventoryMutationCoordinator coordinator)
+    : IRequestHandler<LockExpiredStockCommand, Result<int>>
 {
-    private readonly IApplicationDbContext _context;
-    private readonly ILogger<LockExpiredStockCommandHandler> _logger;
-
-    public LockExpiredStockCommandHandler(IApplicationDbContext context, ILogger<LockExpiredStockCommandHandler> logger)
+    public async Task<Result<int>> Handle(LockExpiredStockCommand request, CancellationToken ct)
     {
-        _context = context;
-        _logger = logger;
-    }
-
-    public async Task<Result<int>> Handle(LockExpiredStockCommand request, CancellationToken cancellationToken)
-    {
-        // Thiết lập biên độ cảnh báo an toàn của doanh nghiệp: Thời gian hiện tại + 30 ngày
-        DateTime warningThreshold = DateTime.UtcNow.AddDays(30);
-
-        // 1. Quét tìm toàn bộ các lô hàng khả dụng (Available) đã chạm hoặc vượt ngưỡng ngày hết hạn
-        var expiredLots = await _context.BinInventories
-            .Where(x => x.Status == InventoryStatus.Available && // 🌟 ĐÃ SỬA: So sánh với Enum thay vì string thô
-                        x.ExpirationDate != null &&
-                        x.ExpirationDate <= warningThreshold)
-            .ToListAsync(cancellationToken);
-
-        if (!expiredLots.Any())
+        var threshold = DateTime.UtcNow.AddDays(30);
+        int affected = 0, skipped = 0;
+        await using (var transaction = await coordinator.BeginAsync(ct))
         {
-            return Result<int>.Success(0, "Hệ thống an toàn. Không phát hiện lô hàng nào bị cận hạn hoặc hết hạn.");
+            try
+            {
+                var candidates = await context.BinInventories.AsNoTracking()
+                    .Where(x => x.Status == InventoryStatus.Available && x.ExpirationDate != null && x.ExpirationDate <= threshold)
+                    .OrderBy(x => x.BinId).ThenBy(x => x.ProductId).ThenBy(x => x.LotNumber).ToListAsync(ct);
+                foreach (var candidate in candidates)
+                {
+                    var rows = await coordinator.LockLotAsync(candidate.BinId, candidate.ProductId,
+                        InventoryMutationRules.Lot(candidate.LotNumber), ct);
+                    var stock = rows.Single(x => x.Id == candidate.Id);
+                    if (stock.Status != InventoryStatus.Available || stock.ExpirationDate == null || stock.ExpirationDate > threshold)
+                        continue;
+                    if (!InventoryMutationRules.ValidStock(stock) || stock.ReservedQuantity > 0 ||
+                        rows.Any(x => x.Id != stock.Id && x.Status == InventoryStatus.Expired) ||
+                        await coordinator.HasWorkflowAsync(stock, ct))
+                    {
+                        skipped++;
+                        logger.LogWarning("Expiry command skipped inventory {InventoryId}: reservation, workflow, invalid quantity or target identity collision.", stock.Id);
+                        continue;
+                    }
+                    stock.Status = InventoryStatus.Expired;
+                    affected++;
+                }
+                await context.SaveChangesAsync(ct);
+                await transaction.CommitAsync(ct);
+            }
+            catch (Exception ex) when (coordinator.IsConflict(ex))
+            {
+                await transaction.RollbackAsync();
+                logger.LogWarning(ex, "Expiry command batch rolled back; no inventory changes committed.");
+                return Result<int>.Failure(ErrorCodeConstants.Conflict, "Batch expiry đã rollback do xung đột; không có thay đổi được commit.");
+            }
         }
-
-        int affectedRows = 0;
-        foreach (var lot in expiredLots)
-        {
-            // 🌟 ĐÃ SỬA: Thay đổi sang thuộc tính Status và gán bằng kiểu Enum Expired chuẩn hóa
-            lot.Status = InventoryStatus.Expired;
-            affectedRows++;
-
-            // Ghi log cấu trúc phục vụ giám sát hạ tầng
-            _logger.LogWarning("⚠️ [SmartWMS SAFETY] Đã đóng băng lô hàng {Lot} của sản phẩm ID: {Product}. Lý do: Hạn dùng {Date} rơi vào vùng nguy hiểm.",
-                lot.LotNumber, lot.ProductId, lot.ExpirationDate);
-        }
-
-        // 2. Đồng bộ trạng thái mới xuống Database
-        await _context.SaveChangesAsync(cancellationToken);
-
-        return Result<int>.Success(affectedRows, $"Hệ thống đã tự động khóa bảo vệ thành công {affectedRows} lô hàng.");
+        logger.LogInformation("Expiry command committed {Affected} inventory rows; skipped {Skipped}.", affected, skipped);
+        return Result<int>.Success(affected, $"Đã khóa {affected} lô hàng; bỏ qua {skipped} lô hàng.");
     }
 }

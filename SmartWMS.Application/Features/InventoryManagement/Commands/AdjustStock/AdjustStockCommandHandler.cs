@@ -1,93 +1,61 @@
-﻿using MediatR;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+using SmartWMS.Application.Common.Constants;
 using SmartWMS.Application.Common.Interfaces;
+using SmartWMS.Application.Common.Inventory;
 using SmartWMS.Application.Common.Models;
-using SmartWMS.Application.Features.InventoryManagement.Specifications.Commands;
 using SmartWMS.Domain.Entities;
 using SmartWMS.Domain.Enums;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace SmartWMS.Application.Features.InventoryManagement.Commands.AdjustStock;
 
-public class AdjustStockCommandHandler : IRequestHandler<AdjustStockCommand, Result<bool>>
+public sealed class AdjustStockCommandHandler(IApplicationDbContext context, IInventoryMutationCoordinator coordinator)
+    : IRequestHandler<AdjustStockCommand, Result<bool>>
 {
-    private readonly IUnitOfWork _unitOfWork;
-
-    public AdjustStockCommandHandler(IUnitOfWork unitOfWork)
-    {
-        _unitOfWork = unitOfWork;
-    }
-
-    public async Task<Result<bool>> Handle(AdjustStockCommand request, CancellationToken cancellationToken)
+    public async Task<Result<bool>> Handle(AdjustStockCommand request, CancellationToken ct)
     {
         var req = request.RequestData;
-        var binRepo = _unitOfWork.Repository<Bin>();
-        var invRepo = _unitOfWork.Repository<BinInventory>();
-        var transRepo = _unitOfWork.Repository<InventoryTransaction>();
-
-        // 1. Kéo dữ liệu Ô kệ lên kiểm tra
-        var bin = await binRepo.GetEntityWithSpecAsync(new BinForAdjustSpec(req.BinId), cancellationToken);
-        if (bin == null) return Result<bool>.Failure("Vị trí ô kệ không tồn tại hoặc đã bị tháo dỡ.");
-
-        // 2. Kéo dữ liệu Tồn kho hiện tại lên
-        var inventory = await invRepo.GetEntityWithSpecAsync(new BinInventoryForAdjustSpec(req.BinId, req.ProductId, req.LotNumber), cancellationToken);
-
-        // TH 1: ĐIỀU CHỈNH TĂNG (+)
-        if (req.AdjustmentQuantity > 0)
+        if (req == null || req.AdjustmentQuantity == 0) return Invalid("Số lượng điều chỉnh phải khác 0.");
+        await using var transaction = await coordinator.BeginAsync(ct);
+        try
         {
-            if (bin.CurrentOccupancy + req.AdjustmentQuantity > bin.MaxCapacity)
-                return Result<bool>.Failure($"Kệ {bin.Code} không đủ sức chứa cho lượng hàng điểu chỉnh tăng.");
-
-            if (inventory == null)
+            var product = await context.Products.AsNoTracking().SingleOrDefaultAsync(x => x.Id == req.ProductId && !x.IsDeleted, ct);
+            if (product == null || product.TrackingMode == ProductTrackingMode.Serial)
+                return Invalid("Sản phẩm không hợp lệ hoặc cần serial reconciliation.");
+            var bin = await InventoryMutationRules.ValidBinAsync(context, req.BinId, ct);
+            if (bin == null) return Invalid("Hierarchy Bin/Zone/Warehouse không hợp lệ.");
+            var lot = InventoryMutationRules.Lot(req.LotNumber);
+            var rows = await coordinator.LockLotAsync(req.BinId, req.ProductId, lot, ct);
+            if (rows.Count > 1) return Invalid("Lookup tồn kho mơ hồ theo Lot/Status; không thể tự chọn một dòng.");
+            var stock = rows.SingleOrDefault();
+            if (stock != null && !InventoryMutationRules.ValidStock(stock)) return Invalid("Tồn kho/reservation không hợp lệ.");
+            long next = (long)(stock?.Quantity ?? 0) + req.AdjustmentQuantity;
+            double occupancy = bin.CurrentOccupancy + req.AdjustmentQuantity;
+            if (next < (stock?.ReservedQuantity ?? 0) || next > int.MaxValue ||
+                !InventoryMutationRules.ValidOccupancy(bin, occupancy))
+                return Invalid("Điều chỉnh vi phạm reservation, giới hạn số lượng hoặc sức chứa/occupancy.");
+            if (stock == null)
             {
-                await invRepo.AddAsync(new BinInventory
-                {
-                    Id = Guid.NewGuid(),
-                    BinId = req.BinId,
-                    ProductId = req.ProductId,
-                    LotNumber = string.IsNullOrWhiteSpace(req.LotNumber) ? "LOT-DEFAULT" : req.LotNumber,
-                    Quantity = req.AdjustmentQuantity,
-                    Status = InventoryStatus.Available
-                }, cancellationToken);
+                stock = new BinInventory { Id = Guid.NewGuid(), BinId = req.BinId, ProductId = req.ProductId,
+                    LotNumber = lot, Status = InventoryStatus.Available };
+                context.BinInventories.Add(stock);
             }
-            else
-            {
-                inventory.Quantity += req.AdjustmentQuantity;
-                invRepo.Update(inventory);
-            }
+            stock.Quantity = (int)next;
+            bin.CurrentOccupancy = occupancy;
+            context.InventoryTransactions.Add(new InventoryTransaction { Id = Guid.NewGuid(), ProductId = req.ProductId,
+                BinInventoryId = stock.Id, TransactionType = "ADJUSTMENT", QuantityChanged = req.AdjustmentQuantity,
+                SourceBinCode = req.AdjustmentQuantity < 0 ? bin.Code : "N/A",
+                DestinationBinCode = req.AdjustmentQuantity > 0 ? bin.Code : "N/A",
+                ReasonCode = req.ReasonCode, CreatedBy = "WarehouseManager", CreatedAt = DateTime.UtcNow });
+            await context.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+            return Result<bool>.Success(true, "Điều chỉnh tồn kho thành công.");
         }
-        // TH 2: ĐIỀU CHỈNH GIẢM (-)
-        else
+        catch (Exception ex) when (coordinator.IsConflict(ex))
         {
-            if (inventory == null || inventory.Quantity < Math.Abs(req.AdjustmentQuantity))
-                return Result<bool>.Failure("Tồn kho hiện tại không đủ để thực hiện điều chỉnh giảm theo yêu cầu.");
-
-            inventory.Quantity += req.AdjustmentQuantity; // Vì req.AdjustmentQuantity là số âm nên += sẽ thành trừ
-            invRepo.Update(inventory);
+            await transaction.RollbackAsync();
+            return Result<bool>.Failure(ErrorCodeConstants.Conflict, "Tồn kho đã thay đổi đồng thời; hãy tải lại dữ liệu.");
         }
-
-        // 3. Cập nhật sức chứa của Kệ
-        bin.CurrentOccupancy += req.AdjustmentQuantity;
-        binRepo.Update(bin);
-
-        // 4. Ghi Sổ cái (Audit Log)
-        await transRepo.AddAsync(new InventoryTransaction
-        {
-            Id = Guid.NewGuid(),
-            ProductId = req.ProductId,
-            TransactionType = TransactionType.Adjustment.ToString().ToUpper(),
-            QuantityChanged = req.AdjustmentQuantity,
-            SourceBinCode = req.AdjustmentQuantity < 0 ? bin.Code : "N/A",
-            DestinationBinCode = req.AdjustmentQuantity > 0 ? bin.Code : "N/A",
-            ReasonCode = req.ReasonCode,
-            CreatedBy = "WarehouseManager", // Theo RBAC của bạn
-            CreatedAt = DateTime.UtcNow
-        }, cancellationToken);
-
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-        string actionName = req.AdjustmentQuantity > 0 ? "tăng" : "giảm";
-        return Result<bool>.Success(true, $"Đã điều chỉnh {actionName} {Math.Abs(req.AdjustmentQuantity)} sản phẩm thành công.");
     }
+    private static Result<bool> Invalid(string message) => Result<bool>.Failure(ErrorCodeConstants.ValidationError, message);
 }
