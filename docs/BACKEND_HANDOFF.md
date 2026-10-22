@@ -1,6 +1,15 @@
 # SmartWMS backend handoff — 2026-10-22 (Asia/Saigon)
 
-> Trạng thái hiện hành sau B2: xem [PHASE_B2.md](PHASE_B2.md). B1 implementation đã commit `5a7377bf353ede47958dcdfa96f52015916f3152`, docs `b668e3cdeddc1c0b3389d131bb8e00957e77a2bb`; receive Stable trong scope None/Lot không LPN, xem [PHASE_B1_INBOUND.md](PHASE_B1_INBOUND.md).
+> Trạng thái mới nhất B3 trong working tree, chưa commit: xem [PHASE_B3.md](PHASE_B3.md) và manifest cuối tài liệu. Checkpoint đã commit gần nhất vẫn là B2 `ae171fcef83d038f9678c39470bd15c6de7f8aac`. Receive B1 vẫn Stable trong scope None/Lot không LPN; các phần audit cũ phía dưới là lịch sử.
+
+## Cập nhật B3 — chờ review, chưa commit
+
+- Direct lifecycle mới: Pending → Allocated → Picked → Packed → Shipped; whole-order, một source bin, None/Lot không LPN. Allocation reserve thật theo ATP, quantity pick consume reserved/physical/occupancy, pack/ship không deduct lần hai; allocated cancel release atomic, sau Pick không reversal.
+- Một forward migration `20261022132945_AddDirectPickWorkflow`: source31 migrations, IsDirectPick + mode FK/checks tách direct/staged, snapshot lot/expiry; staged schema/invariants cũ được giữ. Không sửa historical migrations.
+- SmartWMS_DB giữ checkpoint30/read-only, chưa apply B3; chỉ fixture chạy31. Phase4A preflight chấp nhận đúng B2+only-B3-pending; Phase4B kiểm riêng delta hai cột CycleCount trước khi lên HEAD, không bỏ/đổi mutation assertions.
+- Build PASS 0 warning/error; B3 schema **24 PASS**, focused **166 PASS**, HTTP **46 PASS** (stock20→20→13→13, reserved0→7→0, ledger -7). Regression PASS: Phase4A95, Phase4B107, ReleaseHardening65, DeleteRace31, InboundB1+HTTP142, B2 summary15/migration25; chi tiết trong PHASE_B3.md.
+- Serial/LPN/wave/task assignment/multi-bin/partial pick không thuộc Stable; legacy code giữ lại và direct guard chống bypass. Source/verification/docs chưa stage/commit; 25 dirty baseline paths không đổi.
+- P1 allocate/None-Lot lifecycle cũ đã xử lý scoped. P0 Kitting/AutoReplenishment và P1 legacy/crossdock/create retry/policy ngoài scope vẫn mở. Không coi toàn backend production-ready.
 
 ## Cập nhật B2 — 2026-10-22
 

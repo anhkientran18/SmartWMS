@@ -1,6 +1,6 @@
 # API contract hiện hành — SmartWMS
 
-> Receive đã cập nhật theo [Phase B1](PHASE_B1_INBOUND.md), implementation commit `5a7377bf353ede47958dcdfa96f52015916f3152`. B1 bắt buộc `receivedItems[].expectedReceivedQuantity`. B2 cập nhật aggregate read contract và đóng verification gap Phase4A; xem [PHASE_B2.md](PHASE_B2.md). Phần workflow ngoài scope giữ đánh giá baseline.
+> Receive đã cập nhật theo [Phase B1](PHASE_B1_INBOUND.md), implementation commit `5a7377bf353ede47958dcdfa96f52015916f3152`. B1 bắt buộc `receivedItems[].expectedReceivedQuantity`. B2 cập nhật aggregate read contract; B3 thêm direct-pick lifecycle (working tree), xem PHASE_B3.md; xem [PHASE_B2.md](PHASE_B2.md). Phần workflow ngoài scope giữ đánh giá baseline.
 
 Audit 2026-10-22 (Asia/Saigon), branch `main`, HEAD `8c616b5875d6ad1029ef410688cd764210b0e0da` **cộng working-tree diff**. [Handoff](BACKEND_HANDOFF.md) chứa build/test/P0/P1/P2 và [Lifecycle](LIFECYCLE_STATUS.md) ghi entity/transaction theo bước. Chỉ liệt kê route có trong controller; tên DTO/command không tự tạo endpoint.
 
@@ -71,32 +71,49 @@ GetWarehouseDashboardQueryHandler có cùng SQL aggregate đã sửa và đượ
 
 Lot blank/whitespace của hardened commands thành `LOT-DEFAULT`, trim nonblank. Không mặc định lot `N/A` trên receipt là cùng lot. Không có public MoveInventory/MoveLpn/LockExpiredStock route dù các command/DTO đó tồn tại. GET transfers đọc history, không dùng Guid trả về như transfer document ID có endpoint complete.
 
-## Outbound / Picking (R)
+## Outbound / Picking — B3 direct-pick (R)
 
-| Method / route | Handler; request → data | Validation chính | Allowed before → after | Inventory / history / audit; transaction | Idempotency / retry | Đánh giá |
-| --- | --- | --- | --- | --- | --- | --- |
-| POST `/OutboundOrders` | CreateOutboundOrderCommandHandler; CreateOutboundOrderRequest → Guid orderId | Number required <=50 + duplicate precheck; bin active; date >= UTC today; items nonempty/product IDs/qty>0; customer/product active chưa check đầy đủ | Chưa có → Pending, line Pending | Header/lines/audit; **không reserve**; S | Không key, duplicate precheck không replay response, không bảo đảm chống race number | Partial |
-| PUT `/OutboundOrders/{id}` | UpdateOutboundOrderCommandHandler; UpdateOutboundOrderRequest → bool | route/body id; items nonempty qty>0; existing lines progress đều=0 và không reservation/pickrequest/shipment/history references | Pending/Draft/New → giữ status; thay toàn lines bằng Pending IDs mới | Không inventory; update header/remove+add lines/audit; S; FK Restrict bảo vệ references | Không key; repeat thay IDs mới; cần reload chi tiết. Constraint/concurrency legacy có thể 500 | Partial |
-| DELETE `/OutboundOrders/{id}` | DeleteOutboundOrderCommandHandler; route→DeleteOutboundOrderRequest → bool | Order exists, header allowed state; không release reservation workflow | Pending/Draft/New → Cancelled, IsDeleted=true | Soft delete header, audit; không inventory/history; S | Replay có thể validation/not found; không cached success | Partial |
-| POST `/OutboundOrders/allocate-pick-task` | CreatePickTaskCommandHandler; CreatePickTaskRequest → bool | Order active Pending/Draft/New; không all lines Allocated/Picked | Header→Allocated; chỉ line Pending→Allocated | **Không available check/reservation/OutboundAllocation/PickTask**; AssignedUserId không persist; audit; S | Lần hai thường bị status guard chặn; không retry identity/cached result | Partial; **chưa tích hợp như allocation thực** |
-| POST `/OutboundOrders/create-wave-pick` | CreateWavePickTaskCommandHandler; CreateWavePickRequest → string waveCode | IDs count>1; query phải có ít nhất 1 order; tất cả order tìm thấy active Pending/Allocated/Waved và không line Picked/Shipped. Không đảm bảo đủ IDs hoặc distinct IDs | Orders/lines→Waved | Grouping trong memory, code ngẫu nhiên trả client; **không Wave/WavePickTask/PickTask/reservation record**; audit; S | Waved được gọi lại và sinh mã khác, không dedup | Partial; persisted wave Missing |
-| POST `/OutboundOrders/pick-verify` | PickWithSerialCommandHandler; PickWithSerialRequest → List<string> serials | IDs/list required; serial unique ordinal nonblank <=50; order Allocated/Waved, number unique/nonblank/khớp optional OrderCode; đúng product lines/state, không vượt remaining; serial InStock/chưa link order/có inventory, đúng bin/product/Available/active hierarchy/qty/occupancy đủ | Serial InStock→Allocated+OutboundOrderCode; dòng đủ→Picked; mọi dòng Picked→order Picked | **Trừ quantity và occupancy ngay khi pick** từng serial; OUTBOUND_SERIAL ledger -1/serial; audit; không staging/reservation/request record; S | Không key; serial đã allocated bị reject; mất response không cached success. Không khóa serial progress scope, rowversion conflict có thể 500; thiếu explicit reserved floor guard | Partial/Unsafe với reservation/concurrency; **chỉ serial path** |
-| POST `/OutboundOrders/validate-weight` | ValidatePackingWeightCommandHandler; ValidatePackingWeightRequest → WeightValidationResultDto | OrderId required trong validator; handler chỉ SKU active, qty>0, actual grams finite>0; không kiểm order tồn tại/line/state | Bất kỳ → giữ nguyên | Không DB write/history/audit, không Packed state; expected=unitWeight*quantity+150g, unitWeight fallback250g; <=5% hợp lệ | Read calculation lặp lại được; result thay đổi khi product Weight đổi | Partial; 200 + IsValid=false là expected business result |
-| POST `/OutboundOrders/{id}/ship` | ShipOutboundOrderCommandHandler; ShipOutboundOrderRequest → bool | Order active Picked, tất cả lines Picked qty>0/product active; number unique; mỗi SKU đúng1 check phủ toàn demand, qty đúng; serial toàn order Allocated/unique/đủ exact product qty; gọi lại weight command và IsValid=true; optional nested OrderId trống hoặc khớp route | Order/lines→Shipped, serial Allocated→Shipped | **Không trừ tồn lần nữa**; **không** Shipment/ShipmentItem/ship ledger/reservation release. Audit S | Không idempotency/request key; lần hai Shipped bị reject. Không dùng Shipments unique index để dedup vì không tạo Shipment | Partial; serial-only, chưa full shipment workflow |
+Contract mới đang trong working tree, chưa commit; xem [PHASE_B3.md](PHASE_B3.md) cho schema/migration, evidence và manifest. Scope None/Lot không LPN, whole-order, một source bin/order; FEFO có thể chia nhiều stock rows/lots trong bin. Legacy serial/wave không được dùng cho B3.
 
-| DTO | Fields / điều cần chú ý |
+Mọi mutation direct lifecycle dùng **D**: explicit RepeatableRead transaction, UPDLOCK/HOLDLOCK order/items/allocation/reservation/bin/stock ranges + refresh trước mutation, SaveChanges/audit + commit; failure rollback/clear, known lock/rowversion conflicts→COM_409; không automatic retry. Header/item mode flag và composite FK phân biệt direct/staged.
+
+| Method / route | Handler; request → data | Validation / before → after | Inventory / history / audit | Retry / status |
+| --- | --- | --- | --- | --- |
+| POST /OutboundOrders | CreateOutboundOrderCommandHandler; CreateOutboundOrderRequest → Guid | Number required<=50/precheck duplicate, date>=UTC today, active hierarchy/product None/Lot/customer nếu có; positive requestedQuantity; tạo Pending/direct lines | Header/lines/audit S; không reserve | Create chưa request key/DB unique number; không auto replay unknown outcome. Supported scoped create, concurrent duplicate number còn limitation |
+| POST /OutboundOrders/allocate-pick-task | CreatePickTaskCommandHandler→OutboundLifecycle.AllocateAsync; {outboundOrderId} → bool | Pending/direct chưa progress; assignedUserId nếu truyền→400; active hierarchy/product, Available/not expired, không LPN/serial evidence, normalized lot identity duy nhất; ATP đủ toàn đơn | Persist allocation/reservations exact stock/line + mode/lot/expiry snapshots; stock/line reserved+=qty; physical/occupancy không đổi; RESERVATION ledger delta0/audit D | Duplicate/stale409, không reserve hai lần; scoped Stable đã focused+HTTP, không tạo task engine |
+| POST /OutboundOrders/{id}/pick | DirectPickCommandHandler→OutboundLifecycle.PickAsync; DirectPickRequest → bool | Allocated; toàn bộ reservation IDs unique, positive full quantity khớp live; source ID/lot/expiry/mode/status/counter/hierarchy còn đúng | Physical/reserved/occupancy -=qty, line/reservation picked progress; OUTBOUND ledger -qty với stock/line/reservation IDs, audit D; không staging rows | Empty/duplicate IDs/qty<=0→400; partial/over/stale/duplicate pick409; scoped Stable None/Lot |
+| POST /OutboundOrders/{id}/pack | PackOutboundOrderCommandHandler→OutboundLifecycle.PackAsync; không body → bool | Picked, mọi persisted picked progress đủ → Packed | State + audit D; không stock/ledger mutation | Same Packed/evidence đúng→success no-op; sai state409; scoped Stable minimal state, không cân/carton |
+| POST /OutboundOrders/{id}/ship | ShipOutboundOrderCommandHandler→OutboundLifecycle.ShipAsync cho direct; {} → bool | Packed, full line/reservation picked progress; PackingChecks không rỗng→400; →Shipped terminal | Shipped progress, allocation inactive/Shipped; SHIP_CONFIRM delta0 exact references/audit D; không deduct lần hai, không fabricate Shipment/staging | Same Shipped/evidence đúng→success no-op, không audit/history lặp; sai state409; scoped Stable |
+| DELETE /OutboundOrders/{id} | DeleteOutboundOrderCommandHandler→OutboundLifecycle.CancelAsync cho direct; route ID → bool | Pending không workflow hoặc Allocated với reservation khớp; Picked/Packed409; →Cancelled + IsDeleted | Allocated release đúng reservation của mình; physical/occupancy giữ; RESERVATION_RELEASE delta0/history/audit D; Pending không inventory effect | Không cached delete success; detail canceled404. Supported trong B3 |
+| PUT /OutboundOrders/{id} | UpdateOutboundOrderCommandHandler; UpdateOutboundOrderRequest → bool | Pending/Draft/New, zero progress/no workflow/history refs; replace lines bằng IDs mới/direct | Lock order + transaction; header/line/audit, không inventory | Partial integration, chưa HTTP update smoke; không tự reinterpret persisted legacy lines giữ IDs |
+
+DTOs public hiện có và bổ sung:
+
+| DTO | Fields |
 | --- | --- |
-| CreateOutboundOrderRequest | orderNumber:string, customerId:Guid?, binId:Guid, expectedShipDate:DateTime, priority:string default Normal, notes:string, items:OutboundOrderItemRequest[] |
-| OutboundOrderItemRequest | productId:Guid, requestedQuantity:int |
-| UpdateOutboundOrderRequest | id:Guid, customerId:Guid?, expectedShipDate, priority, notes, items:UpdateOutboundOrderItemRequest[] (productId, requestedQuantity). Không có BinId/lineId/lot/serial |
-| CreatePickTaskRequest | outboundOrderId:Guid, assignedUserId:Guid? (**bị bỏ qua**) |
-| CreateWavePickRequest | outboundOrderIds:Guid[], wavePriority:string default Normal (**không điều khiển persisted wave**) |
-| PickWithSerialRequest | orderId:Guid, orderCode:string optional check, productId:Guid, binId:Guid, serialNumber:string (**không được handler dùng**), scannedSerials:string[] (**phải dùng danh sách này**) |
-| ValidatePackingWeightRequest | sku:string, quantity:int, actualWeightGrams:double, orderId:Guid, actualWeight:decimal (**legacy field không dùng**) |
-| WeightValidationResultDto | isValid:bool, expectedTotalWeightGrams:double, actualWeightGrams:double, deviationPercentage:double, statusMessage:string |
-| ShipOutboundOrderRequest | packingChecks:ValidatePackingWeightRequest[]; **không** shipping carrier/tracking number/idempotency key |
+| CreateOutboundOrderRequest | orderNumber, customerId:Guid?, binId, expectedShipDate, priority=Normal, notes, items:[{productId,requestedQuantity:int32}] |
+| CreatePickTaskRequest | outboundOrderId:Guid, assignedUserId:Guid? (B3 phải bỏ, nếu truyền→400) |
+| DirectPickRequest | items:[{reservationId:Guid,quantity:int32}]; quantity là full lượng đã allocate của reservation; bao phủ đúng toàn đơn, không partial/cumulative |
+| ShipOutboundOrderRequest | packingChecks[] còn cho legacy; direct ship gửi {}, không gửi checks |
+| OutboundOrderDto GET detail | id,orderNumber,binId,isDirectPick,status,customerId/customerName,createdAt/createdBy,items[] |
+| OutboundOrderItemDto | id,productId,productName,sku,quantity,status,isDirectPick,trackingModeSnapshot:null/0/1,reservedQuantity,pickedQuantity,shippedQuantity,reservations[] |
+| OutboundReservationDto | id,allocationId,sourceBinInventoryId,lotNumber,expirationDate,quantity,pickedQuantity,shippedQuantity,releasedQuantity,status |
 
-Không có task list/execution quantity API, persisted pack, release reservation hoặc None/Lot pick route. Foundation entities `OutboundAllocation`, `InventoryReservation`, `OutboundPickRequest`, `FulfilmentOperationRequest`, `Wave`, `Shipment` không phải API contract đã implement chỉ vì migration tạo bảng.
+Tracking snapshot có thể null trước allocation. Reservation status vẫn Picked khi header Packed. List/pagination trả header summaries, Items rỗng mặc định; lấy detail trước mutation. JSON fields mới additive. Controller IActionResult chưa khai báo typed response schema đầy đủ trong OpenAPI: DTO + HTTP body là nguồn contract; không suy từ Swagger route sang completed workflow.
+
+Retry allocate/pick:409→GET/reconcile, không auto replay; Pack/Ship no-op chỉ ở đúng completed state/progress. Mất response create vẫn có giới hạn number precheck, không có idempotency key. Quantity trong inventory summary vẫn physical; ATP/reserved phải đọc counter/progress, không dùng physical total làm ATP.
+
+### Legacy Serial / Wave / Weight — Partial, không tích hợp cho B3
+
+| Route | Behavior hiện có / guard B3 |
+| --- | --- |
+| POST /OutboundOrders/pick-verify | PickWithSerialRequest {orderId,orderCode?,productId,binId,serialNumber legacy unused,scannedSerials[]}; returns List<string>. Guard mới reject direct order hoặc product không active Serial bằng409. Code serial legacy vẫn deduct tại pick, thiếu reservation lifecycle/transaction đầy đủ; Partial/Unsupported B3 |
+| POST /OutboundOrders/create-wave-pick | CreateWavePickRequest {outboundOrderIds[],wavePriority}; direct line bất kỳ→409. Legacy vẫn chỉ đổi Waved/string/code, không persist tasks/wave/reservations; Partial/Unsupported B3 |
+| POST /OutboundOrders/validate-weight | ValidatePackingWeightRequest {sku,quantity,actualWeightGrams,orderId,actualWeight legacy unused}; returns WeightValidationResultDto {isValid,expectedTotalWeightGrams,actualWeightGrams,deviationPercentage,statusMessage}. Read calculation không kiểm order state/không Packed; 200+isValid=false là expected result. Partial helper |
+| POST /OutboundOrders/{id}/ship (legacy mode=false) | Giữ handler serial từ Picked, PackingChecks đủ SKU/qty/weight + exact serial evidence, state/audit save; không B3 Packed/reservation semantics. Không được promote bởi tests direct-pick |
+| DELETE legacy mode=false | Giữ guard Pending/Draft/New và soft delete; không release staged workflow. Partial |
+
+Không có public API task list/execution, release/reallocate cycle, multi-bin allocation, serial/LPN receive lifecycle, carton/returns engine. Foundation entities chưa dùng (PickTask/Wave/Shipment/FulfilmentOperationRequest) không trở thành API contract chỉ vì có bảng.
 
 ## Cycle Counting (J)
 
