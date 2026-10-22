@@ -11,10 +11,24 @@ namespace SmartWMS.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // This data mapping was approved for these four local products only.
-            // Stop rather than infer modes or fabricate progress if the baseline changed.
+            // Existing data keeps the approved four-product backfill and every fail-closed guard.
+            // A new inventory-empty database needs only the schema: do not fabricate demo stock.
             migrationBuilder.Sql("""
-                IF (SELECT COUNT_BIG(*) FROM [Products]) <> 4
+                DECLARE @InventoryEmpty bit = CASE WHEN
+                    NOT EXISTS (SELECT 1 FROM [Products])
+                    AND NOT EXISTS (SELECT 1 FROM [BinInventories])
+                    AND NOT EXISTS (SELECT 1 FROM [ProductSerialNumbers])
+                    AND NOT EXISTS (SELECT 1 FROM [InboundReceipts])
+                    AND NOT EXISTS (SELECT 1 FROM [InboundReceiptItems])
+                    AND NOT EXISTS (SELECT 1 FROM [OutboundIssues])
+                    AND NOT EXISTS (SELECT 1 FROM [OutboundOrderItems])
+                    AND NOT EXISTS (SELECT 1 FROM [InventoryTransactions])
+                    AND NOT EXISTS (SELECT 1 FROM [CycleCountSheets])
+                    AND NOT EXISTS (SELECT 1 FROM [CycleCountItems])
+                    AND NOT EXISTS (SELECT 1 FROM [Bins] WHERE [CurrentOccupancy] <> 0)
+                    THEN 1 ELSE 0 END;
+
+                IF @InventoryEmpty = 0 AND ((SELECT COUNT_BIG(*) FROM [Products]) <> 4
                     OR EXISTS (
                         SELECT v.[Id], v.[SKU]
                         FROM (VALUES
@@ -24,15 +38,15 @@ namespace SmartWMS.Infrastructure.Migrations
                             (CAST('bf2ed393-73c1-4bf9-9322-c6c39c49ff47' AS uniqueidentifier), N'MILK-VINAMILK-1L')
                         ) AS v([Id], [SKU])
                         EXCEPT SELECT [Id], [SKU] FROM [Products]
-                    )
+                    ))
                     THROW 51000, 'Product baseline changed. Review the approved tracking backfill before applying.', 1;
 
-                IF EXISTS (SELECT 1 FROM [ProductSerialNumbers])
+                IF @InventoryEmpty = 0 AND (EXISTS (SELECT 1 FROM [ProductSerialNumbers])
                     OR EXISTS (SELECT 1 FROM [BinInventories]
                         WHERE [ProductId] <> 'e511b03f-6825-4a60-9a24-55b8c9ca189e')
                     OR NOT EXISTS (SELECT 1 FROM [BinInventories]
                         WHERE [ProductId] = 'e511b03f-6825-4a60-9a24-55b8c9ca189e'
-                            AND NULLIF(LTRIM(RTRIM([LotNumber])), N'') IS NOT NULL)
+                            AND NULLIF(LTRIM(RTRIM([LotNumber])), N'') IS NOT NULL))
                     THROW 51001, 'Serial/inventory baseline changed. Review product tracking modes before applying.', 1;
 
                 IF EXISTS (SELECT 1 FROM [BinInventories] WHERE [Quantity] < 0)
@@ -204,12 +218,15 @@ namespace SmartWMS.Infrastructure.Migrations
             // Other approved products keep None (0), supplied by the new column default.
             // Do not backfill order/item snapshots, statuses, reservations, tasks or waves.
             migrationBuilder.Sql("""
-                UPDATE [Products]
-                SET [TrackingMode] = 1
-                WHERE [Id] = 'e511b03f-6825-4a60-9a24-55b8c9ca189e'
-                    AND [SKU] = N'COCA-COOL-320';
-                IF @@ROWCOUNT <> 1
-                    THROW 51004, 'Approved COCA tracking backfill did not match exactly one product.', 1;
+                IF EXISTS (SELECT 1 FROM [Products])
+                BEGIN
+                    UPDATE [Products]
+                    SET [TrackingMode] = 1
+                    WHERE [Id] = 'e511b03f-6825-4a60-9a24-55b8c9ca189e'
+                        AND [SKU] = N'COCA-COOL-320';
+                    IF @@ROWCOUNT <> 1
+                        THROW 51004, 'Approved COCA tracking backfill did not match exactly one product.', 1;
+                END;
                 """);
         }
 

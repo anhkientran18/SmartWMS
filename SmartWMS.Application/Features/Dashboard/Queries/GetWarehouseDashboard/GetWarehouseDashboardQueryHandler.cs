@@ -44,20 +44,25 @@ public class GetWarehouseDashboardQueryHandler : IRequestHandler<GetWarehouseDas
             : 0.0;
 
         // 3. Truy vấn danh sách cảnh báo tồn kho thấp (< 20 sản phẩm) từ Database
-        var lowStockAlerts = await _context.BinInventories
+        var lowQuantities = await _context.BinInventories
             .AsNoTracking()
             .Where(inv => inv.Product != null && !inv.Product.IsDeleted)
             .GroupBy(inv => new { inv.ProductId, inv.Product!.SKU, inv.Product.Name })
-            .Select(g => new LowStockAlertDto
+            .Select(g => new
             {
                 ProductId = g.Key.ProductId,
                 SKU = g.Key.SKU ?? string.Empty,
                 ProductName = g.Key.Name ?? string.Empty,
-                CurrentStock = g.Sum(x => x.Quantity)
+                CurrentStock = g.Sum(x => (long)x.Quantity)
             })
             .Where(x => x.CurrentStock < 20)
             .Take(10)
             .ToListAsync(cancellationToken);
+        var lowStockAlerts = lowQuantities.Select(x => new LowStockAlertDto
+        {
+            ProductId = x.ProductId, SKU = x.SKU, ProductName = x.ProductName,
+            CurrentStock = checked((int)x.CurrentStock)
+        }).ToList();
 
         // 4. Truy vấn 10 giao dịch xuất/nhập/dịch chuyển mới nhất từ Sổ cái
         var recentTransactions = await _context.InventoryTransactions

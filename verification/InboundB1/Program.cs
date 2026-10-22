@@ -10,8 +10,6 @@ using System.Text.Json;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Logging;
 using SmartWMS.Application.Common.Interfaces;
 using SmartWMS.Application.Common.Models;
@@ -78,13 +76,10 @@ try
 {
     await using (var db = Db())
     {
-        // Current-model fixture, as in the existing handler suites. The historical migration chain
-        // has a data-specific tracking backfill preflight (SQL51000) and cannot create a blank DB.
-        // Baseline history ONLY on this generated disposable fixture so the real API preflight can run.
-        await PrepareCurrentModelFixture(db);
+        // Real historical migration chain on a disposable database, including the inventory-empty path.
+        await PrepareMigratedFixture(db);
         Check(!db.Database.HasPendingModelChanges(), "EF model matches snapshot; B1 requires no migration");
-        Check(!(await db.Database.GetPendingMigrationsAsync()).Any(), "current-model fixture history baseline matches source migrations (not a migration-chain test)");
-        results.Add("BLOCKED: fresh historical migration chain hits SQL51000 tracking backfill preflight; fixture uses current model, no business DB writes");
+        Check(!(await db.Database.GetPendingMigrationsAsync()).Any(), "fixture migrated through the real historical chain; no synthetic history baseline");
     }
     var normal = await Fixture();
     Check((await Receive(normal)).IsSuccess, "first partial receive succeeds");
@@ -311,7 +306,7 @@ async Task HttpSmokeCore(string apiDll, string smokeConnection)
     Fixture f;
     await using (var seed = HttpDb())
     {
-        await PrepareCurrentModelFixture(seed);
+        await PrepareMigratedFixture(seed);
         var warehouse = new Warehouse { Code = "HTTP-W", Name = "HTTP fixture" };
         var zone = new Zone { Code = "HTTP-Z", Name = "HTTP fixture", Warehouse = warehouse };
         var bin = new Bin { Id = Guid.NewGuid(), Code = "HTTP-B", Zone = zone, MaxCapacity = 100 };
@@ -410,13 +405,9 @@ async Task HttpSmokeCore(string apiDll, string smokeConnection)
     }
 }
 
-static async Task PrepareCurrentModelFixture(ApplicationDbContext db)
+static Task PrepareMigratedFixture(ApplicationDbContext db)
 {
-    await db.Database.EnsureCreatedAsync();
-    var history = db.GetService<IHistoryRepository>();
-    await db.Database.ExecuteSqlRawAsync(history.GetCreateScript());
-    foreach (var migration in db.Database.GetMigrations())
-        await db.Database.ExecuteSqlRawAsync(history.GetInsertScript(new HistoryRow(migration, "10.0.8")));
+    return db.Database.MigrateAsync();
 }
 
 static async Task<string> Snapshot(string connection)

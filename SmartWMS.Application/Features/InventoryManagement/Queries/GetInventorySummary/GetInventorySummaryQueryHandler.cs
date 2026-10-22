@@ -18,7 +18,7 @@ public class GetInventorySummaryQueryHandler(IApplicationDbContext context)
             .AsNoTracking()
             .Where(x => x.Product != null && !x.Product.IsDeleted)
             .GroupBy(x => x.ProductId)
-            .Select(g => g.Sum(x => x.Quantity))
+            .Select(g => g.Sum(x => (long)x.Quantity))
             .ToListAsync(cancellationToken);
 
         var summary = new InventorySummaryDto

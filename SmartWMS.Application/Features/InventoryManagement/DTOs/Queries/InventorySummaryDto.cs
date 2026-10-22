@@ -3,6 +3,6 @@
 public class InventorySummaryDto
 {
     public int TotalProducts { get; set; }
-    public int TotalQuantity { get; set; }
+    public long TotalQuantity { get; set; }
     public int LowStockItems { get; set; }
 }
