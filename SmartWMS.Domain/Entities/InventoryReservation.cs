@@ -4,6 +4,9 @@ namespace SmartWMS.Domain.Entities;
 
 public class InventoryReservation : BaseEntity
 {
+    public bool IsDirectPick { get; set; }
+    public string? SourceLotNumber { get; set; }
+    public DateTime? SourceExpirationDate { get; set; }
     public Guid AllocationId { get; set; }
     public OutboundAllocation Allocation { get; set; } = null!;
     // These composite relationships must identify a line from the same order/cycle.

@@ -16,14 +16,36 @@ public sealed class UpdateOutboundOrderCommandHandler : IRequestHandler<UpdateOu
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IApplicationDbContext _context;
+    private readonly IInventoryMutationCoordinator _mutations;
+    private readonly IOutboundCoordinator _locks;
 
-    public UpdateOutboundOrderCommandHandler(IUnitOfWork unitOfWork, IApplicationDbContext context)
+    public UpdateOutboundOrderCommandHandler(IUnitOfWork unitOfWork, IApplicationDbContext context,
+        IInventoryMutationCoordinator mutations, IOutboundCoordinator locks)
     {
         _unitOfWork = unitOfWork;
         _context = context;
+        _mutations = mutations;
+        _locks = locks;
     }
 
     public async Task<Result<bool>> Handle(UpdateOutboundOrderCommand request, CancellationToken cancellationToken)
+    {
+        await using var tx = await _mutations.BeginAsync(cancellationToken);
+        try
+        {
+            await _locks.LockOrderAsync(request.RequestData.Id, cancellationToken);
+            var result = await Update(request, cancellationToken);
+            if (result.IsSuccess) await tx.CommitAsync(cancellationToken);
+            return result;
+        }
+        catch (Exception ex) when (_locks.IsConflict(ex))
+        {
+            await tx.RollbackAsync();
+            return Result<bool>.Failure(ErrorCodeConstants.Conflict, "Outbound update conflict; reload order.");
+        }
+    }
+
+    private async Task<Result<bool>> Update(UpdateOutboundOrderCommand request, CancellationToken cancellationToken)
     {
         var repo = _unitOfWork.Repository<OutboundIssue>();
         var req = request.RequestData;
@@ -69,6 +91,7 @@ public sealed class UpdateOutboundOrderCommandHandler : IRequestHandler<UpdateOu
                 OrderId = order.Id,
                 ProductId = item.ProductId,
                 Quantity = item.RequestedQuantity,
+                IsDirectPick = true,
                 Status = "Pending"
             };
             order.Items.Add(newItem);

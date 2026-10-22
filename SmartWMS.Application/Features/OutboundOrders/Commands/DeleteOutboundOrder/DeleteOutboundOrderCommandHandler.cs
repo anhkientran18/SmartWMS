@@ -8,14 +8,17 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace SmartWMS.Application.Features.OutboundOrders.Commands.DeleteOutboundOrder;
+using System.Linq;
 
 public sealed class DeleteOutboundOrderCommandHandler : IRequestHandler<DeleteOutboundOrderCommand, Result<bool>>
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly OutboundLifecycle _lifecycle;
 
-    public DeleteOutboundOrderCommandHandler(IUnitOfWork unitOfWork)
+    public DeleteOutboundOrderCommandHandler(IUnitOfWork unitOfWork, OutboundLifecycle lifecycle)
     {
         _unitOfWork = unitOfWork;
+        _lifecycle = lifecycle;
     }
 
     public async Task<Result<bool>> Handle(DeleteOutboundOrderCommand request, CancellationToken cancellationToken)
@@ -27,6 +30,9 @@ public sealed class DeleteOutboundOrderCommandHandler : IRequestHandler<DeleteOu
 
         if (order == null)
             return Result<bool>.Failure(ErrorCodeConstants.ValidationError, "Đơn xuất kho không tồn tại hoặc đã bị xóa.");
+
+        if (order.Items.Any(x => x.IsDirectPick))
+            return await _lifecycle.CancelAsync(order.Id, cancellationToken);
 
         if (order.Status != "Pending" && order.Status != "Draft" && order.Status != "New")
             return Result<bool>.Failure(ErrorCodeConstants.ValidationError, $"Không thể xóa/hủy đơn xuất kho đang ở trạng thái '{order.Status}'.");

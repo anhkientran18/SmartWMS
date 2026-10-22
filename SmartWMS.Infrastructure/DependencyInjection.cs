@@ -76,6 +76,7 @@ public static class InfrastructureConfiguration
         services.AddScoped<IInventoryMutationCoordinator, InventoryMutationCoordinator>();
         services.AddScoped<ICycleCountCoordinator, CycleCountCoordinator>();
         services.AddScoped<IInboundReceiveCoordinator, InboundReceiveCoordinator>();
+        services.AddScoped<IOutboundCoordinator, OutboundCoordinator>();
 
         return services;
     }

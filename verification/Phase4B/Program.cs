@@ -57,11 +57,13 @@ try
             await db.Database.ExecuteSqlRawAsync(history.GetInsertScript(new HistoryRow(name, "10.0.8")));
         Check(true, "blank fixture baseline built from prior migration model; no legacy data copied");
         var schemaBefore = await Schema(fixtureConnection);
-        await db.Database.MigrateAsync();
+        // Isolate the CycleCount migration's exact delta before applying later migrations.
+        await db.GetService<IMigrator>().MigrateAsync("20261021130000_AddCycleCountSnapshotEvidence");
         var schemaAfter = await Schema(fixtureConnection);
         var additions = schemaAfter.Except(schemaBefore).ToArray();
         Check(!schemaBefore.Except(schemaAfter).Any() && additions.Length == 2 && additions.Any(x => x.Contains("SnapshotBinInventoryId|uniqueidentifier|16|True")) &&
             additions.Any(x => x.Contains("SnapshotRowVersion|binary|8|True")), "actual fixture schema diff exactly two nullable columns; indexes/FKs/checks unchanged");
+        await db.Database.MigrateAsync();
         Check(!(await db.Database.GetPendingMigrationsAsync()).Any(), "fixture pending migrations = 0");
         db.Users.Add(new User { Id = userId, Username = userId.ToString(), Email = "fixture@example.invalid", Role = "Staff" });
         await db.SaveChangesAsync();

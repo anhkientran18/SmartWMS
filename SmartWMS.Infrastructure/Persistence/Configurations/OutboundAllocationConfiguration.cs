@@ -10,6 +10,8 @@ public sealed class OutboundAllocationConfiguration : IEntityTypeConfiguration<O
     {
         builder.HasKey(x => x.Id);
         builder.HasAlternateKey(x => new { x.Id, x.OrderId });
+        builder.HasAlternateKey(x => new { x.Id, x.OrderId, x.IsDirectPick });
+        builder.Property(x => x.IsDirectPick).HasDefaultValue(false);
         builder.Property(x => x.Status).HasMaxLength(24).IsRequired();
         builder.Property(x => x.RowVersion).IsRowVersion();
         builder.HasIndex(x => new { x.OrderId, x.Generation }).IsUnique();
@@ -21,7 +23,9 @@ public sealed class OutboundAllocationConfiguration : IEntityTypeConfiguration<O
         builder.ToTable("OutboundAllocations", t =>
         {
             t.HasCheckConstraint("CK_OutboundAllocations_Generation", "[Generation] > 0");
-            t.HasCheckConstraint("CK_OutboundAllocations_Bins", "[SourceBinId] <> [StagingBinId]");
+            t.HasCheckConstraint("CK_OutboundAllocations_Bins",
+                "([IsDirectPick] = 1 AND [StagingBinId] IS NULL) OR " +
+                "([IsDirectPick] = 0 AND [StagingBinId] IS NOT NULL AND [SourceBinId] <> [StagingBinId])");
             t.HasCheckConstraint("CK_OutboundAllocations_State",
                 "([IsActive] = 1 AND [Status] IN (N'Active', N'Picking', N'Picked', N'Staged')) " +
                 "OR ([IsActive] = 0 AND [Status] IN (N'Released', N'Shipped'))");

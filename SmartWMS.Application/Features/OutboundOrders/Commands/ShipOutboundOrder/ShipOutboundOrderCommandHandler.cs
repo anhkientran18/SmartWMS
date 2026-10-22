@@ -12,11 +12,17 @@ using System.Threading.Tasks;
 
 namespace SmartWMS.Application.Features.OutboundOrders.Commands.ShipOutboundOrder;
 
-public class ShipOutboundOrderCommandHandler(IApplicationDbContext context, ISender sender)
+public class ShipOutboundOrderCommandHandler(IApplicationDbContext context, ISender sender, OutboundLifecycle lifecycle)
     : IRequestHandler<ShipOutboundOrderCommand, Result<bool>>
 {
     public async Task<Result<bool>> Handle(ShipOutboundOrderCommand request, CancellationToken cancellationToken)
     {
+        if (await context.OutboundOrderItems.AnyAsync(x => x.OrderId == request.OrderId && x.IsDirectPick, cancellationToken))
+        {
+            if (request.RequestData == null || request.RequestData.PackingChecks == null || request.RequestData.PackingChecks.Count != 0)
+                return Invalid("B3 direct-pick ship dùng body {} sau Pack; PackingChecks thuộc legacy serial path.");
+            return await lifecycle.ShipAsync(request.OrderId, cancellationToken);
+        }
         var checks = request.RequestData?.PackingChecks;
         if (request.OrderId == Guid.Empty || checks == null || checks.Count == 0 ||
             checks.Any(x => x == null || string.IsNullOrWhiteSpace(x.SKU) || x.Quantity <= 0 ||

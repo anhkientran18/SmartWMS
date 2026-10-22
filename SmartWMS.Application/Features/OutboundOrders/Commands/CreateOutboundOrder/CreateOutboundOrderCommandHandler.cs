@@ -11,20 +11,32 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace SmartWMS.Application.Features.OutboundOrders.Commands.CreateOutboundOrder;
+using Microsoft.EntityFrameworkCore;
+using SmartWMS.Domain.Enums;
 
 public sealed class CreateOutboundOrderCommandHandler : IRequestHandler<CreateOutboundOrderCommand, Result<Guid>>
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IApplicationDbContext _context;
 
-    public CreateOutboundOrderCommandHandler(IUnitOfWork unitOfWork)
+    public CreateOutboundOrderCommandHandler(IUnitOfWork unitOfWork, IApplicationDbContext context)
     {
         _unitOfWork = unitOfWork;
+        _context = context;
     }
 
     public async Task<Result<Guid>> Handle(CreateOutboundOrderCommand request, CancellationToken cancellationToken)
     {
         var repo = _unitOfWork.Repository<OutboundIssue>(); // Tạm dùng OutboundIssue
         var req = request.RequestData;
+        if (req == null || string.IsNullOrWhiteSpace(req.OrderNumber) || req.OrderNumber.Length > 50 || req.Items == null ||
+            req.Items.Count == 0 || req.Items.Any(x => x == null || x.ProductId == Guid.Empty || x.RequestedQuantity <= 0))
+            return Result<Guid>.Failure(ErrorCodeConstants.ValidationError, "Order number/items/quantity không hợp lệ.");
+        var ids = req.Items.Select(x => x.ProductId).Distinct().ToList();
+        if (await _context.Products.CountAsync(x => ids.Contains(x.Id) && !x.IsDeleted &&
+            (x.TrackingMode == ProductTrackingMode.None || x.TrackingMode == ProductTrackingMode.Lot), cancellationToken) != ids.Count ||
+            (req.CustomerId.HasValue && !await _context.Customers.AnyAsync(x => x.Id == req.CustomerId && !x.IsDeleted, cancellationToken)))
+            return Result<Guid>.Failure(ErrorCodeConstants.ValidationError, "B3 create chỉ hỗ trợ product active None/Lot và customer active nếu có.");
 
         if (req.BinId == Guid.Empty || await _unitOfWork.Repository<Bin>()
             .GetEntityWithSpecAsync(new ActiveBinByIdSpec(req.BinId), cancellationToken) == null)
@@ -56,6 +68,7 @@ public sealed class CreateOutboundOrderCommandHandler : IRequestHandler<CreateOu
                 OrderId = outboundOrder.Id,
                 ProductId = item.ProductId,
                 Quantity = item.RequestedQuantity,
+                IsDirectPick = true,
                 Status = "Pending" // Chờ xử lý Picking
             });
         }

@@ -6,6 +6,8 @@ namespace SmartWMS.Application.Features.OutboundOrders.DTOs;
 public class OutboundOrderDto
 {
     public Guid Id { get; set; }
+    public string OrderNumber { get; set; } = string.Empty;
+    public bool IsDirectPick { get; set; }
     public Guid? CustomerId { get; set; }
     public string CustomerName { get; set; } = string.Empty;
     public Guid BinId { get; set; }

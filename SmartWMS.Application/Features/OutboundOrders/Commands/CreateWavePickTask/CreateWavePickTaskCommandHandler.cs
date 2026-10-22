@@ -31,6 +31,8 @@ public sealed class CreateWavePickTaskCommandHandler : IRequestHandler<CreateWav
 
         if (orders.Count == 0)
             return Result<string>.Failure(ErrorCodeConstants.ValidationError, "Các đơn hàng yêu cầu gom chuyến không tồn tại hoặc đã bị xóa.");
+        if (orders.Any(x => x.Items.Any(i => i.IsDirectPick)))
+            return Result<string>.Failure(ErrorCodeConstants.Conflict, "B3 direct-pick chưa hỗ trợ wave; allocate từng order.");
 
         if (orders.Any(o => o.IsDeleted || (o.Status != "Pending" && o.Status != "Allocated" && o.Status != "Waved") ||
             o.Items.Any(i => i.Status == "Picked" || i.Status == "Shipped")))

@@ -48,6 +48,9 @@ public sealed class GetPaginatedOutboundOrdersQueryHandler : IRequestHandler<Get
             .Select(x => new OutboundOrderDto
             {
                 Id = x.Id,
+                BinId = x.BinId,
+                OrderNumber = x.OrderNumber,
+                IsDirectPick = x.Items.Any(i => i.IsDirectPick),
                 CustomerId = x.CustomerId,
                 CustomerName = x.Customer != null ? x.Customer.Name : "N/A",
                 Status = x.Status,

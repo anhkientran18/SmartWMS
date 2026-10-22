@@ -6,6 +6,7 @@ using SmartWMS.Domain.Enums;
 
 public class OutboundOrderItem
 {
+    public bool IsDirectPick { get; set; }
     public Guid Id { get; set; }
     public Guid OrderId { get; set; }
     public Guid ProductId { get; set; }

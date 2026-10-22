@@ -13,13 +13,15 @@ public sealed class InventoryReservationConfiguration : IEntityTypeConfiguration
         builder.HasAlternateKey(x => new { x.Id, x.AllocationId, x.OrderId, x.OrderItemId });
         builder.Property(x => x.Status).HasMaxLength(24).IsRequired();
         builder.Property(x => x.RowVersion).IsRowVersion();
+        builder.Property(x => x.IsDirectPick).HasDefaultValue(false);
+        builder.Property(x => x.SourceLotNumber).HasMaxLength(50);
         builder.HasIndex(x => new { x.AllocationId, x.OrderItemId, x.SourceBinInventoryId }).IsUnique();
         builder.HasOne(x => x.Allocation).WithMany()
-            .HasForeignKey(x => new { x.AllocationId, x.OrderId })
-            .HasPrincipalKey(x => new { x.Id, x.OrderId }).OnDelete(DeleteBehavior.Restrict);
+            .HasForeignKey(x => new { x.AllocationId, x.OrderId, x.IsDirectPick })
+            .HasPrincipalKey(x => new { x.Id, x.OrderId, x.IsDirectPick }).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(x => x.OrderItem).WithMany()
-            .HasForeignKey(x => new { x.OrderItemId, x.OrderId })
-            .HasPrincipalKey(x => new { x.Id, x.OrderId }).OnDelete(DeleteBehavior.Restrict);
+            .HasForeignKey(x => new { x.OrderItemId, x.OrderId, x.IsDirectPick })
+            .HasPrincipalKey(x => new { x.Id, x.OrderId, x.IsDirectPick }).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(x => x.SourceBinInventory).WithMany().HasForeignKey(x => x.SourceBinInventoryId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(x => x.StagingBinInventory).WithMany().HasForeignKey(x => x.StagingBinInventoryId).OnDelete(DeleteBehavior.Restrict);
         builder.ToTable("InventoryReservations", t =>
@@ -29,8 +31,9 @@ public sealed class InventoryReservationConfiguration : IEntityTypeConfiguration
                 "AND CAST([PickedQuantity] AS bigint) + [ReleasedQuantity] <= [Quantity] " +
                 "AND [ShippedQuantity] >= 0 AND [ShippedQuantity] <= [PickedQuantity]");
             t.HasCheckConstraint("CK_InventoryReservations_Staging",
-                "([StagingBinInventoryId] IS NULL OR [StagingBinInventoryId] <> [SourceBinInventoryId]) " +
-                "AND ([PickedQuantity] = 0 OR [StagingBinInventoryId] IS NOT NULL)");
+                "([IsDirectPick] = 1 AND [StagingBinInventoryId] IS NULL) OR " +
+                "([IsDirectPick] = 0 AND ([StagingBinInventoryId] IS NULL OR [StagingBinInventoryId] <> [SourceBinInventoryId]) " +
+                "AND ([PickedQuantity] = 0 OR [StagingBinInventoryId] IS NOT NULL))");
             t.HasCheckConstraint("CK_InventoryReservations_Status",
                 "[Status] IN (N'Active', N'PartiallyPicked', N'Picked', N'Shipped', N'Released')");
         });

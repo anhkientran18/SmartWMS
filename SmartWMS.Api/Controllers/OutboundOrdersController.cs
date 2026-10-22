@@ -9,6 +9,7 @@ using SmartWMS.Application.Features.OutboundOrders.Commands.DeleteOutboundOrder;
 using SmartWMS.Application.Features.OutboundOrders.Commands.PickWithSerial;
 using SmartWMS.Application.Features.OutboundOrders.Commands.ShipOutboundOrder;
 using SmartWMS.Application.Features.OutboundOrders.Commands.UpdateOutboundOrder;
+using SmartWMS.Application.Features.OutboundOrders.Commands.DirectPick;
 using SmartWMS.Application.Features.OutboundOrders.Commands.ValidatePackingWeight;
 using SmartWMS.Application.Features.OutboundOrders.DTOs.Commands;
 using SmartWMS.Application.Features.OutboundOrders.DTOs.Queries;
@@ -74,6 +75,14 @@ public class OutboundOrdersController : ControllerBase
     [HttpPost("pick-verify")]
     public async Task<IActionResult> PickVerifySerial([FromBody] PickWithSerialRequest request)
         => (await _mediator.Send(new PickWithSerialCommand(request))).ToActionResult();
+
+    [HttpPost("{id:guid}/pick")]
+    public async Task<IActionResult> Pick(Guid id, [FromBody] DirectPickRequest request, CancellationToken ct)
+        => (await _mediator.Send(new DirectPickCommand(id, request), ct)).ToActionResult();
+
+    [HttpPost("{id:guid}/pack")]
+    public async Task<IActionResult> Pack(Guid id, CancellationToken ct)
+        => (await _mediator.Send(new PackOutboundOrderCommand(id), ct)).ToActionResult();
 
     [HttpPost("{id:guid}/ship")]
     public async Task<IActionResult> Ship(Guid id, [FromBody] ShipOutboundOrderRequest request, CancellationToken cancellationToken)

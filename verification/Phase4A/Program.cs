@@ -40,7 +40,13 @@ var before = await Snapshot(production);
 await File.WriteAllTextAsync(Path.Combine(report, "before.json"), JsonSerializer.Serialize(before, new JsonSerializerOptions { WriteIndented = true }));
 await using (var db = Db(false))
 {
-    Check(!(await db.Database.GetPendingMigrationsAsync()).Any(), "business database pending migrations = 0");
+    var pending = (await db.Database.GetPendingMigrationsAsync()).ToArray();
+    var applied = (await db.Database.GetAppliedMigrationsAsync()).ToArray();
+    // B3 is intentionally not deployed to the read-only business database. Accept only the
+    // exact audited B2 checkpoint, or an already-current DB; never migrate it from this suite.
+    Check(pending.Length == 0 || (pending.SequenceEqual(new[] { "20261022132945_AddDirectPickWorkflow" }) &&
+        applied.Length == 30 && applied[^1] == "20261021130000_AddCycleCountSnapshotEvidence"),
+        "business DB current or exact B2 checkpoint with only approved B3 migration pending (read-only)");
     Check(!db.Database.HasPendingModelChanges(), "EF model matches migration snapshot");
 }
 try

@@ -35,6 +35,9 @@ public class PickWithSerialCommandHandler : IRequestHandler<PickWithSerialComman
             .FirstOrDefaultAsync(x => x.Id == request.OrderId && !x.IsDeleted, cancellationToken);
         if (order == null)
             return Result<List<string>>.Failure(ErrorCodeConstants.ValidationError, "Không tìm thấy đơn hàng xuất.");
+        if (order.Items.Any(x => x.IsDirectPick) || !await _context.Products.AnyAsync(x => x.Id == request.ProductId &&
+            !x.IsDeleted && x.TrackingMode == ProductTrackingMode.Serial, cancellationToken))
+            return Result<List<string>>.Failure(ErrorCodeConstants.Conflict, "Legacy serial endpoint không hỗ trợ B3 None/Lot/direct-pick; dùng quantity-based pick.");
         if (order.Status != "Allocated" && order.Status != "Waved")
             return Result<List<string>>.Failure(ErrorCodeConstants.ValidationError, "Đơn hàng phải được phân bổ trước khi picking và chưa được pick hoàn tất.");
         if (string.IsNullOrWhiteSpace(order.OrderNumber) ||
