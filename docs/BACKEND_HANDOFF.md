@@ -1,5 +1,7 @@
 # SmartWMS backend handoff — 2026-10-22 (Asia/Saigon)
 
+> Audit baseline bên dưới đã được checkpoint tại `b640f3327ffc47d68bdb680e1684aa8871d7a0e7` (source BinId: `7a9e1c3ba30ca7df1777c8d568a07cb1d473d491`). Receive path có thay đổi **Phase B1 trong working tree**; contract/verification hiện hành xem [PHASE_B1_INBOUND.md](PHASE_B1_INBOUND.md). Finding P0-03/P1-03 bên dưới mô tả receive **trước B1**; finding ngoài receive chưa được sửa.
+
 ## Phạm vi snapshot
 
 - Branch: `main`.
