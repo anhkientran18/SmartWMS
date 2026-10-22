@@ -36,6 +36,7 @@ public sealed class GetOutboundOrderByIdQueryHandler : IRequestHandler<GetOutbou
         var dto = new OutboundOrderDto
         {
             Id = order.Id,
+            BinId = order.BinId,
             CustomerId = order.CustomerId,
             CustomerName = order.Customer != null ? order.Customer.Name : "N/A",
             Status = order.Status,
