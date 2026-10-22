@@ -15,4 +15,7 @@ public class ReceiveItemRequest
 {
     public Guid ItemId { get; set; } // Khóa chính của dòng InboundReceiptItem
     public int QuantityReceived { get; set; } // Số lượng thực tế quét được
+    // Required precondition: the persisted quantity shown by GET receipt before this delta.
+    // A stale/repeated request returns COM_409 without receiving the quantity twice.
+    public int? ExpectedReceivedQuantity { get; set; }
 }
