@@ -5,6 +5,10 @@ namespace SmartWMS.Domain.Entities;
 
 public class CycleCountItem : BaseEntity
 {
+    // Nullable for legacy sheets: never infer historical evidence from current inventory.
+    public Guid? SnapshotBinInventoryId { get; set; }
+    public byte[]? SnapshotRowVersion { get; set; }
+
     // Khóa ngoại liên kết về Phiếu kiểm kê tổng
     public Guid CountSheetId { get; set; }
     public CycleCountSheet CountSheet { get; set; } = null!;

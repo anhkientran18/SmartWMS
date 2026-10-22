@@ -8,10 +8,8 @@ public class GetPendingCountTasksQueryValidator : AbstractValidator<GetPendingCo
 {
     public GetPendingCountTasksQueryValidator(IStringLocalizer<SharedResource> localizer)
     {
-        // Bắt buộc phải có tên nhân viên để phân bổ đúng danh sách nhiệm vụ kiểm kê
+        // Optional legacy field; assignment filtering uses authenticated UserId, never this name.
         RuleFor(v => v.OperatorName)
-            .NotEmpty()
-            .WithMessage(_ => localizer["OperatorName_Required"]) // Bản dịch đề xuất: "Tên nhân viên thực hiện kiểm kê không được để trống."
             .MaximumLength(100)
             .WithMessage(_ => localizer["OperatorName_TooLong"]);
     }

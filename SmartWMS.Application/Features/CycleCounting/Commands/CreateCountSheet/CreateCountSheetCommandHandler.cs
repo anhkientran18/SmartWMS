@@ -1,80 +1,74 @@
-﻿using MediatR;
-using SmartWMS.Application.Common.Interfaces;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
 using SmartWMS.Application.Common.Constants;
+using SmartWMS.Application.Common.Interfaces;
+using SmartWMS.Application.Common.Inventory;
 using SmartWMS.Application.Common.Models;
-using SmartWMS.Application.Features.CycleCounting.Specifications.Commands;
 using SmartWMS.Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace SmartWMS.Application.Features.CycleCounting.Commands.CreateCountSheet;
 
-public class CreateCountSheetCommandHandler : IRequestHandler<CreateCountSheetCommand, Result<Guid>>
+public sealed class CreateCountSheetCommandHandler(IApplicationDbContext context,
+    IInventoryMutationCoordinator mutations, ICycleCountCoordinator counts)
+    : IRequestHandler<CreateCountSheetCommand, Result<Guid>>
 {
-    private readonly IUnitOfWork _unitOfWork;
-
-    public CreateCountSheetCommandHandler(IUnitOfWork unitOfWork)
-    {
-        _unitOfWork = unitOfWork;
-    }
-
-    public async Task<Result<Guid>> Handle(CreateCountSheetCommand request, CancellationToken cancellationToken)
+    public async Task<Result<Guid>> Handle(CreateCountSheetCommand request, CancellationToken ct)
     {
         var req = request.RequestData;
-        var inventoryRepo = _unitOfWork.Repository<BinInventory>();
-        var countSheetRepo = _unitOfWork.Repository<CycleCountSheet>(); // Tạm giả định Entity của bạn tên là CycleCountSheet
-
-        // 1. Kéo tồn kho thực tế hiện tại theo Khu vực / Ô kệ
-        var spec = new BinInventoryForCountSheetSpec(req.ZoneId, req.BinId);
-        var inventoriesToCount = await inventoryRepo.ListAsync(spec, cancellationToken);
-
-        if (!inventoriesToCount.Any())
+        if (req == null || req.BinId == Guid.Empty || req.ZoneId == Guid.Empty ||
+            (!req.BinId.HasValue && !req.ZoneId.HasValue) || req.AssignedUserId == Guid.Empty)
+            return Invalid("Phải chọn phạm vi kiểm kê hợp lệ.");
+        await using var tx = await mutations.BeginAsync(ct);
+        try
         {
-            return Result<Guid>.Failure("Không có tồn kho nào được ghi nhận tại vị trí này để thực hiện kiểm kê.");
-        }
-
-        if (inventoriesToCount.GroupBy(x => new { x.BinId, x.ProductId, x.LotNumber }).Any(g => g.Count() > 1))
-            return Result<Guid>.Failure(ErrorCodeConstants.Conflict,
-                "Không thể lập snapshot duy nhất: có nhiều status tồn cho cùng Bin/Product/Lot; model kiểm kê chưa lưu status.");
-
-        // 2. Khởi tạo Header Phiếu kiểm kê
-        var countSheet = new CycleCountSheet
-        {
-            Id = Guid.NewGuid(),
-            SheetNumber = $"CC-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString().Substring(0, 5).ToUpper()}",
-            ZoneId = req.ZoneId,
-            BinId = req.BinId,
-            AssignedUserId = req.AssignedUserId,
-            Status = "Pending", // Pending, Counting, Completed, Cancelled
-            Notes = req.Notes,
-            CreatedAt = DateTime.UtcNow,
-            CreatedBy = "WarehouseManager",
-            Items = new List<CycleCountItem>()
-        };
-
-        // 3. Khởi tạo danh sách Line Items (Snapshots tồn kho hiện tại)
-        foreach (var inv in inventoriesToCount)
-        {
-            countSheet.Items.Add(new CycleCountItem
+            if (req.BinId.HasValue)
             {
-                Id = Guid.NewGuid(),
-                CountSheetId = countSheet.Id,
-                BinId = inv.BinId,
-                ProductId = inv.ProductId,
-                LotNumber = inv.LotNumber,
-                SystemQuantity = inv.Quantity, // Chốt số lượng hệ thống tại thời điểm tạo phiếu
-                CountedQuantity = 0, // Chờ nhân viên điền
-                Status = "Pending"
-            });
+                var bin = await counts.LockBinAsync(req.BinId.Value, ct);
+                if (bin == null || (req.ZoneId.HasValue && bin.ZoneId != req.ZoneId))
+                    return Invalid("Bin/Zone/Warehouse không hợp lệ hoặc không cùng phạm vi.");
+            }
+            else if (!await context.Zones.AnyAsync(x => x.Id == req.ZoneId && !x.IsDeleted &&
+                x.Warehouse != null && !x.Warehouse.IsDeleted, ct))
+                return Invalid("Zone/Warehouse không hợp lệ.");
+            if (req.AssignedUserId.HasValue && !await context.Users.AnyAsync(x => x.Id == req.AssignedUserId && x.IsActive, ct))
+                return Invalid("Nhân viên được phân công không hợp lệ.");
+            var stocks = await counts.LockScopeAsync(req.BinId, req.ZoneId, ct);
+            if (stocks.Count == 0) return Invalid("Không có tồn kho trong phạm vi kiểm kê.");
+            if (stocks.GroupBy(x => (x.BinId, x.ProductId, Lot: InventoryMutationRules.Lot(x.LotNumber))).Any(g => g.Count() != 1))
+                return Conflict("Không xác định duy nhất tồn kho theo Bin/Product/Lot.");
+            foreach (var stock in stocks.OrderBy(x => x.Id))
+            {
+                // Match the database collation as well as normalized lot identity.
+                var identities = await counts.LockLotAsync(stock.BinId, stock.ProductId, InventoryMutationRules.Lot(stock.LotNumber), ct);
+                if (identities.Count != 1 || identities[0].Id != stock.Id)
+                    return Conflict("Không xác định duy nhất tồn kho theo Bin/Product/Lot.");
+                if (!await CycleCountRules.SupportedAsync(context, mutations, counts, stock, ct))
+                    return Invalid("Không hỗ trợ kiểm kê tồn kho Serial/LPN, reservation/workflow hoặc dữ liệu không hợp lệ.");
+            }
+            var sheet = new CycleCountSheet
+            {
+                Id = Guid.NewGuid(), SheetNumber = $"CC-{Guid.NewGuid():N}",
+                BinId = req.BinId, ZoneId = req.ZoneId, AssignedUserId = req.AssignedUserId,
+                Status = "Pending", Notes = req.Notes,
+                Items = stocks.Select(stock => new CycleCountItem
+                {
+                    Id = Guid.NewGuid(), BinId = stock.BinId, ProductId = stock.ProductId,
+                    LotNumber = stock.LotNumber, SystemQuantity = stock.Quantity,
+                    SnapshotBinInventoryId = stock.Id, SnapshotRowVersion = stock.RowVersion.ToArray(),
+                    Status = "Pending"
+                }).ToList()
+            };
+            context.CycleCountSheets.Add(sheet);
+            await context.SaveChangesAsync(ct);
+            await tx.CommitAsync(ct);
+            return Result<Guid>.Success(sheet.Id, "Đã tạo snapshot kiểm kê.");
         }
-
-        // 4. Lưu giao dịch
-        await countSheetRepo.AddAsync(countSheet, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-        return Result<Guid>.Success(countSheet.Id, $"Đã tạo phiếu kiểm kê {countSheet.SheetNumber} với {countSheet.Items.Count} dòng mặt hàng cần đếm.");
+        catch (Exception ex) when (mutations.IsConflict(ex))
+        {
+            await tx.RollbackAsync();
+            return Conflict("Tồn kho thay đổi đồng thời; hãy lập lại phiếu.");
+        }
     }
+    private static Result<Guid> Invalid(string message) => Result<Guid>.Failure(ErrorCodeConstants.ValidationError, message);
+    private static Result<Guid> Conflict(string message) => Result<Guid>.Failure(ErrorCodeConstants.Conflict, message);
 }

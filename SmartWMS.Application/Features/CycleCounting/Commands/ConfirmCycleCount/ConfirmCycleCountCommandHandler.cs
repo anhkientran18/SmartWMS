@@ -1,119 +1,86 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using SmartWMS.Application.Common.Constants;
 using SmartWMS.Application.Common.Interfaces;
+using SmartWMS.Application.Common.Inventory;
 using SmartWMS.Application.Common.Models;
 using SmartWMS.Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace SmartWMS.Application.Features.CycleCounting.Commands.ConfirmCycleCount;
 
-public class ConfirmCycleCountCommandHandler(IApplicationDbContext context)
+public sealed class ConfirmCycleCountCommandHandler(IApplicationDbContext context,
+    IInventoryMutationCoordinator mutations, ICycleCountCoordinator counts)
     : IRequestHandler<ConfirmCycleCountCommand, Result<bool>>
 {
-    public async Task<Result<bool>> Handle(ConfirmCycleCountCommand request, CancellationToken cancellationToken)
+    public async Task<Result<bool>> Handle(ConfirmCycleCountCommand request, CancellationToken ct)
     {
         var req = request.RequestData;
         if (req == null || req.CountSheetId == Guid.Empty || req.CountedItems == null || req.CountedItems.Count == 0 ||
-            req.CountedItems.Any(x => x == null || x.ItemId == Guid.Empty || !x.CountedQuantity.HasValue || x.CountedQuantity.Value < 0))
-            return Invalid("Vui lòng cung cấp phiếu và kết quả kiểm đếm hợp lệ, không âm.");
-        if (req.CountedItems.Select(x => x.ItemId).Distinct().Count() != req.CountedItems.Count)
-            return Invalid("Không được gửi trùng detail kiểm kê trong cùng request.");
-
-        var sheet = await context.CycleCountSheets.Include(x => x.Items)
-            .FirstOrDefaultAsync(x => x.Id == req.CountSheetId && !x.IsDeleted, cancellationToken);
-        if (sheet == null) return Invalid("Không tìm thấy phiếu kiểm kê.");
-        if (sheet.Status != "Pending" && sheet.Status != "Counting")
-            return Invalid("Chỉ được xác nhận phiếu Pending/Counting chưa chốt sổ hoặc hủy.");
-
-        var sheetIds = sheet.Items.Select(x => x.Id).ToHashSet();
-        if (req.CountedItems.Any(x => !sheetIds.Contains(x.ItemId)))
-            return Invalid("Có detail không thuộc phiếu kiểm kê này.");
-        if (sheet.Items.Count == 0 || !sheetIds.SetEquals(req.CountedItems.Select(x => x.ItemId)))
-            return Invalid("Phải cung cấp kết quả cho toàn bộ detail trước khi chốt phiếu.");
-        if (sheet.Items.GroupBy(x => new { x.BinId, x.ProductId, x.LotNumber }).Any(g => g.Count() != 1))
-            return Conflict("Snapshot có nhiều detail cùng Bin/Product/Lot nhưng không lưu status để xác định dòng tồn.");
-
-        var counts = req.CountedItems.ToDictionary(x => x.ItemId, x => x.CountedQuantity!.Value);
-        var corrections = new List<(CycleCountItem Item, BinInventory Stock, int Counted, int Difference)>();
-        foreach (var item in sheet.Items)
-        {
-            var matches = await context.BinInventories.Include(x => x.Bin)
-                .Where(x => x.BinId == item.BinId && x.ProductId == item.ProductId && x.LotNumber == item.LotNumber)
-                .ToListAsync(cancellationToken);
-            if (matches.Count != 1)
-                return Conflict("Tồn kho snapshot không còn tồn tại hoặc không xác định duy nhất theo Bin/Product/Lot. Cần lập lại phiếu.");
-
-            var stock = matches[0];
-            if (stock.Bin == null || stock.Bin.IsDeleted)
-                return Conflict("Ô kệ của detail không còn hợp lệ.");
-            if (item.SystemQuantity < 0 || stock.Quantity != item.SystemQuantity ||
-                stock.CreatedAt > sheet.CreatedAt || stock.LastModifiedAt > sheet.CreatedAt)
-                return Conflict("Tồn kho đã thay đổi sau snapshot. Cần lập lại phiếu kiểm kê trước khi xác nhận.");
-
-            // The ledger has no lot/inventory ID. Conservatively reject any later movement for this product/bin,
-            // including movements whose net quantity returns to the snapshot value.
-            if (await context.InventoryTransactions.AsNoTracking().AnyAsync(t =>
-                t.ProductId == item.ProductId && t.CreatedAt >= sheet.CreatedAt &&
-                (t.SourceBinCode == stock.Bin.Code || t.DestinationBinCode == stock.Bin.Code), cancellationToken))
-                return Conflict("Có giao dịch của sản phẩm tại bin sau snapshot. Cần lập lại phiếu kiểm kê.");
-
-            corrections.Add((item, stock, counts[item.Id], counts[item.Id] - item.SystemQuantity));
-        }
-
-        // Validate the aggregate bin change before mutating any stock, detail or ledger entry.
-        var binChanges = corrections.GroupBy(x => x.Stock.BinId).Select(g => new
-        {
-            Bin = g.First().Stock.Bin,
-            Difference = g.Sum(x => (long)x.Difference)
-        }).ToList();
-        foreach (var change in binChanges.Where(x => x.Difference != 0))
-        {
-            var occupancy = change.Bin.CurrentOccupancy + change.Difference;
-            if (occupancy < 0 || (change.Difference > 0 && occupancy > change.Bin.MaxCapacity))
-                return Invalid("Correction làm occupancy âm hoặc vượt sức chứa ô kệ.");
-        }
-
-        foreach (var correction in corrections)
-        {
-            correction.Item.CountedQuantity = correction.Counted;
-            correction.Item.Status = correction.Difference == 0 ? "Matched" : "Discrepancy";
-            if (correction.Difference == 0) continue;
-
-            correction.Stock.Quantity = correction.Counted;
-            context.InventoryTransactions.Add(new InventoryTransaction
-            {
-                Id = Guid.NewGuid(),
-                ProductId = correction.Item.ProductId,
-                TransactionType = "ADJUSTMENT",
-                QuantityChanged = correction.Difference,
-                SourceBinCode = correction.Stock.Bin.Code,
-                DestinationBinCode = correction.Stock.Bin.Code,
-                ReasonCode = $"CYCLE_COUNT_{sheet.SheetNumber}",
-                CreatedBy = "WarehouseManager",
-                CreatedAt = DateTime.UtcNow
-            });
-        }
-        foreach (var change in binChanges)
-            if (change.Difference != 0) change.Bin.CurrentOccupancy += change.Difference;
-
-        sheet.Status = sheet.Items.All(x => x.Status == "Matched" || x.Status == "Discrepancy") ? "Completed" : "Counting";
-        if (!string.IsNullOrWhiteSpace(req.Notes)) sheet.Notes = req.Notes;
+            req.CountedItems.Any(x => x == null || x.ItemId == Guid.Empty || !x.CountedQuantity.HasValue || x.CountedQuantity < 0) ||
+            req.CountedItems.Select(x => x.ItemId).Distinct().Count() != req.CountedItems.Count)
+            return Invalid("Kết quả kiểm kê phải hợp lệ, không âm và không trùng detail.");
+        await using var tx = await mutations.BeginAsync(ct);
         try
         {
-            await context.SaveChangesAsync(cancellationToken);
+            var sheet = await counts.LockSheetAsync(req.CountSheetId, ct);
+            if (sheet == null || sheet.IsDeleted) return Invalid("Không tìm thấy phiếu kiểm kê.");
+            if (sheet.Status != "Pending" && sheet.Status != "Counting")
+                return Conflict("Phiếu đã chốt/hủy; không được xác nhận lại.");
+            if (sheet.Items.Count == 0 || !sheet.Items.Select(x => x.Id).ToHashSet().SetEquals(req.CountedItems.Select(x => x.ItemId)))
+                return Invalid("Phải cung cấp toàn bộ detail của phiếu đúng một lần.");
+            if (sheet.Items.Any(x => x.Status != "Pending" || !x.SnapshotBinInventoryId.HasValue ||
+                x.SnapshotRowVersion?.Length != 8 || x.SystemQuantity < 0) ||
+                sheet.Items.GroupBy(x => x.SnapshotBinInventoryId).Any(g => g.Count() != 1) ||
+                sheet.Items.GroupBy(x => (x.BinId, x.ProductId, Lot: InventoryMutationRules.Lot(x.LotNumber))).Any(g => g.Count() != 1))
+                return Conflict("Phiếu thiếu snapshot evidence hoặc identity/detail không hợp lệ; cần lập lại phiếu.");
+            var values = req.CountedItems.ToDictionary(x => x.ItemId, x => x.CountedQuantity!.Value);
+            var corrections = new List<(CycleCountItem Item, BinInventory Stock, int Counted, long Delta)>();
+            foreach (var item in sheet.Items.OrderBy(x => x.BinId).ThenBy(x => x.ProductId).ThenBy(x => x.LotNumber, StringComparer.Ordinal))
+            {
+                var rows = await counts.LockLotAsync(item.BinId, item.ProductId, InventoryMutationRules.Lot(item.LotNumber), ct);
+                if (rows.Count != 1 || rows[0].Id != item.SnapshotBinInventoryId ||
+                    !rows[0].RowVersion.SequenceEqual(item.SnapshotRowVersion!) || rows[0].Quantity != item.SystemQuantity ||
+                    !string.Equals(rows[0].LotNumber, item.LotNumber, StringComparison.Ordinal))
+                    return Conflict("Snapshot identity/RowVersion đã thay đổi; cần lập lại phiếu.");
+                var stock = rows[0];
+                if (!await CycleCountRules.SupportedAsync(context, mutations, counts, stock, ct))
+                    return Invalid("Không hỗ trợ kiểm kê tồn kho Serial/LPN, reservation/workflow hoặc dữ liệu không hợp lệ.");
+                var counted = values[item.Id];
+                if (counted < stock.ReservedQuantity) return Invalid("Correction không được thấp hơn reservation.");
+                corrections.Add((item, stock, counted, (long)counted - item.SystemQuantity));
+            }
+            var changes = corrections.GroupBy(x => x.Stock.BinId)
+                .Select(g => (Bin: g.First().Stock.Bin, Delta: g.Sum(x => x.Delta))).ToList();
+            foreach (var change in changes)
+                if (!InventoryMutationRules.ValidOccupancy(change.Bin, change.Bin.CurrentOccupancy + change.Delta))
+                    return Invalid("Correction làm occupancy không hợp lệ hoặc vượt sức chứa.");
+            foreach (var correction in corrections)
+            {
+                correction.Item.CountedQuantity = correction.Counted;
+                correction.Item.Status = correction.Delta == 0 ? "Matched" : "Discrepancy";
+                if (correction.Delta == 0) continue;
+                correction.Stock.Quantity = correction.Counted;
+                context.InventoryTransactions.Add(new InventoryTransaction
+                {
+                    Id = Guid.NewGuid(), ProductId = correction.Stock.ProductId, BinInventoryId = correction.Stock.Id,
+                    TransactionType = "ADJUSTMENT", QuantityChanged = checked((int)correction.Delta),
+                    SourceBinCode = correction.Stock.Bin.Code, DestinationBinCode = correction.Stock.Bin.Code,
+                    ReasonCode = $"CYCLE_COUNT_{sheet.Id:N}"
+                });
+            }
+            foreach (var change in changes)
+                if (change.Delta != 0) change.Bin.CurrentOccupancy += change.Delta;
+            sheet.Status = "Completed";
+            if (!string.IsNullOrWhiteSpace(req.Notes)) sheet.Notes = req.Notes;
+            await context.SaveChangesAsync(ct);
+            await tx.CommitAsync(ct);
+            return Result<bool>.Success(true, "Đã chốt toàn bộ phiếu kiểm kê.");
         }
-        catch (DbUpdateConcurrencyException)
+        catch (Exception ex) when (mutations.IsConflict(ex))
         {
-            return Conflict("Tồn kho vừa bị cập nhật bởi thao tác khác. Không chốt phiếu; vui lòng tải lại và kiểm kê lại.");
+            await tx.RollbackAsync();
+            return Conflict("Xung đột kiểm kê; không có correction được commit. Hãy tải lại.");
         }
-        return Result<bool>.Success(true, $"Chốt sổ thành công; {corrections.Count(x => x.Difference != 0)} detail có chênh lệch đã được điều chỉnh.");
     }
-
     private static Result<bool> Invalid(string message) => Result<bool>.Failure(ErrorCodeConstants.ValidationError, message);
     private static Result<bool> Conflict(string message) => Result<bool>.Failure(ErrorCodeConstants.Conflict, message);
 }

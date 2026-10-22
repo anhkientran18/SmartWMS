@@ -74,6 +74,7 @@ public static class InfrastructureConfiguration
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IInventoryMutationCoordinator, InventoryMutationCoordinator>();
+        services.AddScoped<ICycleCountCoordinator, CycleCountCoordinator>();
 
         return services;
     }

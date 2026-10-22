@@ -41,11 +41,7 @@ public class CycleCountingController : ControllerBase
     [HttpGet("pending-tasks")]
     public async Task<IActionResult> GetPendingTasks([FromQuery] string? operatorName = null)
     {
-        // Sử dụng HttpContext.User nếu ICurrentUserService không có sẵn thuộc tính tên
-        var currentOperator = !string.IsNullOrWhiteSpace(operatorName)
-            ? operatorName
-            : User.Identity?.Name ?? "WarehouseStaff";
-
-        return (await _mediator.Send(new GetPendingCountTasksQuery { OperatorName = currentOperator })).ToActionResult();
+        // Legacy operatorName is accepted for compatibility; it cannot override authenticated assignment.
+        return (await _mediator.Send(new GetPendingCountTasksQuery())).ToActionResult();
     }
 }

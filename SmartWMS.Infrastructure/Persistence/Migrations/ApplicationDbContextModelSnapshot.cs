@@ -288,6 +288,12 @@ namespace SmartWMS.Infrastructure.Migrations
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("SnapshotBinInventoryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("SnapshotRowVersion")
+                        .HasColumnType("binary(8)");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");

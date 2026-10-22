@@ -13,14 +13,18 @@ namespace SmartWMS.Application.Features.CycleCounting.Queries.GetPendingCountTas
 public class GetPendingCountTasksQueryHandler : IRequestHandler<GetPendingCountTasksQuery, Result<List<CycleCountTaskDto>>>
 {
     private readonly IApplicationDbContext _context;
+    private readonly ICurrentUserService _currentUser;
 
-    public GetPendingCountTasksQueryHandler(IApplicationDbContext context)
+    public GetPendingCountTasksQueryHandler(IApplicationDbContext context, ICurrentUserService currentUser)
     {
         _context = context;
+        _currentUser = currentUser;
     }
 
     public async Task<Result<List<CycleCountTaskDto>>> Handle(GetPendingCountTasksQuery request, CancellationToken cancellationToken)
     {
+        if (!Guid.TryParse(_currentUser.UserId, out var userId))
+            return Result<List<CycleCountTaskDto>>.Failure("Không xác định được nhân viên đang đăng nhập.");
         // 1. Truy vấn các phiếu kiểm kê chưa hoàn thành từ Database
         var pendingSheets = await _context.CycleCountSheets
             .AsNoTracking()
@@ -28,14 +32,15 @@ public class GetPendingCountTasksQueryHandler : IRequestHandler<GetPendingCountT
             .Include(s => s.Items).ThenInclude(i => i.Bin)
             .Include(s => s.Items)
                 .ThenInclude(i => i.Product)
-            .Where(s => !s.IsDeleted && (s.Status == "Pending" || s.Status == "Counting"))
+            .Where(s => !s.IsDeleted && s.AssignedUserId == userId &&
+                (s.Status == "Pending" || s.Status == "Counting"))
             .ToListAsync(cancellationToken);
 
         var pendingTasks = new List<CycleCountTaskDto>();
 
         foreach (var sheet in pendingSheets)
         {
-            foreach (var item in sheet.Items)
+            foreach (var item in sheet.Items.Where(x => x.Status == "Pending"))
             {
                 pendingTasks.Add(new CycleCountTaskDto
                 {
