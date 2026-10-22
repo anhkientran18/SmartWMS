@@ -8,7 +8,8 @@ public sealed class ZoneBinCheckForDeleteSpec : Specification<Bin>
 {
     public ZoneBinCheckForDeleteSpec(Guid zoneId)
     {
-        AndCriteria(x => x.ZoneId == zoneId && !x.IsDeleted);
+        // Physical zone deletion must also preserve soft-deleted bins and their history.
+        AndCriteria(x => x.ZoneId == zoneId);
         AsNoTracking = true;
     }
 }

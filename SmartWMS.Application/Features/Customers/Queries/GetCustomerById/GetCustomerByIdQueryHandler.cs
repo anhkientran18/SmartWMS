@@ -4,7 +4,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using SmartWMS.Application.Common.Interfaces;
 using SmartWMS.Application.Common.Models;
-using SmartWMS.Application.Common.Exceptions;
+using SmartWMS.Application.Common.Constants;
 using SmartWMS.Application.Features.Customers.DTOs;
 
 namespace SmartWMS.Application.Features.Customers.Queries.GetCustomerById;
@@ -22,11 +22,11 @@ public class GetCustomerByIdQueryHandler : IRequestHandler<GetCustomerByIdQuery,
     {
         var customer = await _context.Customers
             .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Id == request.Id, cancellationToken);
+            .FirstOrDefaultAsync(c => c.Id == request.Id && !c.IsDeleted, cancellationToken);
 
         if (customer == null)
         {
-            throw new NotFoundException(nameof(Domain.Entities.Customer), request.Id);
+            return Result<CustomerDto>.Failure(ErrorCodeConstants.NotFound, "Không tìm thấy khách hàng yêu cầu.");
         }
 
         var dto = new CustomerDto
@@ -35,6 +35,7 @@ public class GetCustomerByIdQueryHandler : IRequestHandler<GetCustomerByIdQuery,
             Code = customer.Code,
             Name = customer.Name,
             Email = customer.Email,
+            Phone = customer.Phone,
             Address = customer.Address
         };
 

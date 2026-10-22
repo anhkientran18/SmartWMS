@@ -20,7 +20,7 @@ public class GetPaginatedCustomersQueryHandler : IRequestHandler<GetPaginatedCus
 
     public async Task<Result<PaginatedResult<CustomerDto>>> Handle(GetPaginatedCustomersQuery request, CancellationToken cancellationToken)
     {
-        var query = _context.Customers.AsNoTracking().AsQueryable();
+        var query = _context.Customers.AsNoTracking().Where(c => !c.IsDeleted);
 
         if (!string.IsNullOrWhiteSpace(request.SearchTerm))
         {
@@ -44,6 +44,7 @@ public class GetPaginatedCustomersQueryHandler : IRequestHandler<GetPaginatedCus
                 Code = c.Code,
                 Name = c.Name,
                 Email = c.Email,
+                Phone = c.Phone,
                 Address = c.Address // Đã sửa từ c.DeliveryAddress thành c.Address
             })
             .ToListAsync(cancellationToken);
