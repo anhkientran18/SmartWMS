@@ -1,6 +1,18 @@
 # SmartWMS backend handoff — 2026-10-22 (Asia/Saigon)
 
-> Audit baseline bên dưới đã được checkpoint tại `b640f3327ffc47d68bdb680e1684aa8871d7a0e7` (source BinId: `7a9e1c3ba30ca7df1777c8d568a07cb1d473d491`). Receive path có thay đổi **Phase B1 trong working tree**; contract/verification hiện hành xem [PHASE_B1_INBOUND.md](PHASE_B1_INBOUND.md). Finding P0-03/P1-03 bên dưới mô tả receive **trước B1**; finding ngoài receive chưa được sửa.
+> Trạng thái hiện hành sau B2: xem [PHASE_B2.md](PHASE_B2.md). B1 implementation đã commit `5a7377bf353ede47958dcdfa96f52015916f3152`, docs `b668e3cdeddc1c0b3389d131bb8e00957e77a2bb`; receive Stable trong scope None/Lot không LPN, xem [PHASE_B1_INBOUND.md](PHASE_B1_INBOUND.md).
+
+## Cập nhật B2 — 2026-10-22
+
+- Branch `main`; checkpoint fixture Phase4A: `bf243719779d5cb8d737e8c696e29e0e6d2a108f`; B2 code/verification: `7439d01ad3d7bc2fb117cfa7342ac140e7ea4fa8`. Các mục từ **Phạm vi snapshot** trở xuống giữ nguyên làm audit lịch sử tại HEAD cũ, không phải kết quả hiện hành.
+- Build solution PASS, 0 warnings/errors. Stock-summary boundary + HTTP: **15 PASS**; migration-from-empty + compatibility: **25 PASS**; Phase4A **95 PASS**, Phase4B **107 PASS**, ReleaseHardening **65 PASS**, DeleteRace **31 PASS**, Inbound B1 + HTTP **142 PASS**. Mỗi regression chạy một lượt B2, exit 0, cleanup fixture thành công.
+- P1-08 verification gap đã đóng: fixture source-first, không đổi timeout/assertion/backend locking. B2 regression xác nhận lại full Phase4A. Transfer/adjust/status có đủ bằng chứng handler suite; HTTP role/retry mất response vẫn chưa được kiểm đầy đủ nên chưa promote toàn module Stable.
+- Stock-summary không còn overflow Int32: SQL aggregate và CLR total dùng Int64; `totalQuantity` là JSON integer/int64. Vẫn physical stock của active products có inventory rows, gồm mọi status/reserved quantity. Low-stock/dashboard chỉ sửa cùng aggregate overflow, không đổi threshold/filter.
+- Database trống thực thi đủ **30/30 migrations**, không synthetic history hoặc demo data. Nhánh inventory-empty trong migration tracking foundation cho phép bootstrap; nonempty legacy giữ các guard/mapping cũ. Schema/model không đổi; migration đã áp dụng không chạy lại. SmartWMS_DB chỉ đọc snapshot, không seed/migrate/write.
+- P0-03/P1-03 receive đã xử lý trong scope B1; Serial/LPN inbound vẫn reject có chủ đích. P0-01 Kitting, P0-02 AutoReplenishment và P1-01/02 Outbound vẫn mở; các finding policy/crossdock/retry/cycle ngoài scope không đổi.
+- Có thể bắt đầu phase phát triển/review Outbound. Outbound hiện **Partial**, chưa đủ điều kiện tích hợp full lifecycle; backend chưa production-ready với các P0 ngoài scope còn mở. B2 không sửa Outbound/Kitting/Replenishment.
+
+## Audit lịch sử trước B1/B2
 
 ## Phạm vi snapshot
 
