@@ -48,14 +48,17 @@ try
     await using (var db = Db()) await db.Database.EnsureCreatedAsync();
     Console.WriteLine("Isolated fixture database: " + database);
     async Task<Fixture> Fixture(int quantity = 10, int reserved = 4, ProductTrackingMode mode = ProductTrackingMode.None,
-        int expiryDays = 90, InventoryStatus status = InventoryStatus.Available)
+        int expiryDays = 90, InventoryStatus status = InventoryStatus.Available, bool sourceFirst = false)
     {
         await using var db = Db();
         var tag = Guid.NewGuid().ToString("N");
         var warehouse = new Warehouse { Id = Guid.NewGuid(), Code = tag, Name = tag };
         var zone = new Zone { Id = Guid.NewGuid(), Code = tag, Name = tag, Warehouse = warehouse };
-        var source = new Bin { Id = Guid.NewGuid(), Code = "S" + tag, Zone = zone, MaxCapacity = int.MaxValue, CurrentOccupancy = quantity };
-        var destination = new Bin { Id = Guid.NewGuid(), Code = "D" + tag, Zone = zone, MaxCapacity = int.MaxValue };
+        var sourceId = Guid.NewGuid(); var destinationId = Guid.NewGuid();
+        if (sourceFirst && sourceId.CompareTo(destinationId) > 0)
+            (sourceId, destinationId) = (destinationId, sourceId);
+        var source = new Bin { Id = sourceId, Code = "S" + tag, Zone = zone, MaxCapacity = int.MaxValue, CurrentOccupancy = quantity };
+        var destination = new Bin { Id = destinationId, Code = "D" + tag, Zone = zone, MaxCapacity = int.MaxValue };
         var product = new Product { Id = Guid.NewGuid(), SKU = tag, Barcode = tag, Name = tag, TrackingMode = mode };
         var stock = new BinInventory { Id = Guid.NewGuid(), Bin = source, Product = product, LotNumber = "LOT-DEFAULT",
             Quantity = quantity, ReservedQuantity = reserved, Status = status, ExpirationDate = DateTime.UtcNow.AddDays(expiryDays) };
@@ -323,7 +326,11 @@ try
     }
 
     // Exercise the actual handler's catch/rollback boundary with a real SQL 1222, not a classifier-only test.
-    var timeoutFixture = await Fixture(reserved: 0);
+    // The handler locks GUID-sorted bins, not source first. A destination range scan can block
+    // before the source query. Route this source-specific probe to the first attempted lock.
+    var timeoutFixture = await Fixture(reserved: 0, sourceFirst: true);
+    Check(timeoutFixture.Source.CompareTo(timeoutFixture.Destination) < 0,
+        "lock-timeout fixture source is first in the production GUID lock order");
     var timeoutStockBefore = await Stock(timeoutFixture);
     var timeoutLedgerBefore = await Ledger();
     var timeoutProbe = new LockTimeoutProbe(timeoutFixture.Source);
@@ -345,6 +352,13 @@ try
             await using var blockingTransaction = await blocker.BeginAsync(default);
             await blocker.LockLotAsync(timeoutFixture.Source, timeoutFixture.Product, "LOT-DEFAULT", default);
             var result = await Transfer(timeoutFixture, 1, blockedHandlerDb);
+            await File.WriteAllTextAsync(Path.Combine(report, "lock-timeout-evidence.json"), JsonSerializer.Serialize(new
+            {
+                timeoutFixture.Source, timeoutFixture.Destination, timeoutFixture.Stock,
+                SourceSortsFirst = timeoutFixture.Source.CompareTo(timeoutFixture.Destination) < 0,
+                LockTimeoutMilliseconds = 500,
+                timeoutProbe.SourceLockAttempts, timeoutProbe.TimeoutCount, timeoutProbe.Commands
+            }, new JsonSerializerOptions { WriteIndented = true }));
             Check(!result.IsSuccess && result.Error?.Code == "COM_409", "production Transfer handler returns COM_409 for SQL 1222 without escaping exception");
             Check(timeoutProbe.TimeoutCount == 1 && timeoutProbe.SourceLockAttempts == 1,
                 $"handler encountered exactly one real SQL 1222; no mutation retry (timeouts={timeoutProbe.TimeoutCount}, attempts={timeoutProbe.SourceLockAttempts})");
@@ -489,9 +503,13 @@ sealed class LockTimeoutProbe(Guid sourceBin) : DbCommandInterceptor, ILoggerPro
 {
     public int TimeoutCount { get; private set; }
     public int SourceLockAttempts { get; private set; }
+    public List<object> Commands { get; } = new();
     public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(DbCommand command, CommandEventData eventData,
         InterceptionResult<DbDataReader> result, CancellationToken cancellationToken = default)
     {
+        Commands.Add(new { command.CommandText, Isolation = command.Transaction?.IsolationLevel.ToString(),
+            Parameters = command.Parameters.Cast<DbParameter>().Select(x => new { x.ParameterName,
+                Type = x.Value?.GetType().FullName, Value = x.Value?.ToString() }).ToArray() });
         if (command.CommandText.Contains("UPDLOCK", StringComparison.Ordinal) &&
             command.Parameters.Cast<DbParameter>().Any(x => x.Value is Guid id && id == sourceBin)) SourceLockAttempts++;
         return ValueTask.FromResult(result);
