@@ -1,0 +1,1534 @@
+{
+  "checkpoint": "54695729aadbe7753671e0eee00cf4e80734af21",
+  "branch": "main",
+  "sourceRoutes": 96,
+  "postmanRequests": 119,
+  "releaseReadyHappy200": 93,
+  "releaseReadyTotal": 93,
+  "latestNewmanAssertions": {
+    "total": 271,
+    "pending": 0,
+    "failed": 4
+  },
+  "httpChecks": {
+    "passed": 251,
+    "total": 251
+  },
+  "dataChecks": {
+    "passed": 20,
+    "total": 20
+  },
+  "infrastructureChecks": {
+    "passed": 7,
+    "total": 7
+  },
+  "regressionHarness": {
+    "passed": 12,
+    "total": 12
+  },
+  "baselineTrackedPathsUnchanged": 25,
+  "b4Unchanged": true,
+  "indexEmpty": true,
+  "K1R1SourceUnchanged": true,
+  "latestFailures": [
+    {
+      "request": "GET /api/v1/Dashboard/executive",
+      "test": "Core plus live AI available",
+      "message": "expected false to equal true"
+    },
+    {
+      "request": "GET /api/v1/Dashboard/ai-slotting-recommendations?zoneId={{zoneId}}",
+      "test": "EXTERNAL DEPENDENCY BLOCKED: live happy path required",
+      "message": "Provider unavailable HTTP 502"
+    },
+    {
+      "request": "POST /api/v1/InboundReceipts/scan-invoice",
+      "test": "EXTERNAL DEPENDENCY BLOCKED: live happy path required",
+      "message": "Provider unavailable HTTP 502"
+    },
+    {
+      "request": "POST /api/v1/InboundReceipts/report-damage",
+      "test": "EXTERNAL DEPENDENCY BLOCKED: live happy path required",
+      "message": "Provider unavailable HTTP 502"
+    }
+  ],
+  "routeEvidence": [
+    {
+      "method": "GET",
+      "route": "/api/v1/AuditLogs",
+      "auth": "Roles = \"Admin\"",
+      "source": "SmartWMS.Api/Controllers/AuditLogsController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "AuditLogs workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/Auth/login",
+      "auth": "Authorize",
+      "source": "SmartWMS.Api/Controllers/AuthController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Auth workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/Auth/logout",
+      "auth": "Authorize",
+      "source": "SmartWMS.Api/Controllers/AuthController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Auth workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/Bins/list",
+      "auth": "Roles = \"Admin,WarehouseManager\"; Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/BinsController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Bins workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/Bins",
+      "auth": "Roles = \"Admin,WarehouseManager\"; Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/BinsController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Bins workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/Bins/{id}",
+      "auth": "Roles = \"Admin,WarehouseManager\"; Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/BinsController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Bins workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200,
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/Bins/{id}/contents",
+      "auth": "Roles = \"Admin,WarehouseManager\"; Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/BinsController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Bins workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200,
+        200,
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/Bins",
+      "auth": "Roles = \"Admin,WarehouseManager\"; Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/BinsController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Bins workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200,
+        200,
+        200,
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "PUT",
+      "route": "/api/v1/Bins/{id}",
+      "auth": "Roles = \"Admin,WarehouseManager\"; Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/BinsController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Bins workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "DELETE",
+      "route": "/api/v1/Bins/{id}",
+      "auth": "Roles = \"Admin,WarehouseManager\"; Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/BinsController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Bins workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/Chat/ask",
+      "auth": "Authorize",
+      "source": "SmartWMS.Api/Controllers/ChatController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Chat workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200,
+        400
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/Customers/list",
+      "auth": "Roles = \"Admin, WarehouseManager, Staff\"",
+      "source": "SmartWMS.Api/Controllers/CustomersController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Customers workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/Customers",
+      "auth": "Roles = \"Admin, WarehouseManager, Staff\"",
+      "source": "SmartWMS.Api/Controllers/CustomersController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Customers workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/Customers/{id}",
+      "auth": "Roles = \"Admin, WarehouseManager, Staff\"",
+      "source": "SmartWMS.Api/Controllers/CustomersController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Customers workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200,
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/Customers",
+      "auth": "Roles = \"Admin, WarehouseManager, Staff\"",
+      "source": "SmartWMS.Api/Controllers/CustomersController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Customers workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200,
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "PUT",
+      "route": "/api/v1/Customers/{id}",
+      "auth": "Roles = \"Admin, WarehouseManager, Staff\"",
+      "source": "SmartWMS.Api/Controllers/CustomersController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Customers workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "DELETE",
+      "route": "/api/v1/Customers/{id}",
+      "auth": "Roles = \"Admin, WarehouseManager, Staff\"",
+      "source": "SmartWMS.Api/Controllers/CustomersController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Customers workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/CycleCounting/create-sheet",
+      "auth": "Authorize",
+      "source": "SmartWMS.Api/Controllers/CycleCountingController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "CycleCounting workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/CycleCounting/{id}",
+      "auth": "Authorize",
+      "source": "SmartWMS.Api/Controllers/CycleCountingController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "CycleCounting workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200,
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/CycleCounting/confirm",
+      "auth": "Authorize",
+      "source": "SmartWMS.Api/Controllers/CycleCountingController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "CycleCounting workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/CycleCounting/pending-tasks",
+      "auth": "Authorize",
+      "source": "SmartWMS.Api/Controllers/CycleCountingController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "CycleCounting workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/Dashboard/executive",
+      "auth": "Authorize",
+      "source": "SmartWMS.Api/Controllers/DashboardController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Dashboard workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED; latest live AI dependency failure (earlier happy verified)"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/Dashboard/inbound-outbound-chart",
+      "auth": "Authorize",
+      "source": "SmartWMS.Api/Controllers/DashboardController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Dashboard workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/Dashboard/warehouse-occupancy",
+      "auth": "Authorize",
+      "source": "SmartWMS.Api/Controllers/DashboardController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Dashboard workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/Dashboard/ai-agent-metrics",
+      "auth": "Authorize",
+      "source": "SmartWMS.Api/Controllers/DashboardController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Dashboard workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/Dashboard/ai-slotting-recommendations",
+      "auth": "Authorize",
+      "source": "SmartWMS.Api/Controllers/DashboardController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Dashboard workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        502
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED; latest live AI dependency failure (earlier happy verified)"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/Forecasts/demand-prediction",
+      "auth": "Roles = \"Admin,WarehouseManager\"",
+      "source": "SmartWMS.Api/Controllers/ForecastsController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Forecasts workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/InboundReceipts",
+      "auth": "Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/InboundReceiptsController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "InboundReceipts workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200,
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/InboundReceipts/confirm-receipt",
+      "auth": "Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/InboundReceiptsController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "InboundReceipts workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200,
+        409
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "PUT",
+      "route": "/api/v1/InboundReceipts/{id}",
+      "auth": "Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/InboundReceiptsController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "InboundReceipts workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "DELETE",
+      "route": "/api/v1/InboundReceipts/{id}",
+      "auth": "Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/InboundReceiptsController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "InboundReceipts workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/InboundReceipts",
+      "auth": "Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/InboundReceiptsController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "InboundReceipts workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/InboundReceipts/{id}",
+      "auth": "Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/InboundReceiptsController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "InboundReceipts workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200,
+        200,
+        200,
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/InboundReceipts/list",
+      "auth": "Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/InboundReceiptsController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "InboundReceipts workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/InboundReceipts/putaway-suggestion",
+      "auth": "Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/InboundReceiptsController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "InboundReceipts workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/InboundReceipts/process-crossdock",
+      "auth": "Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/InboundReceiptsController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "InboundReceipts workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        409,
+        200
+      ],
+      "classification": "DEFERRED BY DESIGN; no-demand200 / B3 conflict409"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/InboundReceipts/scan-invoice",
+      "auth": "Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/InboundReceiptsController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "InboundReceipts workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        502
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED; latest live AI dependency failure (earlier happy verified)"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/InboundReceipts/report-damage",
+      "auth": "Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/InboundReceiptsController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "InboundReceipts workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        502
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED; latest live AI dependency failure (earlier happy verified)"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/Inventory/stock-summary",
+      "auth": "Authorize",
+      "source": "SmartWMS.Api/Controllers/InventoryController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Inventory workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/Inventory/low-stock-alerts",
+      "auth": "Authorize",
+      "source": "SmartWMS.Api/Controllers/InventoryController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Inventory workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/Inventory/adjust-stock",
+      "auth": "Authorize",
+      "source": "SmartWMS.Api/Controllers/InventoryController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Inventory workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/Inventory/stock-history",
+      "auth": "Authorize",
+      "source": "SmartWMS.Api/Controllers/InventoryController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Inventory workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200,
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/Inventory/change-status",
+      "auth": "Authorize",
+      "source": "SmartWMS.Api/Controllers/InventoryController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Inventory workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/Inventory/run-auto-replenish",
+      "auth": "Authorize",
+      "source": "SmartWMS.Api/Controllers/InventoryController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Inventory workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200,
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/InventoryTransfers",
+      "auth": "Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/InventoryTransfersController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "InventoryTransfers workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/InventoryTransfers/list",
+      "auth": "Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/InventoryTransfersController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "InventoryTransfers workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/InventoryTransfers/{id}",
+      "auth": "Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/InventoryTransfersController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "InventoryTransfers workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200,
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/InventoryTransfers",
+      "auth": "Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/InventoryTransfersController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "InventoryTransfers workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/Kitting/assemble",
+      "auth": "Roles = \"Admin,WarehouseManager\"",
+      "source": "SmartWMS.Api/Controllers/KittingController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Kitting workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/OutboundOrders/list",
+      "auth": "Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/OutboundOrdersController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "OutboundOrders workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/OutboundOrders",
+      "auth": "Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/OutboundOrdersController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "OutboundOrders workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/OutboundOrders/{id}",
+      "auth": "Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/OutboundOrdersController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "OutboundOrders workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200,
+        200,
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/OutboundOrders",
+      "auth": "Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/OutboundOrdersController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "OutboundOrders workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200,
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "PUT",
+      "route": "/api/v1/OutboundOrders/{id}",
+      "auth": "Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/OutboundOrdersController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "OutboundOrders workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "DELETE",
+      "route": "/api/v1/OutboundOrders/{id}",
+      "auth": "Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/OutboundOrdersController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "OutboundOrders workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/OutboundOrders/allocate-pick-task",
+      "auth": "Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/OutboundOrdersController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "OutboundOrders workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/OutboundOrders/create-wave-pick",
+      "auth": "Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/OutboundOrdersController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "OutboundOrders workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": false,
+      "latestStatuses": [
+        409
+      ],
+      "classification": "UNSUPPORTED BY DESIGN (B3); EXPECTED REJECTION409 VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/OutboundOrders/pick-verify",
+      "auth": "Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/OutboundOrdersController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "OutboundOrders workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": false,
+      "latestStatuses": [
+        409
+      ],
+      "classification": "UNSUPPORTED BY DESIGN (B3); EXPECTED REJECTION409 VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/OutboundOrders/{id}/pick",
+      "auth": "Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/OutboundOrdersController.cs",
+      "oldPostman": false,
+      "postman": true,
+      "dependencies": "OutboundOrders workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200,
+        409
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/OutboundOrders/{id}/pack",
+      "auth": "Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/OutboundOrdersController.cs",
+      "oldPostman": false,
+      "postman": true,
+      "dependencies": "OutboundOrders workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/OutboundOrders/{id}/ship",
+      "auth": "Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/OutboundOrdersController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "OutboundOrders workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/OutboundOrders/validate-weight",
+      "auth": "Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/OutboundOrdersController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "OutboundOrders workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200,
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/Products/{id}",
+      "auth": "Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/ProductsController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Products workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200,
+        200,
+        200,
+        400
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/Products/list",
+      "auth": "Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/ProductsController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Products workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/Products",
+      "auth": "Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/ProductsController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Products workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/Products",
+      "auth": "Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/ProductsController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Products workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200,
+        200,
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "PUT",
+      "route": "/api/v1/Products/{id}",
+      "auth": "Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/ProductsController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Products workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "DELETE",
+      "route": "/api/v1/Products/{id}",
+      "auth": "Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/ProductsController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Products workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/Products/semantic-search",
+      "auth": "Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/ProductsController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Products workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200,
+        400
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/Products/{sku}/qrcode",
+      "auth": "Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/ProductsController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Products workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/Products/parse-barcode",
+      "auth": "Roles = \"Admin,WarehouseManager,Staff\"",
+      "source": "SmartWMS.Api/Controllers/ProductsController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Products workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/Reports/export/excel",
+      "auth": "Roles = \"Admin,WarehouseManager\"",
+      "source": "SmartWMS.Api/Controllers/ReportsController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Reports workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/Suppliers/list",
+      "auth": "Roles = \"Admin, WarehouseManager\"",
+      "source": "SmartWMS.Api/Controllers/SuppliersController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Suppliers workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/Suppliers",
+      "auth": "Roles = \"Admin, WarehouseManager\"",
+      "source": "SmartWMS.Api/Controllers/SuppliersController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Suppliers workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/Suppliers/{id}",
+      "auth": "Roles = \"Admin, WarehouseManager\"",
+      "source": "SmartWMS.Api/Controllers/SuppliersController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Suppliers workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200,
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/Suppliers",
+      "auth": "Roles = \"Admin, WarehouseManager\"",
+      "source": "SmartWMS.Api/Controllers/SuppliersController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Suppliers workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200,
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "PUT",
+      "route": "/api/v1/Suppliers/{id}",
+      "auth": "Roles = \"Admin, WarehouseManager\"",
+      "source": "SmartWMS.Api/Controllers/SuppliersController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Suppliers workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "DELETE",
+      "route": "/api/v1/Suppliers/{id}",
+      "auth": "Roles = \"Admin, WarehouseManager\"",
+      "source": "SmartWMS.Api/Controllers/SuppliersController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Suppliers workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/Users/list",
+      "auth": "Roles = \"Admin\"",
+      "source": "SmartWMS.Api/Controllers/UsersController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Users workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/Users/{id}",
+      "auth": "Roles = \"Admin\"",
+      "source": "SmartWMS.Api/Controllers/UsersController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Users workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200,
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/Users",
+      "auth": "Roles = \"Admin\"",
+      "source": "SmartWMS.Api/Controllers/UsersController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Users workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/Users",
+      "auth": "Roles = \"Admin\"",
+      "source": "SmartWMS.Api/Controllers/UsersController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Users workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "PUT",
+      "route": "/api/v1/Users/{id}",
+      "auth": "Roles = \"Admin\"",
+      "source": "SmartWMS.Api/Controllers/UsersController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Users workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "DELETE",
+      "route": "/api/v1/Users/{id}",
+      "auth": "Roles = \"Admin\"",
+      "source": "SmartWMS.Api/Controllers/UsersController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Users workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/Warehouses",
+      "auth": "Roles = \"Admin,WarehouseManager\"",
+      "source": "SmartWMS.Api/Controllers/WarehousesController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Warehouses workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/Warehouses/list",
+      "auth": "Roles = \"Admin,WarehouseManager\"",
+      "source": "SmartWMS.Api/Controllers/WarehousesController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Warehouses workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/Warehouses/{id}",
+      "auth": "Roles = \"Admin,WarehouseManager\"",
+      "source": "SmartWMS.Api/Controllers/WarehousesController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Warehouses workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200,
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/Warehouses",
+      "auth": "Roles = \"Admin,WarehouseManager\"",
+      "source": "SmartWMS.Api/Controllers/WarehousesController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Warehouses workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200,
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "PUT",
+      "route": "/api/v1/Warehouses/{id}",
+      "auth": "Roles = \"Admin,WarehouseManager\"",
+      "source": "SmartWMS.Api/Controllers/WarehousesController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Warehouses workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "DELETE",
+      "route": "/api/v1/Warehouses/{id}",
+      "auth": "Roles = \"Admin,WarehouseManager\"",
+      "source": "SmartWMS.Api/Controllers/WarehousesController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Warehouses workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/Zones/list",
+      "auth": "Roles = \"Admin,WarehouseManager\"",
+      "source": "SmartWMS.Api/Controllers/ZonesController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Zones workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/Zones/warehouse/{warehouseId}",
+      "auth": "Roles = \"Admin,WarehouseManager\"",
+      "source": "SmartWMS.Api/Controllers/ZonesController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Zones workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/Zones",
+      "auth": "Roles = \"Admin,WarehouseManager\"",
+      "source": "SmartWMS.Api/Controllers/ZonesController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Zones workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/Zones",
+      "auth": "Roles = \"Admin,WarehouseManager\"",
+      "source": "SmartWMS.Api/Controllers/ZonesController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Zones workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200,
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "PUT",
+      "route": "/api/v1/Zones/{id}",
+      "auth": "Roles = \"Admin,WarehouseManager\"",
+      "source": "SmartWMS.Api/Controllers/ZonesController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Zones workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    },
+    {
+      "method": "DELETE",
+      "route": "/api/v1/Zones/{id}",
+      "auth": "Roles = \"Admin,WarehouseManager\"",
+      "source": "SmartWMS.Api/Controllers/ZonesController.cs",
+      "oldPostman": true,
+      "postman": true,
+      "dependencies": "Zones workflow fixtures",
+      "status": "PENDING RUNTIME",
+      "happyVerified": true,
+      "latestStatuses": [
+        200
+      ],
+      "classification": "PASS — HAPPY PATH VERIFIED"
+    }
+  ],
+  "latestReleaseReadyHappy200": 89
+}

@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using SmartWMS.Application.Common.Interfaces;
 using SmartWMS.Application.Common.Models;
 using System.Threading;
@@ -21,7 +21,7 @@ public class GetAiChatResponseQueryHandler : IRequestHandler<GetAiChatResponseQu
             return Result<string>.Failure("Tin nhắn không được để trống.");
 
         // Gọi hàm GenerateInsightAsync của IAiInsightService để xử lý prompt trao đổi với AI
-        string aiResponse = await _aiInsightService.GenerateInsightAsync(request.RequestData.Message);
+        string aiResponse = await _aiInsightService.GenerateInsightAsync(request.RequestData.Message, cancellationToken);
 
         return Result<string>.Success(aiResponse, "Phản hồi từ AI Chatbot thành công.");
     }

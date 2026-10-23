@@ -13,4 +13,6 @@ public class DashboardInsightDto
 
     // Đoạn văn bản phân tích nghiệp vụ và lời khuyên tối ưu không gian từ mô hình AI
     public string AiExecutiveSummary { get; set; } = string.Empty;
+    public bool AiAvailable { get; set; }
+    public string? AiErrorCode { get; set; }
 }

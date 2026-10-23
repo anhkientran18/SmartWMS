@@ -22,4 +22,13 @@ public interface IAiInsightService
 
     // 🌟 BỔ SUNG MỚI: Sử dụng cho AI Dự báo tồn kho (Forecasts)
     Task<string> PredictDemandAsync(string jsonPayload);
+
+    // Existing implementations remain compatible; production transports override these to cancel I/O.
+    Task<string> GenerateInsightAsync(string prompt, CancellationToken ct) => GenerateInsightAsync(prompt).WaitAsync(ct);
+    Task<string> GenerateExecutiveInsightAsync(string data, CancellationToken ct) => GenerateExecutiveInsightAsync(data).WaitAsync(ct);
+    Task<string> AnalyzeReceiptImageAsync(byte[] bytes, string mime, CancellationToken ct) => AnalyzeReceiptImageAsync(bytes, mime).WaitAsync(ct);
+    Task<string> ParseVoiceCommandAsync(string text, CancellationToken ct) => ParseVoiceCommandAsync(text).WaitAsync(ct);
+    Task<string> AnalyzeDamageImageAsync(byte[] bytes, string mime, CancellationToken ct) => AnalyzeDamageImageAsync(bytes, mime).WaitAsync(ct);
+    Task<string> AnalyzeSlottingOptimizationAsync(string data, CancellationToken ct) => AnalyzeSlottingOptimizationAsync(data).WaitAsync(ct);
+    Task<string> PredictDemandAsync(string data, CancellationToken ct) => PredictDemandAsync(data).WaitAsync(ct);
 }

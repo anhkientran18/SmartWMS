@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
@@ -63,8 +63,8 @@ public class ProductsController : ControllerBase
         => (await _mediator.Send(new DeleteProductCommand(new DeleteProductRequest { Id = id }))).ToActionResult();
 
     [HttpGet("semantic-search")]
-    public async Task<IActionResult> SemanticSearch([FromQuery] string text)
-        => (await _mediator.Send(new GetSemanticProductsQuery(new SemanticSearchProductRequest { SearchText = text }))).ToActionResult();
+    public async Task<IActionResult> SemanticSearch([FromQuery] string text, CancellationToken ct)
+        => (await _mediator.Send(new GetSemanticProductsQuery(new SemanticSearchProductRequest { SearchText = text }), ct)).ToActionResult();
 
     [HttpGet("{sku}/qrcode")]
     public async Task<IActionResult> GetQrCode(string sku)

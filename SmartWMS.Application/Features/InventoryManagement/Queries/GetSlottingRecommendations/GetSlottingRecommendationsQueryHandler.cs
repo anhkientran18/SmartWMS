@@ -26,14 +26,14 @@ public class GetSlottingRecommendationsQueryHandler(IApplicationDbContext contex
 
         var stockQuery = context.BinInventories.AsNoTracking()
             .Include(x => x.Product).Include(x => x.Bin).ThenInclude(x => x!.Zone)
-            .Where(x => x.Product != null && !x.Product.IsDeleted && x.Bin != null && !x.Bin.IsDeleted &&
+            .Where(x => x.Quantity > 0 && x.Product != null && !x.Product.IsDeleted && x.Bin != null && !x.Bin.IsDeleted &&
                 x.Bin.Zone != null && !x.Bin.Zone.IsDeleted && !x.Bin.Zone.Warehouse.IsDeleted);
         if (zoneId.HasValue)
             stockQuery = stockQuery.Where(x => x.Bin!.ZoneId == zoneId.Value);
 
         var demand = new OutboundDemandTransactionsSpec(DateTime.UtcNow.AddDays(-30));
         var movements = context.InventoryTransactions.AsNoTracking().Where(demand.Criteria!)
-            .Where(x => x.Product != null && !x.Product.IsDeleted);
+            .Where(x => x.CreatedAt <= DateTime.UtcNow && x.Product != null && !x.Product.IsDeleted && stockQuery.Any(s => s.ProductId == x.ProductId));
         if (zoneId.HasValue)
         {
             // Scope both the product population and the historical source bin, not just the displayed locations.
@@ -57,7 +57,10 @@ public class GetSlottingRecommendationsQueryHandler(IApplicationDbContext contex
                 "Chưa có dữ liệu xuất kho phù hợp trong 30 ngày cho phạm vi Slotting được chọn.");
 
         var currentLocations = await stockQuery.ToListAsync(cancellationToken);
-        var payload = JsonSerializer.Serialize(movementData.Select(m => new
+        var warehouseIds = currentLocations.Select(x => x.Bin!.Zone!.WarehouseId).Distinct().ToList();
+        var allowedZones = await context.Zones.AsNoTracking().Where(x => !x.IsDeleted && !x.Warehouse.IsDeleted && warehouseIds.Contains(x.WarehouseId))
+            .Select(x => new { x.Name, x.WarehouseId }).ToListAsync(cancellationToken);
+        var payload = JsonSerializer.Serialize(new { AllowedZones = allowedZones.Select(x => x.Name).Distinct(), Products = movementData.Select(m => new
         {
             m.SKU,
             m.Name,
@@ -65,18 +68,25 @@ public class GetSlottingRecommendationsQueryHandler(IApplicationDbContext contex
             m.TransactionCount,
             CurrentZones = currentLocations.Where(s => s.ProductId == m.ProductId)
                 .Select(s => s.Bin!.Zone!.Name).Distinct().ToList()
-        }));
+        }) });
 
         try
         {
-            var raw = await aiInsightService.AnalyzeSlottingOptimizationAsync(payload);
+            var raw = await aiInsightService.AnalyzeSlottingOptimizationAsync(payload, cancellationToken);
             if (string.IsNullOrWhiteSpace(raw)) return InvalidResponse();
             var recommendations = JsonSerializer.Deserialize<List<SlottingRecommendationDto>>(raw, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
             });
-            if (recommendations == null || recommendations.Any(x => x == null || !movementData.Any(m => m.SKU == x.SKU)))
+            if (recommendations == null || recommendations.Any(x => x == null) ||
+                recommendations.Select(x => x.SKU).Distinct(StringComparer.Ordinal).Count() != recommendations.Count ||
+                recommendations.Any(x => !movementData.Any(m => m.SKU == x.SKU) ||
+                string.IsNullOrWhiteSpace(x.SuggestedZone) || string.IsNullOrWhiteSpace(x.AIReasoning) ||
+                x.VelocityClass is not ("Fast" or "Medium" or "Slow") ||
+                !currentLocations.Any(s => s.Product!.SKU == x.SKU && s.Bin!.Zone!.Name == x.CurrentZone &&
+                    allowedZones.Any(z => z.Name == x.SuggestedZone && z.WarehouseId == s.Bin!.Zone!.WarehouseId))))
                 return InvalidResponse();
+            foreach (var item in recommendations) item.ProductName = movementData.Single(x => x.SKU == item.SKU).Name;
 
             return Result<List<SlottingRecommendationDto>>.Success(recommendations, "Đã phân tích Slotting khuyến nghị.");
         }

@@ -1,0 +1,306 @@
+{
+  "F1_RESULT": "PARTIAL",
+  "liveFinalHappy200": 89,
+  "liveFinalDenominator": 93,
+  "preservedLiveFailures": 4,
+  "liveCallsThisCertification": 0,
+  "deterministic": {
+    "http": {
+      "passed": 925,
+      "total": 925,
+      "failures": []
+    },
+    "deepData": {
+      "passed": 36,
+      "total": 36,
+      "failures": []
+    },
+    "infrastructure": {
+      "passed": 11,
+      "total": 11,
+      "failures": []
+    },
+    "newmanAssertions": {
+      "total": 275,
+      "pending": 0,
+      "failed": 0
+    },
+    "passed": 1247,
+    "total": 1247
+  },
+  "boundaryScenarios": 128,
+  "boundaryScenariosPassed": 128,
+  "newmanRequests": 119,
+  "expectedHttpRejections": 7,
+  "authorizationMatrix": {
+    "GET /hangfire": {
+      "Anonymous": [
+        200
+      ],
+      "Malformed": [
+        200
+      ],
+      "Expired": [
+        200
+      ],
+      "Admin": [
+        200
+      ],
+      "WarehouseManager": [
+        200
+      ],
+      "Staff": [
+        200
+      ]
+    },
+    "GET Bins/{id}/contents": {
+      "Anonymous": [
+        401
+      ],
+      "Malformed": [
+        401
+      ],
+      "Expired": [
+        401
+      ],
+      "Admin": [
+        200
+      ],
+      "WarehouseManager": [
+        200
+      ],
+      "Staff": [
+        403
+      ]
+    },
+    "GET CycleCounting/{id}": {
+      "Anonymous": [
+        401
+      ],
+      "Malformed": [
+        401
+      ],
+      "Expired": [
+        401
+      ],
+      "Admin": [
+        200
+      ],
+      "WarehouseManager": [
+        200
+      ],
+      "Staff": [
+        200
+      ]
+    },
+    "GET Dashboard/ai-slotting-recommendations?zoneId={id}": {
+      "Anonymous": [
+        401
+      ],
+      "Malformed": [
+        401
+      ],
+      "Expired": [
+        401
+      ],
+      "Admin": [
+        200
+      ],
+      "WarehouseManager": [
+        200
+      ],
+      "Staff": [
+        200
+      ]
+    },
+    "GET Dashboard/executive": {
+      "Anonymous": [
+        401
+      ],
+      "Malformed": [
+        401
+      ],
+      "Expired": [
+        401
+      ],
+      "Admin": [
+        200
+      ],
+      "WarehouseManager": [
+        200
+      ],
+      "Staff": [
+        200
+      ]
+    },
+    "GET Forecasts/demand-prediction?sku={sku}": {
+      "Anonymous": [
+        401
+      ],
+      "Malformed": [
+        401
+      ],
+      "Expired": [
+        401
+      ],
+      "Admin": [
+        200
+      ],
+      "WarehouseManager": [
+        200
+      ],
+      "Staff": [
+        403
+      ]
+    },
+    "POST Chat/ask": {
+      "Anonymous": [
+        401
+      ],
+      "Malformed": [
+        401
+      ],
+      "Expired": [
+        401
+      ],
+      "Admin": [
+        200
+      ],
+      "WarehouseManager": [
+        200
+      ],
+      "Staff": [
+        200
+      ]
+    },
+    "POST CycleCounting/confirm": {
+      "Anonymous": [
+        401
+      ],
+      "Malformed": [
+        401
+      ],
+      "Expired": [
+        401
+      ],
+      "Admin": [
+        200,
+        409
+      ],
+      "WarehouseManager": [
+        200,
+        409
+      ],
+      "Staff": [
+        200,
+        409
+      ]
+    },
+    "POST CycleCounting/create-sheet": {
+      "Anonymous": [
+        401
+      ],
+      "Malformed": [
+        401
+      ],
+      "Expired": [
+        401
+      ],
+      "Admin": [
+        200
+      ],
+      "WarehouseManager": [
+        200
+      ],
+      "Staff": [
+        200
+      ]
+    },
+    "POST Inventory/adjust-stock": {
+      "Anonymous": [
+        401
+      ],
+      "Malformed": [
+        401
+      ],
+      "Expired": [
+        401
+      ],
+      "Admin": [
+        200
+      ],
+      "WarehouseManager": [
+        200
+      ],
+      "Staff": [
+        200
+      ]
+    },
+    "POST Inventory/change-status": {
+      "Anonymous": [
+        401
+      ],
+      "Malformed": [
+        401
+      ],
+      "Expired": [
+        401
+      ],
+      "Admin": [
+        200
+      ],
+      "WarehouseManager": [
+        200
+      ],
+      "Staff": [
+        200
+      ]
+    },
+    "POST Inventory/run-auto-replenish": {
+      "Anonymous": [
+        401
+      ],
+      "Malformed": [
+        401
+      ],
+      "Expired": [
+        401
+      ],
+      "Admin": [
+        200
+      ],
+      "WarehouseManager": [
+        200
+      ],
+      "Staff": [
+        200
+      ]
+    }
+  },
+  "regressionChecks": 884,
+  "regressionHarness": {
+    "passed": 12,
+    "total": 12,
+    "failures": []
+  },
+  "originalEvidenceSha256": {
+    "verification/AcceptanceF1/AcceptanceEvidence.json": "a298c8517d797dafb515f983047f440358689870ce477f4b7362920c06a0c691",
+    "obj/F1/http-final/newman.json": "a82be9a1051f42500576ba27fc49f9d4eb8c935280a7665b16d313cb5854ec2e",
+    "obj/F1/http-final/results.txt": "e151359bf68efff729a7e31ad015bd31355f0ee170150f9d1d22b4435cbf0c69",
+    "obj/F1/regression-final/results.txt": "f95be4efa3d5b87b894973b91ded53fd59cd8e7e33f40129790d6365c14c244f"
+  },
+  "baselineTrackedPathsUnchanged": 25,
+  "B4Unchanged": true,
+  "K1R1Unchanged": true,
+  "indexEmpty": true,
+  "backendLimitations": [
+    "Kitting and transfer are not request-ID idempotent; successful resubmission is another command.",
+    "Image guards validate signature headers, not complete image decoding.",
+    "Semantic registry is single-DB and not tenant/database namespaced; description embeddings can be stale."
+  ],
+  "changesAfterReview": [
+    "No universal model fallback; Development models explicit; missing model503 except executive fallback.",
+    "Reject duplicate slotting SKU recommendations; deduplicate semantic result product IDs.",
+    "Existing Postman descriptions explicitly document LPN/Wave/Serial/Crossdock limits."
+  ]
+}

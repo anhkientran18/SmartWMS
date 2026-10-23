@@ -41,6 +41,7 @@ public static class ResultExtensions
 
     private static int GetStatusCode(string? code) => code switch
     {
+        "AI_RESPONSE_INVALID" => StatusCodes.Status502BadGateway,
         ErrorCodeConstants.Unauthorized => StatusCodes.Status401Unauthorized,
         ErrorCodeConstants.Forbidden => StatusCodes.Status403Forbidden,
         ErrorCodeConstants.NotFound or ErrorCodeConstants.ProductNotFound or

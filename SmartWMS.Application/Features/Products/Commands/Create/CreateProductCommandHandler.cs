@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.Extensions.Caching.Memory;
 using SmartWMS.Application.Common.Constants;
 using SmartWMS.Application.Common.Interfaces;
@@ -42,7 +42,7 @@ public sealed class CreateProductCommandHandler : IRequestHandler<CreateProductC
 
         // 2. Logic AI nhúng Vector
         string textToEmbed = $"{reqData.Name} {reqData.Description}";
-        float[] generatedVector = await _embeddingService.GenerateEmbeddingAsync(textToEmbed);
+        float[] generatedVector = await _embeddingService.GenerateEmbeddingAsync(textToEmbed, cancellationToken);
         string? embeddingJson = generatedVector != null && generatedVector.Length > 0
             ? JsonSerializer.Serialize(generatedVector) : null;
 

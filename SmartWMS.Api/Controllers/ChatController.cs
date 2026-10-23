@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SmartWMS.Api.Extensions;
@@ -18,6 +18,6 @@ public class ChatController : ControllerBase
     public ChatController(IMediator mediator) => _mediator = mediator;
 
     [HttpPost("ask")]
-    public async Task<IActionResult> AskGemini([FromBody] AiChatRequest request)
-        => (await _mediator.Send(new GetAiChatResponseQuery(request))).ToActionResult();
+    public async Task<IActionResult> AskGemini([FromBody] AiChatRequest request, CancellationToken ct)
+        => (await _mediator.Send(new GetAiChatResponseQuery(request), ct)).ToActionResult();
 }

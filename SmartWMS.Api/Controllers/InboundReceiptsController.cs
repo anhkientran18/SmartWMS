@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -85,56 +85,64 @@ public class InboundReceiptsController : ControllerBase
         => (await _mediator.Send(new ProcessCrossDockingCommand(request))).ToActionResult();
 
     [HttpPost("scan-invoice")]
-    public async Task<IActionResult> ScanInboundInvoice(IFormFile file)
+    public async Task<IActionResult> ScanInboundInvoice(IFormFile file, CancellationToken ct)
     {
-        if (file == null || file.Length == 0) return BadRequest(new { IsSuccess = false, Message = "Vui lòng cung cấp hình ảnh hóa đơn hợp lệ từ Camera." });
-
-        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
-        var extension = Path.GetExtension(file.FileName).ToLower();
-        if (!allowedExtensions.Contains(extension)) return BadRequest(new { IsSuccess = false, Message = "Hệ thống chỉ hỗ trợ các định dạng ảnh mẫu (.jpg, .jpeg, .png, .webp)." });
-
-        using var memoryStream = new MemoryStream();
-        await file.CopyToAsync(memoryStream);
-        byte[] imageBytes = memoryStream.ToArray();
-
-        string mimeType = file.ContentType;
-        string jsonOcrResult = await _aiInsightService.AnalyzeReceiptImageAsync(imageBytes, mimeType);
-
+        var image = await ReadImage(file, ct);
+        var raw = await _aiInsightService.AnalyzeReceiptImageAsync(image.Bytes, image.Mime, ct);
         try
         {
-            using var validJson = JsonDocument.Parse(jsonOcrResult);
-            return Ok(new { IsSuccess = true, Data = validJson.RootElement.Clone() });
+            using var doc = JsonDocument.Parse(raw);
+            var root = doc.RootElement;
+            var items = Field(root, "Items");
+            if (!Text(root, "SupplierName") || !Text(root, "InvoiceNumber") ||
+                !DateTime.TryParseExact(Field(root, "InvoiceDate").GetString(), "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.None, out _) || items.ValueKind != JsonValueKind.Array || items.GetArrayLength() == 0 ||
+                items.EnumerateArray().Any(x => !Text(x, "SKU") || !Text(x, "ProductName") || !Number(x, "Quantity", true) || !Number(x, "UnitPrice", false)))
+                return InvalidVision();
+            return Ok(new { IsSuccess = true, Data = root.Clone() });
         }
-        catch (JsonException)
-        {
-            return StatusCode(StatusCodes.Status502BadGateway, new { IsSuccess = false, Message = "Định dạng nhận diện từ AI không khớp cấu trúc JSON.", RawOutput = jsonOcrResult });
-        }
+        catch (Exception ex) when (ex is JsonException or InvalidOperationException) { return InvalidVision(); }
     }
 
     [HttpPost("report-damage")]
-    public async Task<IActionResult> ReportProductDamage(IFormFile file)
+    public async Task<IActionResult> ReportProductDamage(IFormFile file, CancellationToken ct)
     {
-        if (file == null || file.Length == 0) return BadRequest(new { IsSuccess = false, Message = "Vui lòng tải lên hình ảnh bằng chứng hàng hóa bị lỗi." });
-
-        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
-        var extension = Path.GetExtension(file.FileName).ToLower();
-        if (!allowedExtensions.Contains(extension)) return BadRequest(new { IsSuccess = false, Message = "Vui lòng chụp ảnh đúng định dạng (.jpg, .jpeg, .png, .webp)." });
-
-        using var memoryStream = new MemoryStream();
-        await file.CopyToAsync(memoryStream);
-        byte[] imageBytes = memoryStream.ToArray();
-        string mimeType = file.ContentType;
-
-        string jsonVisionResult = await _aiInsightService.AnalyzeDamageImageAsync(imageBytes, mimeType);
-
+        var image = await ReadImage(file, ct);
+        var raw = await _aiInsightService.AnalyzeDamageImageAsync(image.Bytes, image.Mime, ct);
         try
         {
-            using var validJson = JsonDocument.Parse(jsonVisionResult);
-            return Ok(new { IsSuccess = true, Analysis = validJson.RootElement.Clone(), GeneratedAt = DateTime.UtcNow });
+            using var doc = JsonDocument.Parse(raw);
+            var root = doc.RootElement;
+            if (!Text(root, "DamageType") || !Text(root, "DamageDescription") || !Text(root, "ActionRecommended") ||
+                Field(root, "Severity").GetString() is not ("Low" or "Medium" or "High")) return InvalidVision();
+            return Ok(new { IsSuccess = true, Analysis = root.Clone(), GeneratedAt = DateTime.UtcNow });
         }
-        catch (JsonException)
+        catch (Exception ex) when (ex is JsonException or InvalidOperationException) { return InvalidVision(); }
+    }
+
+    private IActionResult InvalidVision() => StatusCode(StatusCodes.Status502BadGateway,
+        new { IsSuccess = false, ErrorCode = "AI_RESPONSE_INVALID", Message = "AI vision response không khớp contract hợp lệ." });
+    private static JsonElement Field(JsonElement root, string name) => root.ValueKind == JsonValueKind.Object
+        ? root.EnumerateObject().FirstOrDefault(x => string.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase)).Value : default;
+    private static bool Text(JsonElement root, string name) => Field(root, name).ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(Field(root, name).GetString());
+    private static bool Number(JsonElement root, string name, bool positive) => Field(root, name).TryGetDecimal(out var value) && (positive ? value > 0 : value >= 0);
+    private static async Task<(byte[] Bytes, string Mime)> ReadImage(IFormFile? file, CancellationToken ct)
+    {
+        void Invalid(string message) => throw new FluentValidation.ValidationException(new[] { new FluentValidation.Results.ValidationFailure("file", message) });
+        if (file == null || file.Length == 0 || file.Length > 5 * 1024 * 1024) Invalid("File ảnh phải có nội dung và không vượt quá 5 MiB.");
+        if (file!.FileName.IndexOfAny(new[] { '/', '\\' }) >= 0) Invalid("Filename chỉ được là tên file, không chứa đường dẫn.");
+        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+        var mime = extension switch { ".jpg" or ".jpeg" => "image/jpeg", ".png" => "image/png", ".webp" => "image/webp", _ => "" };
+        if (mime.Length == 0 || !string.Equals(file.ContentType, mime, StringComparison.OrdinalIgnoreCase)) Invalid("Extension/content type của ảnh không hợp lệ.");
+        using var stream = new MemoryStream(); await file.CopyToAsync(stream, ct); var bytes = stream.ToArray();
+        var valid = mime switch
         {
-            return StatusCode(StatusCodes.Status502BadGateway, new { IsSuccess = false, Message = "AI trả về kết quả thẩm định hình ảnh không đúng cấu trúc.", RawOutput = jsonVisionResult });
-        }
+            "image/png" => bytes.Length > 8 && bytes.AsSpan(0, 8).SequenceEqual(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }),
+            "image/jpeg" => bytes.Length > 3 && bytes[0] == 255 && bytes[1] == 216 && bytes[2] == 255,
+            "image/webp" => bytes.Length > 12 && System.Text.Encoding.ASCII.GetString(bytes, 0, 4) == "RIFF" && System.Text.Encoding.ASCII.GetString(bytes, 8, 4) == "WEBP",
+            _ => false
+        };
+        if (!valid) Invalid("Nội dung không có signature ảnh phù hợp.");
+        return (bytes, mime);
     }
 }

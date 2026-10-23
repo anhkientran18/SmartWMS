@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.Extensions.Caching.Memory;
 using SmartWMS.Application.Common.Interfaces;
 using SmartWMS.Application.Common.Models;
@@ -31,7 +31,7 @@ public sealed class GetSemanticProductsQueryHandler : IRequestHandler<GetSemanti
 
     public async Task<Result<List<ProductResultDto>>> Handle(GetSemanticProductsQuery request, CancellationToken cancellationToken)
     {
-        float[] queryVector = await _embeddingService.GenerateEmbeddingAsync(request.RequestData.SearchText);
+        float[] queryVector = await _embeddingService.GenerateEmbeddingAsync(request.RequestData.SearchText, cancellationToken);
 
         if (queryVector == null || queryVector.Length == 0)
         {
@@ -84,19 +84,24 @@ public sealed class GetSemanticProductsQueryHandler : IRequestHandler<GetSemanti
 
                 if (similarityScore >= 0.65)
                 {
+                    // The vector cache can outlive a soft delete/update. Never return a stale/deleted identity.
+                    var current = await _unitOfWork.Repository<Product>().GetByIdAsync(item.Id, cancellationToken);
+                    if (current == null || current.IsDeleted || !double.IsFinite(similarityScore)) continue;
                     searchResults.Add(new ProductResultDto
                     {
                         Id = item.Id,
-                        SKU = item.SKU,
-                        Name = item.Name,
-                        Description = item.Description,
+                        SKU = current.SKU,
+                        Name = current.Name,
+                        Description = current.Description ?? string.Empty,
                         SimilarityScore = Math.Round(similarityScore * 100, 2)
                     });
                 }
             }
         }
 
-        var finalResult = searchResults.OrderByDescending(x => x.SimilarityScore).ToList();
+        var finalResult = searchResults.GroupBy(x => x.Id)
+            .Select(g => g.OrderByDescending(x => x.SimilarityScore).First())
+            .OrderByDescending(x => x.SimilarityScore).ToList();
         return Result<List<ProductResultDto>>.Success(finalResult);
     }
 }

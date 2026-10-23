@@ -32,6 +32,8 @@ public class GlobalExceptionHandler : IExceptionHandler
         // 2. Phân loại mã trạng thái HTTP (Status Code)
         var (statusCode, title) = exception switch
         {
+            AiDependencyException ai => (ai.Code is "AI_CONFIGURATION_MISSING" or "AI_PROVIDER_UNAVAILABLE" ? StatusCodes.Status503ServiceUnavailable : StatusCodes.Status502BadGateway, "AI Dependency Error"),
+            OperationCanceledException when !httpContext.RequestAborted.IsCancellationRequested => (StatusCodes.Status504GatewayTimeout, "AI Service Response Timeout"),
             // Bắt Custom ValidationException từ Application
             SmartWMS.Application.Common.Exceptions.ValidationException => (StatusCodes.Status400BadRequest, "Dữ Liệu Đầu Vào Không Hợp Lệ"),
 
@@ -64,6 +66,8 @@ public class GlobalExceptionHandler : IExceptionHandler
             },
             Instance = httpContext.Request.Path
         };
+        if (exception is AiDependencyException dependency)
+            problemDetails.Extensions["code"] = dependency.Code;
 
         // 4. Bóc tách ma trận lỗi chi tiết trả về cho Client
         if (exception is SmartWMS.Application.Common.Exceptions.ValidationException customValEx)

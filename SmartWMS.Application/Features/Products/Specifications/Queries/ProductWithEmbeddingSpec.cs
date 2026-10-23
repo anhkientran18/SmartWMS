@@ -8,7 +8,7 @@ public class ProductWithEmbeddingSpec : Specification<Product>
     public ProductWithEmbeddingSpec()
     {
         // Lấy tất cả sản phẩm đã được nhúng vector
-        AndCriteria(p => p.DescriptionEmbeddingJson != null && p.DescriptionEmbeddingJson != "");
+        AndCriteria(p => !p.IsDeleted && p.DescriptionEmbeddingJson != null && p.DescriptionEmbeddingJson != "");
         AsNoTracking = true;
     }
 }

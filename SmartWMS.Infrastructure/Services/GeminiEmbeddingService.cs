@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Options;
+using SmartWMS.Application.Common.Exceptions;
 using SmartWMS.Application.Common.Interfaces;
 using SmartWMS.Application.Common.Models.Configurations;
 using System;
@@ -19,16 +20,19 @@ public class GeminiEmbeddingService : IEmbeddingService
     public GeminiEmbeddingService(HttpClient httpClient, IOptions<GeminiSettings> options)
     {
         _httpClient = httpClient;
+        if (_httpClient.Timeout > TimeSpan.FromSeconds(30)) _httpClient.Timeout = TimeSpan.FromSeconds(30);
         _settings = options.Value;
     }
 
-    public async Task<float[]> GenerateEmbeddingAsync(string text)
+    public Task<float[]> GenerateEmbeddingAsync(string text) => GenerateEmbeddingAsync(text, CancellationToken.None);
+
+    public async Task<float[]> GenerateEmbeddingAsync(string text, CancellationToken ct)
     {
         var model = _settings.EmbeddingModel;
         if (string.Equals(model, "text-embedding-004", StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException("text-embedding-004 đã ngừng sử dụng. Cấu hình GeminiSettings:EmbeddingModel thành gemini-embedding-001.");
-        if (string.IsNullOrWhiteSpace(_settings.ApiKey))
-            throw new InvalidOperationException("GeminiSettings:ApiKey chưa được cấu hình.");
+            throw new AiDependencyException("AI_CONFIGURATION_MISSING");
+        if (string.IsNullOrWhiteSpace(_settings.ApiKey) || string.IsNullOrWhiteSpace(model))
+            throw new AiDependencyException("AI_CONFIGURATION_MISSING");
         var url = $"{_settings.BaseUrl.TrimEnd('/')}/models/{model}:embedContent";
 
         var requestBody = new
@@ -44,26 +48,27 @@ public class GeminiEmbeddingService : IEmbeddingService
         using var httpRequest = new HttpRequestMessage(HttpMethod.Post, url);
         httpRequest.Headers.Add("x-goog-api-key", _settings.ApiKey);
         httpRequest.Content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
-        using var response = await _httpClient.SendAsync(httpRequest);
+        using var response = await SendAsync(httpRequest, ct);
         response.EnsureSuccessStatusCode();
 
-        var jsonResponse = await response.Content.ReadAsStringAsync();
-        using var doc = JsonDocument.Parse(jsonResponse);
-
-        var valuesElement = doc.RootElement.GetProperty("embedding").GetProperty("values");
-        if (valuesElement.ValueKind != JsonValueKind.Array || valuesElement.GetArrayLength() != EmbeddingDimensions)
-            throw new InvalidOperationException($"Embedding phải có đúng {EmbeddingDimensions} dimensions; không trả vector sai kích thước cho caller.");
-        float[] vector = new float[valuesElement.GetArrayLength()];
-        int index = 0;
-        foreach (var val in valuesElement.EnumerateArray())
+        var jsonResponse = await response.Content.ReadAsStringAsync(ct);
+        try
         {
-            var value = val.GetSingle();
-            if (!float.IsFinite(value))
-                throw new InvalidOperationException("Embedding chứa giá trị không hữu hạn.");
-            vector[index++] = value;
+            using var doc = JsonDocument.Parse(jsonResponse);
+            var values = doc.RootElement.GetProperty("embedding").GetProperty("values");
+            if (values.ValueKind != JsonValueKind.Array || values.GetArrayLength() != EmbeddingDimensions)
+                throw new AiDependencyException("AI_RESPONSE_INVALID");
+            var vector = values.EnumerateArray().Select(x => x.GetSingle()).ToArray();
+            if (vector.Any(x => !float.IsFinite(x))) throw new AiDependencyException("AI_RESPONSE_INVALID");
+            return vector;
         }
-
-        return vector;
+        catch (Exception ex) when (ex is JsonException or KeyNotFoundException or InvalidOperationException or FormatException)
+        { throw new AiDependencyException("AI_RESPONSE_INVALID"); }
+    }
+    private async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+    {
+        try { return await _httpClient.SendAsync(request, ct); }
+        catch (Polly.CircuitBreaker.BrokenCircuitException) { throw new AiDependencyException("AI_PROVIDER_UNAVAILABLE"); }
     }
 
     public double CalculateCosineSimilarity(float[] vectorA, float[] vectorB)

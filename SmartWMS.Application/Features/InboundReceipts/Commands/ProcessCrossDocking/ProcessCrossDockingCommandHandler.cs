@@ -27,6 +27,9 @@ public class ProcessCrossDockingCommandHandler : IRequestHandler<ProcessCrossDoc
     {
         var req = request.RequestData;
         var pendingLines = await _unitOfWork.Repository<OutboundOrderItem>().ListAsync(new PendingOutboundOrderItemsSpec(req.ProductId), cancellationToken);
+        if (pendingLines.Any(x => x.IsDirectPick))
+            return Result<CrossDockResultDto>.Failure(SmartWMS.Application.Common.Constants.ErrorCodeConstants.Conflict,
+                "B3 direct-pick không hỗ trợ legacy crossdock; dùng allocation/reservation lifecycle.");
 
         var resultDto = new CrossDockResultDto { ProductId = req.ProductId, TotalIncomingQuantity = req.IncomingQuantity };
         int availableToCrossDock = req.IncomingQuantity;

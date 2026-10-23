@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 using SmartWMS.Application.Common.Interfaces;
 using SmartWMS.Application.Common.Models;
@@ -40,14 +40,21 @@ public class GetDashboardInsightQueryHandler : IRequestHandler<GetDashboardInsig
 
         string statisticalData = $"Tổng sản phẩm: {totalProducts}, Tổng số ô kệ: {totalBins}, Tỷ lệ lấp đầy kho: {occupancyRate}%.";
 
-        string aiSummary = await _aiInsightService.GenerateExecutiveInsightAsync(statisticalData);
+        string aiSummary = string.Empty;
+        string? aiError = null;
+        try { aiSummary = await _aiInsightService.GenerateExecutiveInsightAsync(statisticalData, cancellationToken); }
+        catch (Exception ex) when (ex is SmartWMS.Application.Common.Exceptions.AiDependencyException or HttpRequestException or TimeoutException ||
+            ex is OperationCanceledException && !cancellationToken.IsCancellationRequested)
+        { aiError = "AI_UNAVAILABLE"; }
 
         var resultDto = new DashboardInsightDto
         {
             TotalProducts = totalProducts,
             TotalBins = totalBins,
             OverallOccupancyPercentage = occupancyRate,
-            AiExecutiveSummary = aiSummary
+            AiExecutiveSummary = aiSummary,
+            AiAvailable = !string.IsNullOrWhiteSpace(aiSummary),
+            AiErrorCode = aiError ?? (string.IsNullOrWhiteSpace(aiSummary) ? "AI_RESPONSE_INVALID" : null)
         };
 
         return Result<DashboardInsightDto>.Success(resultDto, "Tạo phân tích AI Dashboard thành công.");

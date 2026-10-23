@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SmartWMS.Application.Features.Forecasts.DTOs.Queries;
@@ -22,6 +22,6 @@ public class ForecastsController : ControllerBase
     /// Dự báo nhu cầu tồn kho cho SKU sản phẩm
     /// </summary>
     [HttpGet("demand-prediction")]
-    public async Task<IActionResult> GetDemandPrediction([FromQuery] string sku)
-        => (await _mediator.Send(new GetStockForecastQuery(new StockForecastRequest { Sku = sku }))).ToActionResult();
+    public async Task<IActionResult> GetDemandPrediction([FromQuery] string sku, CancellationToken ct)
+        => (await _mediator.Send(new GetStockForecastQuery(new StockForecastRequest { Sku = sku }), ct)).ToActionResult();
 }

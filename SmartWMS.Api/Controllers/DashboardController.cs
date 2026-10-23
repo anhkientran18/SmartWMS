@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SmartWMS.Api.Extensions;
@@ -24,8 +24,8 @@ public class DashboardController : ControllerBase
     }
 
     [HttpGet("executive")]
-    public async Task<IActionResult> GetExecutiveDashboard()
-        => (await _mediator.Send(new GetExecutiveDashboardQuery())).ToActionResult();
+    public async Task<IActionResult> GetExecutiveDashboard(CancellationToken ct)
+        => (await _mediator.Send(new GetExecutiveDashboardQuery(), ct)).ToActionResult();
 
     [HttpGet("inbound-outbound-chart")]
     public async Task<IActionResult> GetInboundOutboundChart([FromQuery] int days = 7)
@@ -40,12 +40,12 @@ public class DashboardController : ControllerBase
         => (await _mediator.Send(new GetAIAgentMetricsQuery())).ToActionResult();
 
     [HttpGet("ai-slotting-recommendations")]
-    public async Task<IActionResult> GetAiSlottingRecommendations([FromQuery] Guid? zoneId = null)
+    public async Task<IActionResult> GetAiSlottingRecommendations([FromQuery] Guid? zoneId = null, CancellationToken ct = default)
     {
         var requestData = new SlottingRecommendationRequest
         {
             ZoneId = zoneId
         };
-        return (await _mediator.Send(new GetSlottingRecommendationsQuery(requestData))).ToActionResult();
+        return (await _mediator.Send(new GetSlottingRecommendationsQuery(requestData), ct)).ToActionResult();
     }
 }
