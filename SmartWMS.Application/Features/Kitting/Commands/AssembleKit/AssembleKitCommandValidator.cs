@@ -18,6 +18,13 @@ public class AssembleKitCommandValidator : AbstractValidator<AssembleKitCommand>
             RuleFor(x => x.RequestData.Components)
                 .NotEmpty().WithMessage("Phải có ít nhất 1 sản phẩm thành phần để tạo Combo.")
                 .Must(x => x != null && x.Any());
+
+            RuleForEach(x => x.RequestData.Components).NotNull().ChildRules(component =>
+            {
+                component.RuleFor(x => x.ComponentProductId).NotEmpty();
+                component.RuleFor(x => x.SourceBinId).NotEmpty();
+                component.RuleFor(x => x.QuantityPerKit).GreaterThan(0);
+            });
         });
     }
 }
