@@ -14,10 +14,12 @@ namespace SmartWMS.Application.Features.CycleCounting.Queries.GetCountSheetById;
 public sealed class GetCountSheetByIdQueryHandler : IRequestHandler<GetCountSheetByIdQuery, Result<CycleCountSheetDto>>
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly ICurrentUserService _currentUser;
 
-    public GetCountSheetByIdQueryHandler(IUnitOfWork unitOfWork)
+    public GetCountSheetByIdQueryHandler(IUnitOfWork unitOfWork, ICurrentUserService currentUser)
     {
         _unitOfWork = unitOfWork;
+        _currentUser = currentUser;
     }
 
     public async Task<Result<CycleCountSheetDto>> Handle(GetCountSheetByIdQuery request, CancellationToken cancellationToken)
@@ -28,6 +30,8 @@ public sealed class GetCountSheetByIdQueryHandler : IRequestHandler<GetCountShee
         var sheet = await repo.GetEntityWithSpecAsync(spec, cancellationToken);
         if (sheet == null)
             return Result<CycleCountSheetDto>.Failure(ErrorCodeConstants.ValidationError, "Không tìm thấy phiếu kiểm kê yêu cầu.");
+        if (!CycleCountAccess.CanAccess(_currentUser, sheet))
+            return Result<CycleCountSheetDto>.Failure(ErrorCodeConstants.Forbidden, "Không có quyền xem phiếu kiểm kê này.");
 
         var dto = new CycleCountSheetDto
         {

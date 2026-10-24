@@ -8,7 +8,7 @@ using SmartWMS.Domain.Entities;
 namespace SmartWMS.Application.Features.CycleCounting.Commands.ConfirmCycleCount;
 
 public sealed class ConfirmCycleCountCommandHandler(IApplicationDbContext context,
-    IInventoryMutationCoordinator mutations, ICycleCountCoordinator counts)
+    IInventoryMutationCoordinator mutations, ICycleCountCoordinator counts, ICurrentUserService currentUser)
     : IRequestHandler<ConfirmCycleCountCommand, Result<bool>>
 {
     public async Task<Result<bool>> Handle(ConfirmCycleCountCommand request, CancellationToken ct)
@@ -23,6 +23,9 @@ public sealed class ConfirmCycleCountCommandHandler(IApplicationDbContext contex
         {
             var sheet = await counts.LockSheetAsync(req.CountSheetId, ct);
             if (sheet == null || sheet.IsDeleted) return Invalid("Không tìm thấy phiếu kiểm kê.");
+            // Check the locked assignment before any correction, ledger or audit write.
+            if (!CycleCountAccess.CanAccess(currentUser, sheet))
+                return Result<bool>.Failure(ErrorCodeConstants.Forbidden, "Không có quyền xác nhận phiếu kiểm kê này.");
             if (sheet.Status != "Pending" && sheet.Status != "Counting")
                 return Conflict("Phiếu đã chốt/hủy; không được xác nhận lại.");
             if (sheet.Items.Count == 0 || !sheet.Items.Select(x => x.Id).ToHashSet().SetEquals(req.CountedItems.Select(x => x.ItemId)))

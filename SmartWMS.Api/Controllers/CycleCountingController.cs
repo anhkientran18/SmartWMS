@@ -26,14 +26,17 @@ public class CycleCountingController : ControllerBase
         _currentUserService = currentUserService;
     }
 
+    [Authorize(Roles = "Admin,WarehouseManager")]
     [HttpPost("create-sheet")]
     public async Task<IActionResult> CreateSheet([FromBody] CreateCountSheetCommand command)
         => (await _mediator.Send(command)).ToActionResult();
 
+    [Authorize(Roles = "Admin,WarehouseManager,Staff")]
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetDetails(Guid id, CancellationToken cancellationToken)
         => (await _mediator.Send(new GetCountSheetByIdQuery(new CountSheetByIdRequest { Id = id }), cancellationToken)).ToActionResult();
 
+    [Authorize(Roles = "Admin,WarehouseManager,Staff")]
     [HttpPost("confirm")]
     public async Task<IActionResult> Confirm([FromBody] ConfirmCycleCountRequest request, CancellationToken cancellationToken)
         => (await _mediator.Send(new ConfirmCycleCountCommand(request), cancellationToken)).ToActionResult();

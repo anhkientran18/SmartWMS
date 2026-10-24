@@ -23,6 +23,7 @@ public class DashboardController : ControllerBase
         _mediator = mediator;
     }
 
+    [Authorize(Roles = "Admin,WarehouseManager")]
     [HttpGet("executive")]
     public async Task<IActionResult> GetExecutiveDashboard(CancellationToken ct)
         => (await _mediator.Send(new GetExecutiveDashboardQuery(), ct)).ToActionResult();
@@ -39,6 +40,7 @@ public class DashboardController : ControllerBase
     public async Task<IActionResult> GetAIAgentMetrics()
         => (await _mediator.Send(new GetAIAgentMetricsQuery())).ToActionResult();
 
+    [Authorize(Roles = "Admin,WarehouseManager")]
     [HttpGet("ai-slotting-recommendations")]
     public async Task<IActionResult> GetAiSlottingRecommendations([FromQuery] Guid? zoneId = null, CancellationToken ct = default)
     {

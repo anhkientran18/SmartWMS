@@ -1,0 +1,68 @@
+{
+  "S1_RESULT": "PARTIAL",
+  "reason": "high-confidence authorization hardening verified; unresolved product/deployment policy remains documented.",
+  "checkpoint": "ead3c3a0b3cfd53a8248fe49062023686d671fc0",
+  "liveGeminiCalls": 0,
+  "controllerRouteCount": 96,
+  "runtimeOpenApiExactMatch": true,
+  "focused": {
+    "passed": 588,
+    "total": 588
+  },
+  "focusedMatrixRecords": 79,
+  "preCommitOwnership": {
+    "passed": 24,
+    "total": 24
+  },
+  "phase4bRepositoryUnchanged": true,
+  "phase4bAdapter": "S1 PrepareMirror supplies VerifyUser(userId) only in ignored mirror; historical assertions/evidence unchanged",
+  "sqlNoMutationSnapshots": 57,
+  "allRouteInvalidJwtCases": 285,
+  "f1Relevant": {
+    "passed": 51,
+    "total": 51
+  },
+  "regressionOrchestration": {
+    "passed": 12,
+    "total": 12,
+    "basis": "10 original suite passes + anchor pass + isolated S1-aware R1 HTTP retry"
+  },
+  "historicalR1Assertion": "Original R1 Staff200 assertion failed as expected after policy change; ignored mirror replaces only this with403 and SQL no-mutation check. Committed R1 files unchanged.",
+  "regressionChecks": 884,
+  "regressionSuites": {
+    "InboundB1-verify-localdb": 142,
+    "KittingK1-focused": 127,
+    "KittingK1-http": 15,
+    "OutboundB3-cached-context": 5,
+    "OutboundB3-focused": 161,
+    "OutboundB3-http": 46,
+    "OutboundB3-schema": 24,
+    "Phase4A-verify-localdb": 95,
+    "Phase4B-verify-localdb": 107,
+    "ReplenishmentR1-focused": 136,
+    "ReplenishmentR1-http": 26
+  },
+  "baselinePathsUnchanged": 25,
+  "b4Unchanged": true,
+  "indexEmpty": true,
+  "committed": false,
+  "manifest": [
+    "SmartWMS.Api/Controllers/CycleCountingController.cs",
+    "SmartWMS.Api/Controllers/DashboardController.cs",
+    "SmartWMS.Api/Controllers/InventoryController.cs",
+    "SmartWMS.Application/Features/CycleCounting/Commands/ConfirmCycleCount/ConfirmCycleCountCommandHandler.cs",
+    "SmartWMS.Application/Features/CycleCounting/CycleCountAccess.cs",
+    "SmartWMS.Application/Features/CycleCounting/Queries/GetCountSheetById/GetCountSheetByIdQueryHandler.cs",
+    "docs/PHASE_S1_ROLE_MATRIX.md",
+    "verification/AuthorizationS1/Audit.py",
+    "verification/AuthorizationS1/AuthorizationChecks.cs",
+    "verification/AuthorizationS1/AuthorizationS1.Verification.csproj",
+    "verification/AuthorizationS1/Certify.py",
+    "verification/AuthorizationS1/HandlerChecks.cs",
+    "verification/AuthorizationS1/PrepareMirror.ps1",
+    "verification/AuthorizationS1/Program.cs",
+    "verification/AuthorizationS1/StaffExecution.cs",
+    "verification/AuthorizationS1/TestHost.cs",
+    "verification/AuthorizationS1/VerificationEvidence.json"
+  ]
+}

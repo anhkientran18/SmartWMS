@@ -33,6 +33,7 @@ public class InventoryController : ControllerBase
     public async Task<IActionResult> GetLowStockAlerts([FromQuery] GetLowStockAlertsQuery query)
         => (await _mediator.Send(query)).ToActionResult();
 
+    [Authorize(Roles = "Admin,WarehouseManager")]
     [HttpPost("adjust-stock")]
     public async Task<IActionResult> AdjustStock([FromBody] AdjustStockRequest request)
         => (await _mediator.Send(new AdjustStockCommand(request))).ToActionResult();
@@ -41,10 +42,12 @@ public class InventoryController : ControllerBase
     public async Task<IActionResult> GetStockHistory([FromQuery] StockHistoryPaginatedRequest request)
         => (await _mediator.Send(new GetStockHistoryQuery(request))).ToActionResult();
 
+    [Authorize(Roles = "Admin,WarehouseManager")]
     [HttpPost("change-status")]
     public async Task<IActionResult> ChangeStockStatus([FromBody] ChangeStockStatusRequest request)
         => (await _mediator.Send(new ChangeStockStatusCommand(request))).ToActionResult();
 
+    [Authorize(Roles = "Admin,WarehouseManager")]
     [HttpPost("run-auto-replenish")]
     public async Task<IActionResult> RunAutoReplenish()
         => (await _mediator.Send(new AutoReplenishCommand())).ToActionResult();
