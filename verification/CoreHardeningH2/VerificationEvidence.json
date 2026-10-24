@@ -1,0 +1,128 @@
+{
+  "H2_RESULT": "PASS",
+  "backendCoreStatus": "CLOSED",
+  "baseHead": "539dc542314a46207cd98313e89d04165ebed9a5",
+  "committed": false,
+  "liveGeminiCalls": 0,
+  "controllerRoutesBefore": 96,
+  "controllerRoutesAfter": 97,
+  "runtimeOpenApiExactMatch": true,
+  "handoffExactRouteCoverage": true,
+  "handoffReadinessCounts": {
+    "S": 8,
+    "E": 8,
+    "C": 78,
+    "P": 1,
+    "U": 2
+  },
+  "focused": {
+    "complete": true,
+    "passed": 253,
+    "total": 253
+  },
+  "relevantAndRegression": {
+    "S1-http": {
+      "exitCode": 0,
+      "passed": 591,
+      "total": 591
+    },
+    "S1-ownership": {
+      "exitCode": 0,
+      "passed": 24,
+      "total": 24
+    },
+    "F1-relevant": {
+      "exitCode": 0,
+      "passed": 51,
+      "total": 51
+    },
+    "F1-data": {
+      "exitCode": 0,
+      "passed": 20,
+      "total": 20
+    },
+    "full-regression": {
+      "exitCode": 0,
+      "passed": 12,
+      "total": 12
+    },
+    "ReleaseHardening": {
+      "exitCode": 0,
+      "passed": 65,
+      "total": 65
+    },
+    "DeleteRace": {
+      "exitCode": 0,
+      "passed": 31,
+      "total": 31
+    },
+    "B2-summary": {
+      "exitCode": 0,
+      "passed": 15,
+      "total": 15
+    },
+    "B2-migrations": {
+      "exitCode": 0,
+      "passed": 25,
+      "total": 25
+    }
+  },
+  "regressionSuites": {
+    "InboundB1-verify-localdb": 142,
+    "KittingK1-focused": 127,
+    "KittingK1-http": 15,
+    "OutboundB3-cached-context": 5,
+    "OutboundB3-focused": 161,
+    "OutboundB3-http": 46,
+    "OutboundB3-schema": 24,
+    "Phase4A-verify-localdb": 95,
+    "Phase4B-verify-localdb": 107,
+    "ReplenishmentR1-focused": 136,
+    "ReplenishmentR1-http": 26
+  },
+  "fullRegressionChecks": 1020,
+  "baselineDirtyPathsUnchanged": 25,
+  "b4Unchanged": true,
+  "historicalVerificationUnchanged": true,
+  "externalPostmanUnchanged": true,
+  "externalPostmanHashes": {
+    "SmartWMS Local.postman_environment.json": "9e139f7eb3a8dd59b18cfca45d2e2b0d729b131e4c9045f47a35e17c9a2f9f17",
+    "SmartWMS.Api - v1 - TESTED BASELINE.postman_collection.json": "a2336eb2c2044be108650219107c69c40fb4a685df309614860e95cc41267d71",
+    "SmartWMS.Api - v1 - WORKING.postman_collection.json": "71b750572661bc7ba9f2d7c0a7deb42fd388a378e0ecf03a8de10e73d2026ca0"
+  },
+  "indexEmpty": true,
+  "migrationSchemaPackageChanges": "NONE",
+  "verifiedProductionHashes": {
+    "SmartWMS.Api/Controllers/CycleCountingController.cs": "6460396062a6801f20a2ee733cfa7ae7a9e727414a73adcf60c3416068668d8f",
+    "SmartWMS.Application/Features/CycleCounting/DTOs/Queries/CycleCountAssigneeDto.cs": "3037192c49880e878c0586eb544cee784ebfd2841a94dd895373f04bd0330458",
+    "SmartWMS.Application/Features/CycleCounting/Queries/GetCycleCountAssignees/GetCycleCountAssigneesQuery.cs": "065f75b325a5ee38b92f9ef522300acb6bccc869888a71edf87d0a23e863ff2c",
+    "SmartWMS.Application/Features/CycleCounting/Queries/GetCycleCountAssignees/GetCycleCountAssigneesQueryHandler.cs": "a14b69ca2c856018a8b78f2dbfc58015f4abf863a908291cfe2dd20df2d2dec2",
+    "SmartWMS.Application/Features/InventoryTransfers/Commands/CreateInventoryTransfer/CreateInventoryTransferCommandHandler.cs": "3d253aba156976759334637e457c398af7afce2d2effa371792428dd98fbb547",
+    "SmartWMS.Application/Features/Products/Commands/Create/CreateProductCommandHandler.cs": "9e7afba1b8aed77ba55aab68d5a82542cc439f6d78b0eedb2a3a3c608624174b",
+    "SmartWMS.Application/Features/Products/Queries/GetList/GetProductListQueryHandler.cs": "d0576617529824ed665b39b92c8719662ff5e7b9c057c787c6a56e1ce1525edb",
+    "SmartWMS.Application/Features/Products/Queries/GetPaginatedProducts/GetPaginatedProductsQueryHandler.cs": "02e0925117222f76ce02aafc51b11cf0cec9717819cf730132a97d03b4ded8c5",
+    "SmartWMS.Application/Features/Products/Queries/GetProductById/GetProductByIdQueryHandler.cs": "72590f2cacf1026c0b22b3b9668dda9cd7be0d04e39f5d213525275c473545e1"
+  },
+  "manifest": [
+    "SmartWMS.Api/Controllers/CycleCountingController.cs",
+    "SmartWMS.Application/Features/CycleCounting/DTOs/Queries/CycleCountAssigneeDto.cs",
+    "SmartWMS.Application/Features/CycleCounting/Queries/GetCycleCountAssignees/GetCycleCountAssigneesQuery.cs",
+    "SmartWMS.Application/Features/CycleCounting/Queries/GetCycleCountAssignees/GetCycleCountAssigneesQueryHandler.cs",
+    "SmartWMS.Application/Features/InventoryTransfers/Commands/CreateInventoryTransfer/CreateInventoryTransferCommandHandler.cs",
+    "SmartWMS.Application/Features/Products/Commands/Create/CreateProductCommandHandler.cs",
+    "SmartWMS.Application/Features/Products/Queries/GetList/GetProductListQueryHandler.cs",
+    "SmartWMS.Application/Features/Products/Queries/GetPaginatedProducts/GetPaginatedProductsQueryHandler.cs",
+    "SmartWMS.Application/Features/Products/Queries/GetProductById/GetProductByIdQueryHandler.cs",
+    "docs/FE_API_HANDOFF.md",
+    "docs/PHASE_H2.md",
+    "verification/CoreHardeningH2/Audit.py",
+    "verification/CoreHardeningH2/CoreHardeningH2.Verification.csproj",
+    "verification/CoreHardeningH2/EmbeddingChecks.cs",
+    "verification/CoreHardeningH2/HttpChecks.cs",
+    "verification/CoreHardeningH2/PrepareMirror.py",
+    "verification/CoreHardeningH2/Program.cs",
+    "verification/CoreHardeningH2/RunRegression.py",
+    "verification/CoreHardeningH2/VerificationEvidence.json"
+  ],
+  "nextStep": "SYNC POSTMAN FINAL DELTA"
+}

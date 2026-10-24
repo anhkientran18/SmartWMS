@@ -9,6 +9,7 @@ using SmartWMS.Application.Features.CycleCounting.DTOs.Commands;
 using SmartWMS.Application.Features.CycleCounting.DTOs.Queries;
 using SmartWMS.Application.Features.CycleCounting.Queries.GetCountSheetById;
 using SmartWMS.Application.Features.CycleCounting.Queries.GetPendingCountTasks;
+using SmartWMS.Application.Features.CycleCounting.Queries.GetCycleCountAssignees;
 
 namespace SmartWMS.Api.Controllers; // Giữ nguyên namespace gốc của bạn nếu các controller khác đang dùng namespace này
 
@@ -25,6 +26,11 @@ public class CycleCountingController : ControllerBase
         _mediator = mediator;
         _currentUserService = currentUserService;
     }
+
+    [Authorize(Roles = "Admin,WarehouseManager")]
+    [HttpGet("assignees")]
+    public async Task<IActionResult> GetAssignees(CancellationToken cancellationToken)
+        => (await _mediator.Send(new GetCycleCountAssigneesQuery(), cancellationToken)).ToActionResult();
 
     [Authorize(Roles = "Admin,WarehouseManager")]
     [HttpPost("create-sheet")]

@@ -33,6 +33,7 @@ public sealed class GetProductListQueryHandler : IRequestHandler<GetProductListQ
             Id = p.Id,
             SKU = p.SKU,
             Barcode = p.Barcode,
+            Weight = p.Weight,
             Name = p.Name,
             Description = p.Description ?? string.Empty,
             Unit = p.Unit ?? string.Empty

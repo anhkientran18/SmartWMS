@@ -44,6 +44,8 @@ public sealed class GetPaginatedProductsQueryHandler : IRequestHandler<GetPagina
                 TrackingMode = x.TrackingMode,
                 Id = x.Id,
                 SKU = x.SKU ?? string.Empty,
+                Barcode = x.Barcode ?? string.Empty,
+                Weight = x.Weight,
                 Name = x.Name ?? string.Empty,
                 Description = x.Description ?? string.Empty,
                 Unit = x.Unit ?? string.Empty

@@ -32,6 +32,13 @@ public sealed class CreateInventoryTransferCommandHandler(
                 if (bin == null) return Invalid("Hierarchy Bin/Zone/Warehouse không hợp lệ.");
                 bins.Add(id, bin);
             }
+            // Project the current hierarchy from SQL, not a previously tracked Bin.ZoneId.
+            var binIds = bins.Keys.ToArray();
+            var warehouses = await context.Bins.AsNoTracking().Where(x => binIds.Contains(x.Id))
+                .Select(x => new { x.Id, x.Zone!.WarehouseId })
+                .ToDictionaryAsync(x => x.Id, x => x.WarehouseId, ct);
+            if (warehouses[req.SourceBinId] != warehouses[req.DestinationBinId])
+                return Invalid("Luân chuyển nội bộ yêu cầu ô nguồn và ô đích thuộc cùng một kho.");
             var lot = InventoryMutationRules.Lot(req.LotNumber);
             var rows = new Dictionary<Guid, List<BinInventory>>();
             foreach (var id in bins.Keys.OrderBy(x => x))

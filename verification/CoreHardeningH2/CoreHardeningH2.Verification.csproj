@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../SmartWMS.Infrastructure/SmartWMS.Infrastructure.csproj" />
+    <Compile Include="../AcceptanceF1/FixtureDatabase.cs" Link="FixtureDatabase.cs" />
+    <Compile Include="../AcceptanceF1/DeterministicProvider.cs" Link="DeterministicProvider.cs" />
+    <Compile Include="../AuthorizationS1/TestHost.cs" Link="TestHost.cs" />
+  </ItemGroup>
+</Project>
