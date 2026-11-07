@@ -111,7 +111,7 @@ export default function SemanticProductSearchModal({ onClose, onOpen }: Semantic
           <button
             type="button"
             aria-label={t('f8.close', { defaultValue: 'Close' })}
-            onClick={onClose}
+            onClick={() => dialogRef.current?.close()}
             className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors"
           >
             <X className="w-4 h-4" />
