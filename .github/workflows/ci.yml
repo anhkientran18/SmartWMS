@@ -39,6 +39,9 @@ jobs:
         run: dotnet restore SmartWMS.slnx --nologo
       - name: Build production solution
         run: dotnet build SmartWMS.slnx --configuration Release --no-restore --nologo
+      - name: Run inbound RBAC regression
+        # Isolated loopback host and safe MediatR probe; no production startup or SQL.
+        run: dotnet run --project verification/InboundCreateRbac/InboundCreateRbac.Verification.csproj --configuration Release --no-launch-profile
 
   frontend-quality:
     name: frontend-quality
