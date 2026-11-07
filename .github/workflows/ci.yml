@@ -1,0 +1,72 @@
+name: SmartWMS CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# No production database, secret, deployment, or privileged token is required.
+permissions:
+  contents: read
+
+concurrency:
+  group: smartwms-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-build:
+    name: backend-build
+    runs-on: windows-2025
+    timeout-minutes: 25
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Install .NET SDK 10
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+          # No packages.lock.json exists; restore without setup-dotnet caching.
+          cache: false
+      - name: Select .NET SDK 10
+        # Runner images may also contain newer SDKs. This file is runner-local.
+        run: dotnet new globaljson --sdk-version 10.0.100 --roll-forward latestFeature
+      - name: SDK diagnostics
+        run: dotnet --info
+      - name: Restore production solution
+        run: dotnet restore SmartWMS.slnx --nologo
+      - name: Build production solution
+        run: dotnet build SmartWMS.slnx --configuration Release --no-restore --nologo
+
+  frontend-quality:
+    name: frontend-quality
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Install Node.js 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install locked frontend dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Typecheck frontend
+        run: npm run typecheck
+      - name: Prepare sprint evidence directory
+        # Existing evidence is ignored by Git; run-sprint writes here without mkdir.
+        run: mkdir -p verification/shared/evidence
+      - name: Run existing frontend sprint suites
+        # This is the existing 9-group runner; AI groups are not claimed as covered.
+        run: npm run test:sprint
+      - name: Build frontend
+        run: npm run build
