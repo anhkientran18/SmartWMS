@@ -38,6 +38,7 @@ public class InboundReceiptsController : ControllerBase
         _aiInsightService = aiInsightService;
     }
 
+    [Authorize(Roles = "Admin,WarehouseManager")]
     [HttpPost]
     public async Task<IActionResult> CreateInboundReceipt([FromBody] CreateInboundReceiptRequest request)
         => (await _mediator.Send(new CreateInboundReceiptCommand(request))).ToActionResult();
