@@ -1,0 +1,10 @@
+{
+  "name": "Remix Remix Remix Remix Remix Remix Remix Remix Remix Remix Remix Remix Remix Remix Remix Trần Anh Kiện_Hệ thống quản lý kho thông minh (WMS): Barcode/QR + AI dự báo tồn kho_Web app",
+  "description": "Smart Warehouse Management System with AI forecasting, real-time alerts, voice picking, automated purchase orders, and computer vision auditing.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

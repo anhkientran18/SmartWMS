@@ -1,0 +1,240 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap");
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --animate-fadeIn: fadeIn 150ms cubic-bezier(0.16, 1, 0.3, 1);
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-2px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* Base Enterprise Styles */
+:root {
+  --color-slate-bg: #F8FAFC;
+  --color-border-subtle: #E2E8F0;
+  --color-primary-navy: #1E293B;
+  --color-primary-blue: #2563EB;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #F8FAFC;
+  color: #1E293B;
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Elegant scrolling & scrollbar styling */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+/* Hide scrollbar utility but let it be scrollable */
+.scrollbar-none {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Enterprise clean card utility */
+.enterprise-card {
+  background-color: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+}
+
+.ai-glow {
+  box-shadow: 0 0 15px rgba(37, 99, 235, 0.12);
+  border: 1px solid rgba(191, 219, 254, 0.6);
+}
+
+.ai-glow-dark {
+  box-shadow: 0 0 20px rgba(30, 41, 59, 0.25);
+  border: 1px solid rgba(51, 65, 85, 0.6);
+}
+
+/* Enterprise Shared Table Standards */
+.enterprise-table th {
+  padding: 0.75rem 1rem;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #475569;
+  background-color: #F8FAFC;
+  border-bottom: 1px solid #E2E8F0;
+}
+
+.enterprise-table td {
+  padding: 0.75rem 1rem;
+  font-size: 12px;
+  color: #1E293B;
+  border-bottom: 1px solid #F1F5F9;
+  vertical-align: middle;
+}
+
+/* Stock workspaces follow the reference's heading / filter band / data hierarchy.
+   Scope these rules so other operational table families retain their treatment. */
+.stock-workspace {
+  padding-block: 0.25rem;
+  overflow: hidden;
+}
+.stock-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1rem 0;
+}
+.stock-section-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0.5rem;
+  border-width: 1px;
+  border-radius: 0.625rem;
+  flex-shrink: 0;
+}
+.stock-filter-band {
+  padding: 0.875rem 1rem;
+  background: #F8FAFC;
+  border-block: 1px solid #F1F5F9;
+}
+.stock-table th {
+  text-transform: none;
+  letter-spacing: normal;
+  white-space: nowrap;
+}
+.stock-capacity-bar {
+  display: block;
+  appearance: none;
+  width: 100%;
+  height: 0.375rem;
+  border: 0;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #F1F5F9;
+}
+.stock-capacity-bar::-webkit-progress-bar { background: #F1F5F9; }
+.stock-capacity-bar::-webkit-progress-value { background: currentColor; border-radius: 999px; }
+.stock-capacity-bar::-moz-progress-bar { background: currentColor; border-radius: 999px; }
+
+/* Receipt actions stay reachable in the modal's independently scrolling body. */
+.receipt-action-bar {
+  position: sticky;
+  bottom: -1rem;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-top: 1px solid #E2E8F0;
+  background: #F8FAFC;
+}
+@media (min-width: 640px) {
+  .receipt-action-bar { bottom: -1.5rem; }
+}
+
+/* Enterprise Modal Viewport Constraints (1366x768 Safe) */
+.enterprise-modal-container {
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.enterprise-modal-body {
+  overflow-y: auto;
+  flex: 1 1 auto;
+}
+
+/* Print optimization for Label Printing Station */
+@media print {
+  body {
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  body * {
+    visibility: hidden;
+  }
+  #print-label-area,
+  #print-label-area * {
+    visibility: visible;
+  }
+  #print-label-area {
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    margin: 0 !important;
+    padding: 24px !important;
+    background: white !important;
+    border: none !important;
+    box-shadow: none !important;
+    display: flex !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+  }
+  .print-label-sticker {
+    box-shadow: none !important;
+    border: 2px solid #0f172a !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+}
+
+/* Keyboard focus follows the canonical blue operational accent. */
+:where(button, a, input, select, textarea, summary):focus-visible {
+  outline: 2px solid #2563EB;
+  outline-offset: 3px;
+}
+
+/* F7 request-defined recipe: compact desktop columns, local narrow-screen table scroll. */
+.kit-columns { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
+@media (min-width: 1280px) { .kit-columns { grid-template-columns: minmax(0, 2.05fr) minmax(280px, 1fr); } }
+.kit-card { min-width: 0; border: 1px solid #E2E8F0; border-radius: 12px; background: white; padding: 20px; box-shadow: 0 1px 2px #0F172A06; }
+.kit-section-title { font-size: 14px; font-weight: 700; padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid #F1F5F9; }
+.kit-label { display: block; font-size: 12px; font-weight: 500; margin-bottom: 6px; color: #334155; }
+.kit-select, .kit-input { width: 100%; min-width: 0; min-height: 38px; background: white; border: 1px solid #CBD5E1; border-radius: 7px; padding: 8px 10px; font-size: 12px; color: #0F172A; }
+.kit-select { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.kit-select:disabled, .kit-input:disabled { background: #F8FAFC; cursor: not-allowed; color: #64748B; }
+.kit-input[aria-invalid=true], .kit-select[aria-invalid=true] { border-color: #F43F5E; }
+.kit-helper { font-size: 11px; line-height: 1.45; color: #64748B; }
+.kit-field-error { display: block; margin-top: 4px; font-size: 11px; line-height: 1.5; color: #BE123C; }
+.kit-recipe-scroll { overflow-x: auto; border: 1px solid #E2E8F0; border-radius: 7px; }
+.kit-recipe th { background: #F8FAFC; color: #475569; font-size: 10px; font-weight: 600; padding: 12px 6px; overflow-wrap: anywhere; }
+.kit-recipe td { padding: 12px 6px; vertical-align: top; border-top: 1px solid #E2E8F0; }
+.kit-recipe th:last-child, .kit-recipe td:last-child { padding-right: 12px; }
+.kit-recipe .kit-select, .kit-recipe .kit-input { padding-left: 8px; padding-right: 8px; }
+.kit-review-table th, .kit-review-table td { padding: 10px 14px; border-bottom: 1px solid #F1F5F9; overflow-wrap: anywhere; }
+.kit-review-table th { font-size: 10px; font-weight: 600; color: #64748B; background: #F8FAFC; }
+.kit-link { display: inline-flex; align-items: center; padding: 8px 12px; border: 1px solid #CBD5E1; border-radius: 8px; background: white; color: #334155; font-size: 12px; font-weight: 600; }
+@media (max-width: 767px) { .kit-recipe { min-width: 620px; } .kit-card { padding: 16px; } }
