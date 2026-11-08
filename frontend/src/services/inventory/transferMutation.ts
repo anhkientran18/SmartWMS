@@ -2,26 +2,72 @@ import { MutationObserver, QueryClient } from '@tanstack/react-query';
 import { sessionStore } from '../../features/auth/session';
 import { ApiError } from '../api/apiTypes';
 import { normalizeApiError } from '../api/httpClient';
-import { canReadBinContext } from './inventoryReadApi';
+import { canReadBinContext, inventoryReadApi } from './inventoryReadApi';
 import { inventoryKey, inventoryQueries } from './inventoryQueries';
-import { TransferRequest, transferApi, transferRequest } from './transferApi';
+import { isTransferGuid, TransferRequest, transferApi, transferRequest } from './transferApi';
 import { transferKey, transferQueries } from './transferQueries';
 
 export interface TransferOperationState {
   phase: 'restoring' | 'ready' | 'pending' | 'succeeded' | 'rejected' | 'uncertain';
   request?: TransferRequest; reference?: string; error?: ApiError; refreshError?: unknown; refreshing?: boolean; reconciled?: boolean;
+  storageWarning?: boolean;
+}
+type TransferJournal = { version: 1; request: TransferRequest } & (
+  { status: 'pending' | 'uncertain' } | { status: 'succeeded'; reference: string }
+);
+function readJournal(raw: string): TransferJournal {
+  const saved = JSON.parse(raw);
+  if (!saved || typeof saved !== 'object' || Array.isArray(saved)) throw new Error('Invalid journal');
+  const request = transferRequest(saved.request);
+  // The original request-only journal never proved a mutation outcome.
+  if (Object.keys(saved).length === 1 && 'request' in saved) return { version: 1, status: 'uncertain', request };
+  if (saved.version !== 1) throw new Error('Unsupported journal version');
+  if (saved.status === 'succeeded' && isTransferGuid(saved.reference)) return { version: 1, status: 'succeeded', request, reference: saved.reference };
+  if (['pending', 'uncertain'].includes(saved.status) && saved.reference === undefined) return { version: 1, status: saved.status, request };
+  throw new Error('Invalid journal outcome');
 }
 export async function refreshTransferReads(client: QueryClient, request: TransferRequest, isCurrent = () => true) {
-  if (!isCurrent()) return;
-  await Promise.all([inventoryKey, transferKey].map(queryKey => client.invalidateQueries({ queryKey, refetchType: 'active' }, { throwOnError: true })));
-  // Fetch these even when their panels are unmounted. Merely invalidating inactive
-  // queries cannot provide reconciliation evidence. These reads NEVER submit stock.
-  if (!isCurrent()) return;
-  await Promise.all([
-    client.fetchQuery({ ...inventoryQueries.contents(request.sourceBinId), staleTime: 0 }),
-    client.fetchQuery({ ...inventoryQueries.contents(request.destinationBinId), staleTime: 0 }),
-    client.fetchQuery({ ...transferQueries.history({ pageNumber: 1, pageSize: 10 }), staleTime: 0 }),
-  ]);
+  const checkSession = () => { if (!isCurrent()) throw normalizeApiError(401); };
+  checkSession();
+  const history = { pageNumber: 1, pageSize: 10 };
+  const requiredKeys = [inventoryQueries.contents(request.sourceBinId).queryKey,
+    inventoryQueries.contents(request.destinationBinId).queryKey, transferQueries.history(history).queryKey];
+  // Cache maintenance does not certify reconciliation. Mark all affected reads
+  // stale without waiting for unrelated active requests to succeed.
+  await Promise.all([inventoryKey, transferKey].map(queryKey => client.invalidateQueries({ queryKey, refetchType: 'none' }))).catch(() => undefined);
+  checkSession();
+  void Promise.resolve().then(() => {
+    checkSession();
+    return client.refetchQueries({ type: 'active', predicate: query =>
+      query.queryKey[0] === 'private' && ['inventory', 'inventory-transfers'].includes(String(query.queryKey[1])) &&
+      !requiredKeys.some(key => JSON.stringify(key) === JSON.stringify(query.queryKey)),
+    }, { throwOnError: true });
+  }).catch(() => undefined); // Best effort; never gates required reads or leaks a rejection.
+
+  async function freshRead<T>(queryKey: readonly unknown[], read: (signal: AbortSignal) => Promise<T>) {
+    checkSession();
+    // Cancel an older in-flight read instead of accepting its deduplicated result.
+    await client.cancelQueries({ queryKey, exact: true });
+    checkSession();
+    return client.fetchQuery({ queryKey, staleTime: 0, retry: false, networkMode: 'always', queryFn: async ({ signal }) => {
+      checkSession();
+      const controller = new AbortController();
+      const abort = () => controller.abort();
+      if (signal.aborted) abort();
+      signal.addEventListener('abort', abort, { once: true });
+      const unsubscribe = sessionStore.subscribe(() => { if (!isCurrent()) abort(); });
+      try {
+        const value = await read(controller.signal);
+        checkSession(); // An adapter ignoring cancellation must not populate a new session's cache.
+        return value;
+      } finally { unsubscribe(); signal.removeEventListener('abort', abort); }
+    } });
+  }
+  // Check ownership between requests; no remaining private GETs after logout.
+  await freshRead(requiredKeys[0], signal => inventoryReadApi.contents(request.sourceBinId, signal));
+  await freshRead(requiredKeys[1], signal => inventoryReadApi.contents(request.destinationBinId, signal));
+  await freshRead(requiredKeys[2], signal => transferApi.history(history, signal));
+  checkSession();
 }
 export function createTransferOperation(client: QueryClient) {
   const owner = sessionStore.get();
@@ -31,24 +77,25 @@ export function createTransferOperation(client: QueryClient) {
   const set = (next: TransferOperationState) => { state = next; listeners.forEach(listener => listener()); };
   const checkOwner = () => { if (!owner || owner !== sessionStore.get() || !canReadBinContext(owner.role)) throw normalizeApiError(401); };
   const storageError = () => normalizeApiError(400, { code: 'FE_TRANSFER_STORAGE' });
+  const persist = (journal: TransferJournal) => {
+    if (!storageKey) throw storageError();
+    sessionStorage.setItem(storageKey, JSON.stringify(journal));
+  };
   const initialize = (async () => {
     if (!owner || !canReadBinContext(owner.role)) { set({ phase: 'ready' }); return; }
     try {
-      // A one-way digest correlates this login after reload; never persist a JWT,
-      // username or password. This journal is a UX guard, not authorization.
+      // Preserve tab/login isolation without persisting credentials or username.
       const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(owner.token));
+      if (owner !== sessionStore.get()) return;
       storageKey = 'smartwms.transfer-review.' + Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
       const saved = sessionStorage.getItem(storageKey);
-      if (saved) {
-        const journal = JSON.parse(saved);
-        const request = transferRequest(journal.request);
-        // Even a previously pending request may have committed before reload.
-        set({ phase: 'uncertain', request });
+      if (saved !== null) {
+        const journal = readJournal(saved);
+        set(journal.status === 'succeeded' ? { phase: 'succeeded', request: journal.request, reference: journal.reference }
+          : { phase: 'uncertain', request: journal.request });
       } else set({ phase: 'ready' });
     } catch {
-      // Fail closed if the journal cannot be read, including corrupt data. It
-      // must not silently turn an unresolved request into an unlocked form.
-      set({ phase: 'rejected', error: storageError() });
+      if (owner === sessionStore.get()) set({ phase: 'rejected', error: storageError() });
     }
   })();
   const mutation = new MutationObserver(client, { mutationKey: [...transferKey, 'create'], mutationFn: transferApi.create,
@@ -61,30 +108,31 @@ export function createTransferOperation(client: QueryClient) {
       checkOwner();
       if (state.phase !== 'ready') throw normalizeApiError(409, { code: 'FE_TRANSFER_REVIEW_REQUIRED' });
       const request = transferRequest(value);
-      set({ phase: 'pending', request }); // Synchronous latch before the first POST.
-      try {
-        if (!storageKey) throw storageError();
-        sessionStorage.setItem(storageKey, JSON.stringify({ request }));
-      } catch { set({ phase: 'rejected', request, error: storageError() }); return; }
+      set({ phase: 'pending', request });
+      try { persist({ version: 1, status: 'pending', request }); }
+      catch { set({ phase: 'rejected', request, error: storageError() }); return; }
       let reference: string;
       try { reference = await mutation.mutate(request); }
       catch (caught) {
         if (owner !== sessionStore.get()) return;
         const error = caught as ApiError;
-        // Server/gateway errors may occur after commit. Absence of a response and
-        // malformed success envelopes are equally uncertain; never auto retry.
         const rejected = [400, 401, 403, 409].includes(error.status ?? 0);
-        // Retain uncertain requests durably. Definite rejections can be cleared.
-        if (rejected && storageKey) { try { sessionStorage.removeItem(storageKey); } catch { /* Conservative guard survives reload. */ } }
-        set({ phase: rejected ? 'rejected' : 'uncertain', request, error });
+        let storageWarning = false;
+        try {
+          if (rejected) sessionStorage.removeItem(storageKey!);
+          else persist({ version: 1, status: 'uncertain', request });
+        } catch { storageWarning = true; } // A persisted pending entry still restores as uncertain.
+        set({ phase: rejected ? 'rejected' : 'uncertain', request, error, storageWarning });
         return;
       }
       if (owner !== sessionStore.get()) return;
-      if (storageKey) { try { sessionStorage.removeItem(storageKey); } catch { /* A reload will conservatively require review. */ } }
-      set({ phase: 'succeeded', request, reference, refreshing: true });
+      let storageWarning = false;
+      try { persist({ version: 1, status: 'succeeded', request, reference }); }
+      catch { storageWarning = true; } // The confirmed result remains successful and locked in memory.
+      set({ phase: 'succeeded', request, reference, storageWarning, refreshing: true });
       let refreshError: unknown;
       try { await refreshTransferReads(client, request, () => owner === sessionStore.get()); } catch (error) { refreshError = error; }
-      if (owner === sessionStore.get()) set({ phase: 'succeeded', request, reference, refreshError });
+      if (owner === sessionStore.get()) set({ phase: 'succeeded', request, reference, storageWarning, refreshError });
     },
     async reconcile() {
       checkOwner();
@@ -98,20 +146,29 @@ export function createTransferOperation(client: QueryClient) {
         if (owner === sessionStore.get()) set({ ...previous, refreshing: false, reconciled: false, refreshError: error });
       }
     },
-    acknowledge(externallyReviewed = false) {
+    acknowledge(externallyReviewed = false): boolean {
       checkOwner();
       if (state.phase === 'ready' || state.phase === 'restoring' || state.phase === 'pending' || state.refreshing ||
           state.error?.code === 'FE_TRANSFER_STORAGE' ||
-          state.phase === 'uncertain' && (!state.reconciled || !externallyReviewed)) throw normalizeApiError(409);
-      try { if (storageKey) sessionStorage.removeItem(storageKey); }
-      catch { set({ ...state, error: storageError() }); return; }
-      set({ phase: 'ready' }); // Only unlocks a NEW review; never replays the request.
+          state.phase === 'uncertain' && (!state.reconciled || !externallyReviewed)) throw normalizeApiError(409, { code: 'FE_TRANSFER_REVIEW_REQUIRED' });
+      try {
+        // Retry journal persistence only, never the stock mutation. Do not unlock
+        // a confirmed result while the post-commit storage failure still exists.
+        if (state.storageWarning && state.request && state.phase !== 'rejected') {
+          persist(state.phase === 'succeeded' ? { version: 1, status: 'succeeded', request: state.request, reference: state.reference! }
+            : { version: 1, status: 'uncertain', request: state.request });
+        }
+        if (!storageKey) throw storageError();
+        sessionStorage.removeItem(storageKey);
+        if (sessionStorage.getItem(storageKey) !== null) throw storageError();
+      } catch { set({ ...state, storageWarning: true }); return false; }
+      set({ phase: 'ready' }); // Only an explicit acknowledgement unlocks a NEW review.
+      return true;
     },
   };
 }
-// Preserve the synchronous latch and unknown outcome across route unmount/remount
-// in this tab. The session journal also survives reload. AuthLifecycle clears
-// caches; a new login token gets its own operation and journal identity.
+// Keep the latch across route remounts. The versioned journal also survives reload;
+// a different login token gets its own operation and journal identity.
 const operations = new WeakMap<QueryClient, { owner: ReturnType<typeof sessionStore.get>; operation: ReturnType<typeof createTransferOperation> }>();
 export function getTransferOperation(client: QueryClient) {
   const owner = sessionStore.get(), saved = operations.get(client);

@@ -2058,6 +2058,7 @@
     "ready": "Sẵn sàng xem lại.",
     "refresh": "Làm mới",
     "refreshing": "Đang làm mới dữ liệu chỉ đọc…",
+    "storageWarning": "Chưa cập nhật được journal an toàn. Kết quả luân chuyển bên trên không đổi và form vẫn khóa. Khôi phục bộ nhớ trình duyệt trước khi xác nhận xem lại giao dịch mới; không gửi lại luân chuyển.",
     "refreshFailed": "Một số dữ liệu chưa làm mới được. Kiểm tra lỗi đọc và làm mới lại. Giao dịch đã xác nhận vẫn thành công.",
     "stockNote": "Tồn kho vật lý không phải ATP hay số lượng chắc chắn chuyển được. Server kiểm tra reservation, sức chứa, hạn dùng, trạng thái và LPN. Chỉ hỗ trợ chuyển theo số lượng với None/Lot.",
     "contents": "Hàng trong ô nguồn",
@@ -2087,6 +2088,7 @@
       "uncertain": "Chưa rõ kết quả — cần đối soát"
     },
     "errors": {
+      "review": "Giao dịch này đang khóa. Kiểm tra kết quả hiện tại trước khi tiếp tục.",
       "storage": "Bộ nhớ an toàn luân chuyển không khả dụng hoặc hỏng. Giữ tab này và liên hệ người phụ trách để đối soát trước khi xóa dữ liệu trình duyệt. Chưa gửi giao dịch mới.",
       "400": "Kiểm tra dữ liệu luân chuyển.",
       "401": "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.",

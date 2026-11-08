@@ -18,9 +18,33 @@ import { changeTransferDraft, draftTransferRequest, emptyTransferDraft, supporte
 const input = 'w-full border border-slate-300 bg-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed';
 const panel = 'bg-white border border-slate-200 rounded-2xl shadow-2xs p-4 sm:p-5 space-y-4 min-w-0';
 export function transferErrorKey(error?: ApiError) {
+  if (error?.code === 'FE_TRANSFER_REVIEW_REQUIRED') return 'transfer.errors.review';
   if (error?.code === 'FE_TRANSFER_STORAGE') return 'transfer.errors.storage';
   if ([400, 401, 403, 409].includes(error?.status ?? 0)) return `transfer.errors.${error!.status}`;
   return error?.status === undefined ? 'transfer.errors.network' : 'transfer.errors.server';
+}
+// These are the same handlers used by UI events and deterministic interaction tests.
+// Report translated keys only; raw operation errors can contain internal details.
+export function createTransferEventHandlers(operation: Pick<ReturnType<typeof getTransferOperation>, 'submit' | 'reconcile' | 'acknowledge'>,
+  onError: (key: string | undefined) => void, onAcknowledged: () => void) {
+  const owner = sessionStore.get();
+  const report = (error: unknown) => { if (owner === sessionStore.get()) onError(transferErrorKey(error as ApiError)); };
+  const clear = () => { if (owner === sessionStore.get()) onError(undefined); };
+  return {
+    async submit(request: TransferRequest) {
+      clear();
+      try { await operation.submit(request); } catch (error) { report(error); }
+    },
+    async reconcile() {
+      clear();
+      try { await operation.reconcile(); } catch (error) { report(error); }
+    },
+    acknowledge(reviewed: boolean) {
+      clear();
+      try { if (operation.acknowledge(reviewed) && owner === sessionStore.get()) onAcknowledged(); }
+      catch (error) { report(error); }
+    },
+  };
 }
 export function TransferReadState<T>({ query, children }: { query: UseQueryResult<T, Error>; children: ReactNode }) {
   const { t } = useTranslation();
@@ -86,6 +110,7 @@ export function TransferOutcome({ state, onRefresh, onNew }: {
       <div><dt>{t('transfer.reason')}</dt><dd>{state.request.reason}</dd></div>
     </dl>}
     {uncertain && <p className="text-sm">{t('transfer.uncertainty')}</p>}
+    {state.storageWarning && <p role="alert" className="text-sm text-amber-800">{t('transfer.storageWarning')}</p>}
     {state.refreshError !== undefined && <p role="alert" className="text-sm text-amber-800">{t('transfer.refreshFailed')}</p>}
     {state.refreshing && <p role="status">{t('transfer.refreshing')}</p>}
     {!['pending', 'restoring'].includes(state.phase) && state.error?.code !== 'FE_TRANSFER_STORAGE' && <div className="space-y-3">
@@ -109,7 +134,9 @@ function Workspace() {
   const operation = getTransferOperation(client);
   const state = useSyncExternalStore(operation.subscribe, operation.getState, operation.getState);
   const [draft, setDraft] = useState(emptyTransferDraft);
+  const [eventError, setEventError] = useState<string>();
   const [review, setReview] = useState<{ request: TransferRequest; revision: string }>();
+  const events = createTransferEventHandlers(operation, setEventError, () => { setDraft(emptyTransferDraft()); setReview(undefined); });
   const reviewButton = useRef<HTMLButtonElement>(null);
   const [page, setPage] = useState(1), [searchDraft, setSearchDraft] = useState(''), [search, setSearch] = useState('');
   const [productFilter, setProductFilter] = useState(''), [selectedId, setSelectedId] = useState('');
@@ -144,9 +171,8 @@ function Workspace() {
       <p className="text-sm text-slate-500 mt-1">{t('transfer.description')}</p><Link to="/dashboard/inventory" className="text-xs text-blue-700 underline">{t('transfer.back')}</Link></div>
       <ActionButton variant="secondary" disabled={refreshing} onClick={() => void refresh()} icon={<RefreshCw className="w-4 h-4" />}>{t('transfer.refresh')}</ActionButton></header>
     {refreshError && <p role="alert">{t('transfer.refreshFailed')}</p>}
-    <TransferOutcome state={state} onRefresh={() => void operation.reconcile()} onNew={reviewed => {
-      operation.acknowledge(reviewed); setDraft(emptyTransferDraft()); setReview(undefined);
-    }} />
+    {eventError && <p role="alert">{t(eventError)}</p>}
+    <TransferOutcome state={state} onRefresh={() => void events.reconcile()} onNew={events.acknowledge} />
     {state.request && state.phase !== 'pending' && <div className="grid lg:grid-cols-2 gap-4" aria-label={t('transfer.reconcile')}>
       <ReconciliationBin id={state.request.sourceBinId} label={t('transfer.source')} />
       <ReconciliationBin id={state.request.destinationBinId} label={t('transfer.destination')} />
@@ -205,7 +231,7 @@ function Workspace() {
       <p className="text-xs">{t('transfer.stockNote')}</p>{!reviewValid && <p role="alert">{t('transfer.validation.context')}</p>}
       <ActionButton disabled={!reviewValid || locked} onClick={() => {
         if (!reviewValid || locked) return;
-        const request = review.request; closeReview(); void operation.submit(request);
+        const request = review.request; closeReview(); void events.submit(request);
       }}>{t('transfer.confirm')}</ActionButton>
     </Dialog>}
     {selectedId && <TransferDetail id={selectedId} onClose={() => setSelectedId('')} />}

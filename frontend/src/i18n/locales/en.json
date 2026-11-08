@@ -2058,6 +2058,7 @@
     "ready": "Ready for review.",
     "refresh": "Refresh",
     "refreshing": "Refreshing read-only data…",
+    "storageWarning": "The safety journal could not be updated. The transfer result above is unchanged and the form remains locked. Restore browser storage before acknowledging a new review; do not repeat the transfer.",
     "refreshFailed": "Some reads could not be refreshed. Review the read errors and refresh again. A confirmed transfer remains successful.",
     "stockNote": "Physical quantity is not available-to-promise or guaranteed transferable stock. The server checks reservations, capacity, expiry, status and LPN restrictions. Only None/Lot quantity transfers are supported.",
     "contents": "Source bin contents",
@@ -2087,6 +2088,7 @@
       "uncertain": "Transfer outcome uncertain — reconciliation required"
     },
     "errors": {
+      "review": "This transfer is locked. Review its current result before continuing.",
       "storage": "Transfer safety storage is unavailable or corrupt. Keep this tab open and contact the responsible operator to reconcile prior transfers before clearing browser data. No new transfer was sent.",
       "400": "Check the transfer data.",
       "401": "Your session expired. Sign in again.",
