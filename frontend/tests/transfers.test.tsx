@@ -18,6 +18,8 @@ import i18n from '../src/i18n';
 import en from '../src/i18n/locales/en.json';
 import vi from '../src/i18n/locales/vi.json';
 
+const journal = new Map<string, string>();
+globalThis.sessionStorage = { getItem: key => journal.get(key) ?? null, setItem: (key, value) => { journal.set(key, value); }, removeItem: key => { journal.delete(key); }, clear: () => journal.clear(), key: index => [...journal.keys()][index] ?? null, get length() { return journal.size; } };
 const ids = Array.from({ length: 8 }, (_, index) => `${index + 1}`.repeat(8) + '-' + `${index + 1}`.repeat(4) + '-' + `${index + 1}`.repeat(4) + '-' + `${index + 1}`.repeat(4) + '-' + `${index + 1}`.repeat(12));
 const [warehouse, zone, source, destination, product, transaction, otherWarehouse, otherZone] = ids;
 const body = { productId: product, sourceBinId: source, destinationBinId: destination, transferQuantity: 2, lotNumber: '', reason: 'Internal transfer' };
@@ -29,7 +31,7 @@ const page = { items: [], pageIndex: 1, pageSize: 10, totalCount: 0, totalPages:
 const context = () => ({ fresh: true, warehouses: [{ id: warehouse, code: 'WH', name: 'Warehouse' }], zones: [{ id: zone, code: 'Z', name: 'Zone', warehouseId: warehouse }],
   bins: [source, destination].map((id, index) => ({ id, code: index ? 'DST' : 'SRC', zoneId: zone, purpose: 0, maxCapacity: 50, currentOccupancy: 20 })), products: [{ ...productRow }], contents: contents() });
 const draft = () => ({ ...emptyTransferDraft(), warehouseId: warehouse, sourceBinId: source, destinationBinId: destination, productId: product, lotNumber: '', quantity: '2', reason: 'Internal transfer' });
-const user = (role: 'Admin' | 'WarehouseManager' | 'Staff' = 'Admin') => ({ role, username: 'fixture', token: `test.${btoa(JSON.stringify({ exp: Date.now() / 1000 + 3600 }))}.unsigned` });
+const user = (role: 'Admin' | 'WarehouseManager' | 'Staff' = 'Admin') => ({ role, username: 'fixture', token: `test.${btoa(JSON.stringify({ exp: Date.now() / 1000 + 3600, fixtureNonce: Math.random() }))}.unsigned` });
 const client = () => new QueryClient({ defaultOptions: { queries: { retry: false, retryOnMount: false, gcTime: 0 }, mutations: { retry: 3, retryDelay: 1 } } });
 const response = (config, data, status = 200) => ({ config, data, status, statusText: String(status), headers: {} });
 const success = data => { httpClient.defaults.adapter = async config => response(config, { isSuccess: true, data }); };
@@ -141,7 +143,7 @@ test('warehouse/source/product/lot changes synchronously invalidate all dependen
 });
 
 test('single-submit latch, pending state, success GUID, query invalidation and no optimistic stock update', async () => {
-  sessionStore.set(user()); const cache = client(); const op = createTransferOperation(cache); let resolvePost; let posts = 0;
+  sessionStore.set(user()); const cache = client(); cache.setQueryDefaults(inventoryKey, { gcTime: Infinity }); cache.setQueryDefaults(transferKey, { gcTime: Infinity }); const op = getTransferOperation(cache); let resolvePost; let posts = 0;
   cache.setQueryData(inventoryQueries.summary().queryKey, { totalProducts: 1, totalQuantity: 20, lowStockItems: 0 });
   cache.setQueryData(inventoryQueries.contents(source).queryKey, contents()); cache.setQueryData(inventoryQueries.bins().queryKey, context().bins);
   const filter = { pageNumber: 2, pageSize: 10, productId: product }; cache.setQueryData(transferQueries.history(filter).queryKey, page);
@@ -150,7 +152,7 @@ test('single-submit latch, pending state, success GUID, query invalidation and n
     if (config.method === 'post') { posts++; return new Promise(resolve => { resolvePost = () => resolve(response(config, { isSuccess: true, data: transaction })); }); }
     reads.push(config.url); return Promise.resolve(mockReads(config));
   };
-  const pending = op.submit(body); assert.equal(op.getState().phase, 'pending');
+  const pending = op.submit(body); while (op.getState().phase === 'restoring') await new Promise(resolve => setTimeout(resolve, 0)); assert.equal(op.getState().phase, 'pending'); assert.match(render(cache), /<fieldset disabled=""/);
   await assert.rejects(op.submit(body), error => error.status === 409);
   assert.equal(cache.getQueryData(inventoryQueries.contents(source).queryKey).items[0].quantity, 20);
   while (!resolvePost) await new Promise(resolve => setTimeout(resolve, 0)); resolvePost(); await pending;
@@ -278,4 +280,42 @@ test('logout during success invalidation never starts subsequent inactive privat
 test('duplicate/conflicting product metadata blocks selecting ambiguous stock', () => {
   const c = context(); c.products.push({ ...productRow, trackingMode: 2 });
   assert.equal(supportedSourceRows(c).length, 0); assert.equal(validateTransferDraft(draft(), c), 'selection');
+});
+
+test('reload restores an unresolved transfer and requires reconciliation; journal contains no credentials', async () => {
+  journal.clear(); const session = user(); sessionStore.set(session); const cache = client(); let posts = 0;
+  httpClient.defaults.adapter = async config => {
+    if (config.method !== 'post') return mockReads(config);
+    posts++; throw new axios.AxiosError('lost response', 'ERR_NETWORK', config);
+  };
+  const first = createTransferOperation(cache); await first.submit(body); assert.equal(first.getState().phase, 'uncertain');
+  assert.equal(journal.size, 1); const serialized = [...journal.entries()].flat().join(''); assert.ok(!serialized.includes(session.token)); assert.ok(!serialized.includes(session.username));
+  const restored = createTransferOperation(cache);
+  while (restored.getState().phase === 'restoring') await new Promise(resolve => setTimeout(resolve, 0));
+  assert.equal(restored.getState().phase, 'uncertain'); assert.deepEqual(restored.getState().request, body);
+  await assert.rejects(restored.submit(body)); assert.equal(posts, 1); assert.throws(() => restored.acknowledge(true));
+  await restored.reconcile(); restored.acknowledge(true); assert.equal(restored.getState().phase, 'ready'); assert.equal(journal.size, 0); assert.equal(posts, 1); cache.clear();
+});
+
+test('unavailable safety storage fails closed before POST', async () => {
+  sessionStore.set(user()); const cache = client(); const original = sessionStorage.setItem; let posts = 0;
+  sessionStorage.setItem = () => { throw new Error('Storage disabled'); };
+  httpClient.defaults.adapter = async config => { posts++; return response(config, { isSuccess: true, data: transaction }); };
+  try {
+    const op = createTransferOperation(cache); await op.submit(body);
+    assert.equal(op.getState().phase, 'rejected'); assert.equal(op.getState().error.code, 'FE_TRANSFER_STORAGE'); assert.equal(posts, 0);
+    assert.throws(() => op.acknowledge(true));
+  } finally { sessionStorage.setItem = original; cache.clear(); }
+});
+
+test('corrupt unresolved journal cannot silently unlock a repeated attempt', async () => {
+  journal.clear(); sessionStore.set(user()); const cache = client(); let posts = 0;
+  httpClient.defaults.adapter = async config => { posts++; throw new axios.AxiosError('lost response', 'ERR_NETWORK', config); };
+  const first = createTransferOperation(cache); await first.submit(body);
+  const key = [...journal.keys()][0]; assert.ok(key); journal.set(key, '{corrupt');
+  const restored = createTransferOperation(cache);
+  while (restored.getState().phase === 'restoring') await new Promise(resolve => setTimeout(resolve, 0));
+  assert.equal(restored.getState().error.code, 'FE_TRANSFER_STORAGE');
+  assert.throws(() => restored.acknowledge(true)); await assert.rejects(restored.submit(body)); assert.equal(posts, 1);
+  journal.clear(); cache.clear();
 });

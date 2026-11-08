@@ -2080,12 +2080,14 @@
     "newTransfer": "Bắt đầu xem lại giao dịch mới",
     "uncertainty": "Giao dịch có thể đã commit. Không gửi lại trước khi đối soát kết quả. Làm mới tồn kho nguồn/đích và lịch sử bên dưới; các dữ liệu này không luôn xác định duy nhất lần gửi này. Form chỉ mở sau bước kiểm tra chủ động.",
     "outcome": {
+      "restoring": "Đang kiểm tra kết quả luân chuyển trước…",
       "pending": "Đang gửi luân chuyển — không gửi lại",
       "succeeded": "Đã xác nhận luân chuyển",
       "rejected": "Server đã từ chối luân chuyển",
       "uncertain": "Chưa rõ kết quả — cần đối soát"
     },
     "errors": {
+      "storage": "Bộ nhớ an toàn luân chuyển không khả dụng hoặc hỏng. Giữ tab này và liên hệ người phụ trách để đối soát trước khi xóa dữ liệu trình duyệt. Chưa gửi giao dịch mới.",
       "400": "Kiểm tra dữ liệu luân chuyển.",
       "401": "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.",
       "403": "Bạn không có quyền thực hiện thao tác này.",

@@ -18,6 +18,7 @@ import { changeTransferDraft, draftTransferRequest, emptyTransferDraft, supporte
 const input = 'w-full border border-slate-300 bg-white rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed';
 const panel = 'bg-white border border-slate-200 rounded-2xl shadow-2xs p-4 sm:p-5 space-y-4 min-w-0';
 export function transferErrorKey(error?: ApiError) {
+  if (error?.code === 'FE_TRANSFER_STORAGE') return 'transfer.errors.storage';
   if ([400, 401, 403, 409].includes(error?.status ?? 0)) return `transfer.errors.${error!.status}`;
   return error?.status === undefined ? 'transfer.errors.network' : 'transfer.errors.server';
 }
@@ -87,7 +88,7 @@ export function TransferOutcome({ state, onRefresh, onNew }: {
     {uncertain && <p className="text-sm">{t('transfer.uncertainty')}</p>}
     {state.refreshError !== undefined && <p role="alert" className="text-sm text-amber-800">{t('transfer.refreshFailed')}</p>}
     {state.refreshing && <p role="status">{t('transfer.refreshing')}</p>}
-    {state.phase !== 'pending' && <div className="space-y-3">
+    {!['pending', 'restoring'].includes(state.phase) && state.error?.code !== 'FE_TRANSFER_STORAGE' && <div className="space-y-3">
       <ActionButton variant="secondary" disabled={state.refreshing} icon={<RefreshCw className="w-4 h-4" />} onClick={onRefresh}>{t('transfer.reconcile')}</ActionButton>
       {uncertain && <label className="flex gap-2 items-start text-sm"><input type="checkbox" className="mt-1" checked={reviewed} disabled={!state.reconciled || state.refreshing}
         onChange={event => setReviewed(event.target.checked)} /><span>{t('transfer.reviewed')}</span></label>}

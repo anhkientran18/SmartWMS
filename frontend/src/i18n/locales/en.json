@@ -2080,12 +2080,14 @@
     "newTransfer": "Start a new transfer review",
     "uncertainty": "The transfer may have committed. Do not repeat it until the outcome has been reconciled. Refresh the source/destination contents and history below; these reads cannot always uniquely identify this attempt. The form remains locked until deliberate review.",
     "outcome": {
+      "restoring": "Checking the previous transfer outcome…",
       "pending": "Transfer pending — do not resubmit",
       "succeeded": "Transfer confirmed",
       "rejected": "Transfer rejected by the server",
       "uncertain": "Transfer outcome uncertain — reconciliation required"
     },
     "errors": {
+      "storage": "Transfer safety storage is unavailable or corrupt. Keep this tab open and contact the responsible operator to reconcile prior transfers before clearing browser data. No new transfer was sent.",
       "400": "Check the transfer data.",
       "401": "Your session expired. Sign in again.",
       "403": "You do not have permission for this action.",
