@@ -58,6 +58,7 @@ import SupplierAdministration from '../features/administration/SupplierAdministr
 import ReceiptCreation from '../features/inbound/ReceiptCreation';
 import UserAdministration from '../features/administration/UserAdministration';
 import AuditLogWorkspace from '../features/administration/AuditLogWorkspace';
+import InventoryTransferWorkspace from '../features/inventory/InventoryTransferWorkspace';
 import StockVisibility from "../features/inventory/StockVisibility";
 import CycleCountManagement from "../features/cycle-count/CycleCountManagement";
 import AssignedCycleCounts from "../features/cycle-count/AssignedCycleCounts";
@@ -1132,6 +1133,7 @@ export default function App() {
             <Route path="/dashboard/security/audit-logs" element={<AuditLogWorkspace />} />
             <Route path="/dashboard" element={<OperationalDashboard />} />
             <Route path="/dashboard/inventory" element={<StockVisibility />} />
+            <Route path="/dashboard/inventory/transfers" element={<InventoryTransferWorkspace />} />
             <Route path="/dashboard/replenishment" element={<RealReplenishment />} />
             <Route path="/dashboard/orders" element={<OrderManagement />} />
             <Route path="/dashboard/orders/outbound/create" element={<RealCreateOutbound />} />
