@@ -71,7 +71,29 @@
     "currentPage": "Current page only",
     "coverageNote": "{{percent}}% coverage on the current page",
     "metrics": "Product catalog metrics",
-    "resultCount": "{{count}} matching products"
+    "resultCount": "{{count}} matching products",
+    "semanticSearch": {
+      "button": "Semantic Search",
+      "title": "Semantic Product Search",
+      "subtitle": "Discover products conceptually using natural language embeddings.",
+      "advisory": "Semantic search discovers conceptually similar products using AI embeddings. Standard product search remains authoritative for exact SKU, barcode, and full catalog search.",
+      "placeholder": "Describe what you are looking for (e.g. high-capacity storage boxes, waterproof packing tape)...",
+      "search": "Search",
+      "searching": "Searching...",
+      "charCount": "{{count}} / 200",
+      "similarity": "{{score}}% match",
+      "viewDetails": "View Details",
+      "noMatches": "No semantic matches found",
+      "noMatchesHint": "Try different descriptive terms, or use standard catalog search for exact SKU / barcode lookup.",
+      "errors": {
+        "empty": "Search query cannot be empty.",
+        "tooLong": "Search query cannot exceed 200 characters.",
+        "invalid": "The AI embedding response could not be processed. Please try again.",
+        "unavailable": "Semantic AI search is currently unavailable. Standard product search remains available.",
+        "timeout": "Semantic search request timed out. Please try again.",
+        "general": "Semantic search failed. Standard product search remains available."
+      }
+    }
   },
   "f7": {
     "nav": "Kit assembly",

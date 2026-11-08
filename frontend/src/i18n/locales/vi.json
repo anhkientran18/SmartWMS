@@ -71,7 +71,29 @@
     "currentPage": "Chỉ trong trang hiện tại",
     "coverageNote": "{{percent}}% có mã vạch trong trang hiện tại",
     "metrics": "Chỉ số danh mục sản phẩm",
-    "resultCount": "{{count}} sản phẩm phù hợp"
+    "resultCount": "{{count}} sản phẩm phù hợp",
+    "semanticSearch": {
+      "button": "Tìm kiếm ngữ nghĩa",
+      "title": "Tìm kiếm sản phẩm theo ngữ nghĩa",
+      "subtitle": "Khám phá sản phẩm theo khái niệm bằng embedding ngôn ngữ tự nhiên.",
+      "advisory": "Tìm kiếm ngữ nghĩa giúp phát hiện các sản phẩm tương tự về khái niệm bằng AI embeddings. Tìm kiếm danh mục tiêu chuẩn vẫn là nguồn chuẩn xác cho tra cứu SKU, mã vạch và toàn bộ danh mục.",
+      "placeholder": "Mô tả sản phẩm bạn đang tìm (ví dụ: hộp lưu trữ dung tích lớn, băng keo chống thấm)...",
+      "search": "Tìm kiếm",
+      "searching": "Đang tìm...",
+      "charCount": "{{count}} / 200",
+      "similarity": "{{score}}% độ tương đồng",
+      "viewDetails": "Xem chi tiết",
+      "noMatches": "Không tìm thấy sản phẩm phù hợp theo ngữ nghĩa",
+      "noMatchesHint": "Thử dùng từ khóa mô tả khác, hoặc sử dụng tìm kiếm tiêu chuẩn để tra cứu chính xác theo SKU / mã vạch.",
+      "errors": {
+        "empty": "Nội dung tìm kiếm không được để trống.",
+        "tooLong": "Nội dung tìm kiếm không được vượt quá 200 ký tự.",
+        "invalid": "Không thể xử lý phản hồi AI embedding. Vui lòng thử lại.",
+        "unavailable": "Tính năng tìm kiếm ngữ nghĩa AI hiện không khả dụng. Tìm kiếm sản phẩm tiêu chuẩn vẫn hoạt động bình thường.",
+        "timeout": "Yêu cầu tìm kiếm ngữ nghĩa đã quá thời gian chờ. Vui lòng thử lại.",
+        "general": "Tìm kiếm ngữ nghĩa thất bại. Tìm kiếm sản phẩm tiêu chuẩn vẫn hoạt động bình thường."
+      }
+    }
   },
   "f7": {
     "nav": "Lắp ráp Kit",

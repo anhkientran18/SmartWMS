@@ -1,7 +1,7 @@
 import { ReactNode, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, Barcode, Eye, Layers, Package, QrCode, RefreshCw, Search, X } from 'lucide-react';
+import { AlertTriangle, Barcode, Eye, Layers, Package, QrCode, RefreshCw, Search, Sparkles, X } from 'lucide-react';
 import ActionButton from '../../components/common/ActionButton';
 import PaginationFooter from '../../components/common/PaginationFooter';
 import SharedStateView from '../../components/common/SharedStateView';
@@ -10,6 +10,7 @@ import { ApiError } from '../../services/api/apiTypes';
 import { canReadProducts, ProductDetail, ProductRead, BarcodeResolution } from '../../services/inventory/inventoryReadApi';
 import { inventoryQueries } from '../../services/inventory/inventoryQueries';
 import { createBarcodeLookup } from '../../services/inventory/productLookup';
+import SemanticProductSearchModal from './SemanticProductSearchModal';
 
 const inputClass = 'w-full min-w-0 border border-slate-200 bg-white rounded-xl py-2.5 px-3 text-xs';
 export function productErrorKey(error: ApiError | undefined, barcode = false) {
@@ -144,6 +145,7 @@ export function ProductCatalogTable({ items, onOpen }: { items: ProductRead[]; o
 function Catalog() {
   const { t } = useTranslation(); const [draft, setDraft] = useState(''); const [search, setSearch] = useState(''); const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<{ id: string; qr: boolean }>(); const [lookupOpen, setLookupOpen] = useState(false);
+  const [semanticOpen, setSemanticOpen] = useState(false);
   const catalog = useQuery(inventoryQueries.productsPage(page, search));
   // The unfiltered total reuses the same fixed-20 page key. Initial observers
   // deduplicate; filtered result totals are never presented as global KPIs.
@@ -159,6 +161,7 @@ function Catalog() {
       {(draft || search) && <ActionButton variant="ghost" onClick={() => { setDraft(''); setSearch(''); setPage(1); }}>{t('f8.reset')}</ActionButton>}
       <ActionButton variant="secondary" disabled={catalog.isFetching || total.isFetching} icon={<RefreshCw className="w-4 h-4" />} onClick={refresh}>{t('f8.refresh')}</ActionButton>
       <ActionButton variant="secondary" icon={<Barcode className="w-4 h-4" />} onClick={() => setLookupOpen(true)}>{t('f8.analyzeBarcode')}</ActionButton>
+      <ActionButton variant="secondary" icon={<Sparkles className="w-4 h-4 text-blue-600" />} onClick={() => setSemanticOpen(true)}>{t('f8.semanticSearch.button')}</ActionButton>
     </form>
     <section className="bg-white border border-slate-200 rounded-2xl shadow-2xs min-w-0 overflow-hidden" aria-labelledby="product-catalog-title">
       <div className="px-5 py-4 bg-slate-50/80 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2"><h2 id="product-catalog-title" className="flex gap-2 items-center text-sm font-semibold"><Package className="w-4 h-4 text-blue-600" />{t('f8.catalogList')}</h2>{catalog.isSuccess && <span className="text-xs text-slate-500 font-mono">{t('f8.resultCount', { count: catalog.data.totalCount })}</span>}</div>
@@ -169,6 +172,7 @@ function Catalog() {
       </>}
     </section>
     {lookupOpen && <BarcodeLookup onClose={() => setLookupOpen(false)} onOpen={id => { setLookupOpen(false); openProduct(id); }} />}
+    {semanticOpen && <SemanticProductSearchModal onClose={() => setSemanticOpen(false)} onOpen={id => { setSemanticOpen(false); openProduct(id); }} />}
     {selected && <ProductDialog key={selected.id} id={selected.id} showQr={selected.qr} onClose={() => setSelected(undefined)} />}
   </div>;
 }
