@@ -1,73 +1,117 @@
 # SmartWMS — Test strategy
 
-## Phạm vi CI hiện tại
+> Active source coverage guide: **10/11/2026**, main **`ad8b620038b5beab5f6225fb5a01460bf2414b97`**.
+> B1a đọc workflow/projects/runners/imports và kiểm tài liệu tĩnh; **không chạy application build, typecheck hoặc test runner**.
 
-Source baseline: `main` tại `a31bb37d16799decfe0b6a5dc2cac31f828eaea9`, đối chiếu 2026-11-07. CI gồm compile backend, InboundCreateRbac regression và frontend quality không cần SQL. Kết quả thực thi local nằm trong báo cáo bàn giao ngoài branch; tài liệu này mô tả coverage từ source, không tuyên bố GitHub Actions đã PASS.
+## Evidence levels
 
-| Lớp | CI chạy | Điều được kiểm tra |
-|---|---|---|
-| Backend build | `dotnet restore SmartWMS.slnx --nologo`; `dotnet build SmartWMS.slnx --configuration Release --no-restore --nologo` | Compile bốn production projects bằng SDK 10; không chạy production application. |
-| Backend RBAC | `dotnet run --project verification/InboundCreateRbac/InboundCreateRbac.Verification.csproj --configuration Release --no-launch-profile` | Chạy console assertions sau production build trong `backend-build`; exit code khác 0 làm job fail. Host loopback riêng, JWT Bearer và authorization middleware thật, production inbound controller và safe MediatR probe; không chạy business handlers hoặc SQL. |
-| Dependency install | `npm ci --no-audit --no-fund` trong `frontend` với Node 22 | Manifest/lockfile đồng bộ, cài dependencies theo lockfile và platform. Không phải vulnerability scan. |
-| TypeScript | `npm run typecheck` | `tsc --noEmit` theo `frontend/tsconfig.json`: `src` và `vite.config.ts`; không typecheck toàn bộ test files. |
-| Frontend tests | `npm run test:sprint` | Chín suites dùng Node test + esbuild, Axios mock adapters, SSR và source assertions. |
-| Frontend build | `npm run build` | Vite bundle production; không xác nhận API runtime hoặc trình duyệt. |
+| Label | Meaning in this guide |
+| --- | --- |
+| Tests configured | Source workflow → command → runner → entry/import chain đã đối chiếu |
+| Tests actually executed | Cần command/environment/exact source, exit code và output của một run thật |
+| Historical PASS | Chỉ gắn với run/source cũ; không chứng nhận selected main hoặc docs candidate |
+| Current NOT RUN | B1a không execute application/test checks; chỉ static documentation checks có kết quả mới |
+| NOT VERIFIED | SQL/production host/browser/live provider/deployment behavior chưa được chứng minh bởi wiring hoặc mock checks |
 
-Không dùng `npm run test`: package.json hiện không khai báo script đó. Không dùng `dotnet test SmartWMS.slnx` để nhận coverage backend: solution chỉ chứa production projects, không chứa các console verification harness.
+Không dùng test file tồn tại, compile thành công hoặc tên suite để suy tests đã chạy. Không đưa total tests historical183/197/254/267 vào current acceptance. Results phải lấy từ actual run trên exact candidate khi có task được phê duyệt.
 
-InboundCreateRbac kiểm tra create: anonymous/invalid/expired JWT trả 401; Staff và authenticated role không phù hợp trả 403; Admin/WarehouseManager vượt authorization tới `RBAC_FIXTURE_STOP` (HTTP 400), không tạo receipt. Denied requests không dispatch MediatR, kể cả malformed JSON. Regression giữ Staff confirm-receipt và GET page/list/detail/putaway; kiểm tra exact metadata và combined policies của cả 11 inbound actions. Số assertions thực tế lấy từ output mỗi lần chạy, không dùng số lịch sử để suy ra PASS. Xem [harness README](../verification/InboundCreateRbac/README.md).
+## CI configured at selected main
 
-## Test wiring đã đối chiếu
+Source: [ci.yml](../.github/workflows/ci.yml), [package.json](../frontend/package.json), [solution](../SmartWMS.slnx).
 
-`frontend/tests/run-sprint.mjs` gọi tuần tự các runner bên dưới. Mỗi runner bundle đúng entry test bằng esbuild rồi gọi Node `--test`; runner sprint trả exit code lỗi nếu bất kỳ suite không thành công. Không bỏ suite hoặc tắt assertions để làm CI xanh.
+| Layer | Configured command / scope | What it can establish when actually run |
+| --- | --- | --- |
+| Backend compile | SDK10 restore SmartWMS.slnx; Release build --no-restore | Compile4 production projects; không production host hoặc SQL behavior |
+| Inbound RBAC | dotnet run --project verification/InboundCreateRbac/InboundCreateRbac.Verification.csproj --configuration Release --no-launch-profile | Isolated loopback authorization/controller dispatch assertions; không business execution |
+| Frontend install | npm ci --no-audit --no-fund tại frontend, Node22 | Lock/manifest install consistency; không vulnerability scan |
+| TypeScript | npm run typecheck → tsc --noEmit | tsconfig include src +vite.config; không typecheck toàn bộ frontend tests |
+| Frontend regression | npm run test:sprint |9 suites qua esbuild/Node test, controlled adapters/SSR/source assertions |
+| Frontend bundle | npm run build → vite build | Build static assets; không xác nhận live API/browser |
 
-| Suite | Entry test | Import test bổ sung |
-|---|---|---|
-| auth | `auth.test.ts` | — |
-| inventory | `inventory.test.tsx` | — |
-| replenishment | `replenishment.test.tsx` | — |
-| inbound | `inbound.test.tsx` | — |
-| outbound | `outbound.test.tsx` | — |
-| cycle-count | `cycle-count.test.tsx` | — |
-| kitting | `kitting.test.ts` | — |
-| products | `products.test.tsx` | — |
-| administration | `administration.test.tsx` | — |
+Hai check IDs là backend-build và frontend-quality. Workflow không SQL service/deploy/jobs; frontend cwd/cache/evidence settings xem [DEVELOPMENT_WORKFLOW](DEVELOPMENT_WORKFLOW.md). B1a không thay hoặc chạy CI; hosted status **NOT VERIFIED**.
 
-Những tests này kiểm tra logic frontend, HTTP payload/error mapping, quyền UI, cache/mutation behavior, SSR và source guards. URL localhost trong runner là cấu hình fixture; HTTP được mock. Đây không phải chứng nhận backend authorization, SQL locks, transaction atomicity hoặc WMS end-to-end.
+## Frontend runner/import matrix
 
-Khác working copy enhancement cũ, baseline main này không có `inventoryOperations.test` hoặc `customerProductOperations.test`; hai entry Inventory/Products không import các nhóm bổ sung đó. Không nhận coverage từ working copy cũ.
+[run-sprint.mjs](../frontend/tests/run-sprint.mjs) gọi9 runners tuần tự, ghi log/result và trả failure nếu runner lỗi. Runners bundle entry bằng esbuild rồi Node --test theo cwd frontend.
 
-Sáu file AI được nhắc trong tài liệu chuẩn bị cũng không có tại baseline này: `aiChat.test.tsx`, `demandForecast.test.tsx`, `semanticProductSearch.test.tsx`, `aiSlotting.test.tsx`, `damageVision.test.tsx`, `executiveDashboardOcr.test.tsx`. Runner không liệt kê/import chúng. Tên file hoặc test lịch sử không chứng minh chúng đã chạy trong CI này. Không tự copy AI suites hoặc feature changes từ enhancement branch vào scope CI.
+| Suite | Runner tại frontend/tests | Entry | Additional test import at M |
+| --- | --- | --- | --- |
+| auth | run-auth.mjs | auth.test.ts | — |
+| inventory | run-inventory.mjs | inventory.test.tsx | Không có transfers/inventoryOperations import |
+| replenishment | run-replenishment.mjs | replenishment.test.tsx | — |
+| inbound | run-inbound.mjs | inbound.test.tsx | — |
+| outbound | run-outbound.mjs | outbound.test.tsx | — |
+| cycle-count | run-cycle-count.mjs | cycle-count.test.tsx | — |
+| kitting | run-kitting.mjs | kitting.test.ts | — |
+| products | run-products.mjs | products.test.tsx | `import './semanticProductSearch.test';` |
+| administration | run-administration.mjs | administration.test.tsx | — |
 
-## Side effects và bảo vệ dữ liệu
+Configured semantic path:
 
-- Backend restore/build ghi artifacts và có thể cập nhật `obj` đang tracked; không stage các output này. Có thể chuyển artifacts ra ngoài worktree bằng `--artifacts-path` cho cả restore và build khi verify local.
-- Sprint ghi bundles tại `frontend/verification/{f1..f6,shared}/scripts`, log và JSON tại `frontend/verification/shared/evidence`. Workflow/script tạo evidence directory trước vì runner không tự tạo. Kitting/Products xóa đúng hai temporary bundles chúng tạo tại root frontend.
-- Vite ghi `frontend/dist`; npm ci tạo/thay `frontend/node_modules` và chạy dependency lifecycle hooks. Dùng install mới trong worktree tách biệt, không junction tới dependencies của working copy gốc.
-- Chỉ chạy `verification/InboundCreateRbac` trong các console harness: empty host không load production Program.cs/configuration/user secrets, Infrastructure DI, business handlers hoặc live AI services. Không chạy các harness khác, `frontend/tests/rehearse-local.mjs`, production API host, SQL scripts, migration, seed, cleanup hoặc Hangfire/background AI jobs. Không cần database/production secrets.
-- Review runner, imports, project files, Vite config và lifecycle hooks lại khi source thay đổi. Không auto-retry stock mutation sau timeout/lost response.
+~~~text
+package.json test:sprint
+ → tests/run-sprint.mjs (products)
+ → tests/run-products.mjs
+ → tests/products.test.tsx:1
+ → tests/semanticProductSearch.test.tsx
+~~~
 
-## Những lớp chưa được CI bao phủ
+`test:products` chạy products runner trực tiếp và có cùng semantic import. Semantic tests dùng controlled HTTP adapters/test doubles và SSR: kiểm GET text query, validation/encoding, response/error/provider handling, cancellation, result rendering và mutation boundary. Đây **không** là live Gemini/SQL/browser acceptance; **NOT RUN trong B1a**.
 
-Backend unit/business integration/concurrency harness và HTTP/RBAC ngoài phạm vi inbound endpoint của InboundCreateRbac; production startup, login/token lifecycle, SQL migrations và dữ liệu thật, browser E2E, frontend AI suites, live Gemini và background AI actions, dependency/security scanning, deployment/rollback. Build và inbound authorization assertions thành công không chứng nhận các lớp này.
+M không có năm O-only AI test files `aiChat`, `demandForecast`, `aiSlotting`, `damageVision`, `executiveDashboardOcr` (đuôi .test.tsx). Câu “sáu AI files absent/unwired” trong guide cũ lỗi thời vì semanticProductSearch hiện đã có và được import. M cũng không có inventoryOperations/customerProductOperations supplementary suites từ O. Không copy feature/test code O trong docs task.
 
-SQL integration chỉ được chạy trên fixture/database tách biệt đã được chủ dự án xác nhận. Runner phải fail closed nếu target không đúng fixture, không fallback sang appsettings/user secrets, không attach demo database. Dùng dữ liệu tổng hợp; setup/migration/cleanup chỉ tác động database do runner sở hữu. Chưa chọn hoặc thêm Testcontainers/package/schema trong CI Foundation.
+P có transfers.test.tsx và inventory import, nhưng **P chưa merge**: không claim main configured transfer-workspace tests. P test đọc controller theo old root path; adaptation thuộc B2/PR7 integration riêng, không sửa B1a.
 
-Các bất biến cần integration coverage tiếp theo:
+## Backend project discovery and runner safety
 
-1. Physical stock khác ATP; reservation/rowversion, conflict, ledger/audit và lost response reconciliation.
-2. Receiving delta và `expectedReceivedQuantity`; stale/concurrent receive.
-3. Outbound allocate → pick → pack → ship; chỉ Pick trừ physical stock đúng một lần.
-4. Transfer cùng warehouse, capacity/metadata/availability guards và rollback.
-5. Cycle Count snapshot, đầy đủ counted items, Staff ownership và Admin/WM override.
-6. Kitting atomic theo recipe request; Replenishment bodyless, zero movement hợp lệ.
-7. Backend three-role authorization ngoài inbound endpoint; SQL integration xác nhận request bị từ chối không thay dữ liệu. InboundCreateRbac đã kiểm tra authorization và zero MediatR dispatch cho denied requests, nhưng không dùng database.
-8. Migration chain và upgrade dữ liệu theo source hiện hành; không suy ra migration đã apply từ việc build.
+[SmartWMS.slnx](../SmartWMS.slnx) chỉ có4 production projects. Source có12 console verification projects net10.0/OutputType Exe ngoài solution; không tìm thấy dedicated test-SDK/IsTestProject unit suite. `dotnet test SmartWMS.slnx` không discover/execute các console assertions đó.
 
-Browser tests tiếp theo cần environment fixture, production routing với API mode và ba role. Mock/SSR PASS không chứng nhận browser hay database demo. Serial/LPN/Wave, stored BOM, cross-warehouse transfer, mobile/PDA và post-pick reversal chưa được chứng nhận end-to-end.
+| Console project group under verification/ | Classification / execution gate |
+| --- | --- |
+| InboundCreateRbac | Isolated HTTP authorization probe không SQL; chỉ run khi task cho phép local host/artifacts |
+| AcceptanceF1, AuthorizationS1, BackendB2, CoreHardeningH2 | SQL/HTTP/provider/fixture/mirror-capable historical tooling; không chạy mặc định |
+| InboundB1, KittingK1, OutboundB3, Phase4A, Phase4B, ReleaseHardening, ReplenishmentR1 | Business/SQL/concurrency verification; cần source/runner review và approved isolated fixture |
 
-## Ghi nhận evidence
+Compile solution không chứng nhận compile các harness. Future task cần enumerate từng csproj/build target/import rồi chọn compile/run allowlist; không sửa assertions hoặc schema/roles để cho green. CertifyFinal/Summarize/Audit/PrepareMirror helpers có thể ghi docs/evidence, copy/rewrite source mirrors hoặc chạy processes; không dùng để tái chứng nhận lịch sử sau rename.
 
-Mỗi lần verify ghi branch, full HEAD, patch scope, OS, SDK/Node/npm, command, exit code, số tests thực tế và PASS/FAIL/BLOCKED/NOT RUN. Phân biệt lỗi sandbox/network với lỗi source; retry chỉ lệnh verification an toàn sau khi được cho phép môi trường. Không tắt test, audit mặc định của .NET hoặc sửa assertions để đạt PASS.
+[InboundCreateRbac README](../verification/InboundCreateRbac/README.md) mô tả empty Kestrel host trên ephemeral loopback, actual JWT Bearer/authorization và production inbound controller, safe MediatR probe. Denied requests phải zero dispatch; admitted create trả RBAC_FIXTURE_STOP (HTTP400), không tạo receipt. Staff create denied, Admin/WM admitted; regression nhận hàng/GET và combined policies. Không load production Program/config/user secrets/Infrastructure DI/business handlers/SQL/live AI. Đây là authorization boundary evidence khi chạy, không unit suite hoặc full business acceptance.
 
-Logs, exact diff và final report giữ ngoài PR; không ghi credentials, JWT hoặc connection strings. `git diff --check` không thấy untracked files, nên phải whitespace-check các file mới bằng diff từ empty file hoặc cơ chế tương đương nếu có. GitHub-hosted checks chỉ được ghi PASS sau run thật; local Windows/Node 22 không chứng nhận frontend Ubuntu runner.
+G0/G1A ở independent checkouts, không thuộc main CI hay production solution. Historical fake-policy results không chứng nhận live infrastructure/SQL/browser hoặc cấp quyền execution.
+
+## Commands for an approved future verification task
+
+Run từ root của clone tách biệt, sau đọc side effects và kiểm SDK10/Node22; không execute trong B1a:
+
+~~~powershell
+dotnet restore SmartWMS.slnx --nologo
+dotnet build SmartWMS.slnx --configuration Release --no-restore --nologo
+npm --prefix frontend ci --no-audit --no-fund
+npm --prefix frontend run typecheck
+New-Item -ItemType Directory -Path frontend/verification/shared/evidence -Force
+npm --prefix frontend run test:sprint
+npm --prefix frontend run test:products
+npm --prefix frontend run build
+~~~
+
+Chỉ cần targeted suites phù hợp changes; không repeat build/tests khi không có thay đổi hoặc unresolved concern. Không có npm script `test`; administration dùng runner trực tiếp hoặc sprint. Offline RBAC console command trong CI table chỉ chạy khi authorization task đã review và cho phép host riêng; không phải yêu cầu cho docs patch.
+
+## Side effects and data safety
+
+- Restore/build ghi bin/obj, có thể làm dirty artifacts đã tracked; output redirection phải nhất quán giữa restore/build và reviewed runner paths.
+- npm ci tạo/thay node_modules và chạy dependency lifecycle hooks. Dùng fresh isolated environment; không junction original dependencies, không đưa production credentials vào process.
+- Sprint ghi bundles tại frontend/verification/{f1..f6,shared}/scripts, logs/results tại shared/evidence; evidence directory cần tạo trước. Kitting/Products tạo rồi xóa đúng2 temporary root bundles. Không gọi Git cleanup.
+- Vite ghi frontend/dist; dev:demo là server riêng không phải production acceptance.
+- Không chạy prepare-local-demo.mjs, rehearse-local.mjs, Newman/Postman, SQL-capable harness, migration/seed/reset/cleanup hoặc production API/Hangfire/live AI như bước test mặc định.
+- Không có SQL integration trên SmartWMS_DB/shared/default target. Fixture phải được owner xác nhận, fail closed với exact target/ownership, không fallback appsettings/user secrets. B1a không tạo fixture hoặc thay runtime configuration.
+
+## Coverage gaps / future acceptance
+
+Chưa chứng nhận current SQL transaction/concurrency/ledger, migrations deployed, all-controller RBAC, login/revocation lifecycle, browser E2E, live Gemini, realtime integration, dependency scan, performance/backup/deployment. Mock API URLs localhost là controlled fixture configuration, không bằng chứng gọi host thật.
+
+Future approved integration cần bảo toàn physical≠ATP, receiving delta/precondition, Pick deduct once, same-warehouse transfer/capacity/metadata, count snapshot/full-set/ownership/override, atomic request-recipe Kitting, global bodyless zero-op Replenishment, ledger/audit/rowversion và uncertain-outcome reconciliation. Source M có31 migrations (exclude Designer/Snapshot); apply state UNKNOWN, không migrate shared DB để kiểm count.
+
+## Reporting
+
+Mỗi actual run ghi branch/fullSHA/patch scope, OS/SDK/Node/npm, exact command, exit code, count thực tế, PASS/FAIL/BLOCKED/NOT RUN và evidence location. Tránh sensitive logs; không ghi tokens/credentials/connections. Local PASS không chứng nhận hosted platform hoặc end-to-end.
+
+Documentation verification của B1a gồm allowlist, links/Markdown/whitespace, source provenance, secret-preimage exclusion và source-preservation checks. `git diff --check` không cover untracked files; validate AGENTS/context additions riêng. Application checks trong tài liệu này vẫn **NOT RUN**.
