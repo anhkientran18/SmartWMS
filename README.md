@@ -1,111 +1,116 @@
-# 🚀 SmartWMS Center - Base Backend Template
+# SmartWMS
 
-Hệ thống quản lý kho hàng thông minh (**SmartWMS**) được xây dựng trên nền tảng kiến trúc sạch (**Clean Architecture**), kết hợp với tư duy thiết kế hướng miền (**Domain-Driven Design - DDD**) và mô hình tách biệt lệnh/truy vấn (**CQRS**). Hệ thống được tích hợp sâu các tác vụ tự động hóa chạy ngầm và động cơ trí tuệ nhân tạo (AI Virtual Agent) nhằm tối ưu hóa toàn diện chuỗi cung ứng vật tư, luân chuyển hàng hóa theo thời gian thực.
+SmartWMS là monorepo quản lý kho gồm backend ASP.NET Core và frontend React. SQL Server/EF Core là nguồn dữ liệu tồn kho; frontend gọi API có authorization, validation, transaction và audit ở backend. Gemini cung cấp một số khả năng hỗ trợ; có source không đồng nghĩa đã nghiệm thu production.
 
----
+Đối chiếu source ngày **10/11/2026** trên selected main **`ad8b620038b5beab5f6225fb5a01460bf2414b97`**. Phase B1a chỉ cập nhật tài liệu; không build/test/runtime acceptance mới. Đọc [project context](docs/PROJECT_CONTEXT.md) để phân biệt main, PR #7, original enhancements và verification infrastructure.
 
-## 🛠️ 1. Giới thiệu Base Backend Template
+## Source scope hiện tại
 
-Template này đóng vai trò là kiến trúc thượng tầng mạnh mẽ, thiết lập sẵn các tiêu chuẩn doanh nghiệp (Enterprise Standards) giúp hệ thống dễ dàng mở rộng và bảo trì lâu dài. 
+Main có source cho hierarchy Warehouse → Zone → Bin, master data, login/RBAC, physical stock reads, inbound receiving/putaway, outbound direct-pick, assigned Cycle Count, request-defined Kitting, global Replenishment, reports và backend AI integrations. Frontend production có các workflow tương ứng theo [App.tsx](frontend/src/app/App.tsx), cùng product catalog/QR/barcode và semantic product search.
 
-### Các tính năng cốt lõi được tích hợp sẵn:
-* **Hệ thống Kiểm toán Tự động (Audit Trail Engine):** Sử dụng `ChangeTracker` ngầm để tự động bốc tách, ghi nhận lịch sử biến động dữ liệu chi tiết (`AuditLogs`) dưới dạng JSON.
-* **Động cơ Thời gian thực (Real-time Hub):** Đồng bộ hóa trạng thái bốc dỡ, nạp hàng thông qua nền tảng SignalR siêu tốc.
-* **Xử lý Tác vụ nền (Background Worker):** Đăng ký luồng quét định kỳ bằng Hangfire nhằm tự động khóa kho sản phẩm cận hạn và kích hoạt tác nhân AI.
-* **Lá chắn Lỗi tập trung:** Pipeline xử lý lỗi tối cao bằng `IExceptionHandler` của .NET giúp chuẩn hóa cấu trúc phản hồi API theo chuẩn `ProblemDetails`.
+PR #7 bổ sung Inventory Transfer Workspace nhưng **chưa merge**, không nằm trong selected main. Các UI enhancements và NameEn schema chỉ ở original O phải review/port riêng. Không coi prototype/demo screens hoặc entity Serial/LPN/Wave là supported end-to-end workflows.
 
----
+## Technology stack
 
-## 💻 2. Công nghệ sử dụng
+| Layer | Source-declared technology |
+| --- | --- |
+| Backend | .NET 10 / ASP.NET Core controllers; MediatR 12.2.0, FluentValidation 12.1.1 |
+| Persistence | EF Core 10.0.8 / SQL Server; SQL locks, rowversion, constraints và inventory coordinators |
+| Security / integrations | JWT Bearer, Serilog, OpenAPI, Hangfire, SignalR, Gemini services |
+| Frontend | React 19, TypeScript 5.8, Vite 6, Tailwind 4, React Router 6, TanStack Query 5, Axios, i18next |
+| Verification | .NET console harnesses; frontend Node test/esbuild, controlled HTTP adapters và SSR |
 
-Hệ thống tận dụng tối đa sức mạnh của hệ sinh thái công nghệ mới nhất hiện nay:
+Phiên bản chính xác xem các `.csproj`, [package.json](frontend/package.json) và [package-lock.json](frontend/package-lock.json). Domain hiện cũng có package references; không mô tả nó như package-free model.
 
-* **Tầng lõi:** .NET 10 (C# 14 Web API)
-* **Cơ sở dữ liệu:** SQL Server (Relational Database)
-* **Truy cập dữ liệu:** Entity Framework Core 10 (Code-First Migration)
-* **Quản lý bất đồng bộ:** MediatR (CQRS Pattern)
-* **Bảo mật & Xác thực:** JWT Bearer Authentication
-* **Hệ thống Log:** Serilog (Structured Logging ghi song song ra Console và File tuần hoàn)
-* **Giám sát hạ tầng:** .NET Health Checks (Tự động theo dõi SQL Server và AI Hub Connection)
-* **AI Integration:** Google Gemini AI Ecosystem (AI Insight, Forecasting Demand, Vector Embeddings)
+## Repository structure — implemented
 
----
-
-## 📂 3. Cấu trúc Solution
-
-Dự án được phân chia mạch lạc thành 4 phân tầng độc lập nhằm đảm bảo nguyên tắc đảo ngược phụ thuộc (**Dependency Inversion Principle**):
-
-```text
+~~~text
 SmartWMS/
-│
-├── 🏛️ SmartWMS.Domain/               # Tầng Miền (Lõi thực thể vô tri, không phụ thuộc bên ngoài)
-│   ├── Entities/                     # Khai báo cấu trúc bảng CSDL (Product, Bin, Zone, InboundReceipt...)
-│   ├── Enums/                        # Định danh kiểu strongly-typed (InventoryStatus, TransactionType...)
-│   └── Common/                       # Các thực thể nền, cấu trúc dùng chung (BaseEntity)
-│
-├── ⚡ SmartWMS.Application/          # Tầng Ứng dụng (Luồng nghiệp vụ xử lý Core Logic)
-│   ├── Common/                       # Các mô hình giao tiếp, Interfaces, DTOs hệ thống
-│   └── Features/                     # Phân khu CQRS (Mỗi tính năng chứa Commands, Queries, Handlers riêng)
-│       ├── InboundReceipts/          # Xử lý nhập kho, Xác nhận hộc hàng, Luân chuyển Cross-Docking
-│       ├── OutboundIssues/           # Xử lý xuất kho, thuật toán gom đơn Wave Picking
-│       └── Forecasts/                # Logic gọi AI dự báo nhu cầu thị trường (Demand Forecasting)
-│
-├── ⚙️ SmartWMS.Infrastructure/       # Tầng Hạ tầng (Kết nối CSDL, dịch vụ bên thứ ba)
-│   ├── Persistence/                  # DbContext, Cấu hình Fluent API, Migrations cấu trúc dữ liệu
-│   ├── Services/                     # Cài đặt dịch vụ AI Gemini, Barcode, Mail Agent, Picking Route Optimizer
-│   ├── SignalR/                      # Cấu hình Real-time Hub điều phối thông báo biến động kho
-│   └── HealthChecks/                 # Bộ kiểm tra trạng thái hoạt động của ổ đĩa SQL và Google AI Hub
-│
-└── 🌐 SmartWMS.Api/                  # Tầng Biên giới (Điểm tiếp nhận các HTTP Requests)
-    ├── Controllers/                  # Các Endpoints API phân quyền bảo mật chặt chẽ
-    ├── Middlewares/                  # Bộ lọc Global Exception Handler chặn bắt lỗi tập trung
-    └── Program.cs                    # Trạm khởi tạo trung tâm, cấu hình Pipeline, Seeding & Job Scheduler
-4. Yêu cầu môi trường
-Để khởi chạy dự án mượt mà trên môi trường máy cục bộ (Local Development), máy tính của bạn cần đáp ứng các điều kiện tiên quyết sau:
+├── .github/workflows/ci.yml
+├── SmartWMS.slnx
+├── SmartWMS.Api/
+├── SmartWMS.Application/
+├── SmartWMS.Domain/
+├── SmartWMS.Infrastructure/
+├── frontend/
+│   ├── src/
+│   ├── tests/
+│   ├── demo/
+│   ├── legacy/
+│   └── package.json
+├── verification/
+├── scripts/verify-local.ps1
+├── docs/
+├── AGENTS.md
+└── README.md
+~~~
 
-SDK: .NET 10.0 SDK trở lên.
+Dependencies: **API → Application + Infrastructure; Application → Domain; Infrastructure → Application + Domain; Domain không phụ thuộc Infrastructure**. API nhận HTTP/RBAC; Application xử lý command/query/validation; Domain chứa model/rules; Infrastructure thực thi persistence/providers. Solution chỉ chứa bốn production projects. Mười hai console verification projects không tự được build/test qua solution.
 
-IDE: Visual Studio 2022 (Phiên bản v17.12 trở lên) hoặc JetBrains Rider / VS Code (Đã cài C# Dev Kit).
+Frontend có production API routing và explicit demo routing; legacy proposals không xác định backend contracts. Shared verification orchestration giữ tại `scripts/`.
 
-Database Engine: SQL Server 2019, 2022 hoặc Azure SQL Database Edge.
+**Planned repository restructuring — NOT IMPLEMENTED:** Phase A đề xuất backend source dưới `backend/src/`. B1a chưa move projects, guides hoặc generated files; mọi lệnh bên dưới dùng layout hiện tại.
 
-Công cụ hỗ trợ: cài đặt sẵn dotnet-ef toàn cục để chạy lệnh migration:
-dotnet tool install --global dotnet-ef
+## Development prerequisites
 
-## 📦 5. Các NuGet Package chính
+Yêu cầu được xác minh từ project/CI/lockfile: Git, **.NET SDK 10**, **Node.js 22 (từ 22.12)** và npm tương ứng; PowerShell nếu dùng script local. Repo chưa có `global.json` chọn SDK cho developer. Xác minh SDK đang được chọn trước restore/build; CI tạo SDK selector tạm ở runner.
 
-Các thư viện nền tảng được phân bổ chuẩn chỉ vào từng phân tầng cấu trúc để đảm bảo tính bao đóng:
+Availability/version trên máy người đọc và khả năng fresh install/build là **NOT VERIFIED trong B1a**. Không yêu cầu một phiên bản IDE hay SQL engine chưa được chứng minh tương thích. SQL chỉ cần cho runtime/integration trên environment được owner cho phép, không cần để review tài liệu.
 
-| Tầng Dự Án | Tên Thư Viện (NuGet Package) | Phiên Bản | Công Dụng Chính |
-| :--- | :--- | :--- | :--- |
-| **Domain** | *Không sử dụng thư viện ngoài* | - | Đảm bảo tính thuần khiết của thực thể |
-| **Application** | `MediatR` | LATEST | Điều phối luồng dữ liệu CQRS, giảm phụ thuộc |
-| **Infrastructure** | `Microsoft.EntityFrameworkCore.SqlServer` | 10.x | Trình kết nối cơ sở dữ liệu SQL Server |
-| **Infrastructure** | `Hangfire.AspNetCore` | LATEST | Tích hợp bảng điều khiển và chạy tác vụ ngầm |
-| **Infrastructure** | `Hangfire.SqlServer` | LATEST | Lưu trữ trạng thái và cấu hình của Hangfire Job |
-| **Infrastructure** | `Microsoft.Extensions.Diagnostics.HealthChecks` | 10.x | Giám sát tài nguyên và kết nối API hệ thống |
-| **Api** | `Microsoft.AspNetCore.Authentication.JwtBearer` | 10.x | Cơ chế cấp phát và giải mã Token bảo mật |
-| **Api** | `Serilog.AspNetCore` | LATEST | Ghi nhật ký cấu trúc, tối ưu giám sát lỗi |
+## Safe build and frontend verification
 
-6. Cấu hình Database
-Hệ thống áp dụng cơ chế tự động hóa hoàn toàn luồng quản lý dữ liệu. Ngay khi máy chủ API được khởi chạy, hệ thống sẽ tự quét tìm Migration mới để cập nhật cấu trúc bảng, đồng thời tự động nạp dữ liệu mồi (Seed Data) cho Kho tổng, Phân khu, Hệ thống hộc hàng, tài khoản Admin tối cao và đồng bộ hóa Vector thông minh.
+Các lệnh dưới là hướng dẫn cho **clone tách biệt đã được phép ghi artifacts**, không phải lệnh đã chạy trong B1a:
 
-Bước 1: Thiết lập chuỗi kết nối
-Kiên cập nhật lại chuỗi kết nối SQL Server của bạn tại tệp appsettings.json nằm trong dự án SmartWMS.Api:
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Server=YOUR_SERVER_NAME;Database=SmartWMS_DB;Trusted_Connection=True;TrustServerCertificate=True;"
-  },
-  "JwtSettings": {
-    "Secret": "ChuyenGiaQuanLyKhoHangThongMinhSmartWMSCenter2026SecurityKey!",
-    "Issuer": "SmartWMSCenter",
-    "Audience": "SmartWMSUsers"
-  }
-}
-Bước 2: Thực thi cập nhật thủ công (Nếu cấu hình lại Entities)
-Nếu Kiên bổ sung thực thể hoặc thay đổi cấu hình trường dữ liệu, hãy mở Package Manager Console (PMC), đặt dự án mặc định (Default project) về SmartWMS.Infrastructure và chạy bộ lệnh:
-# 1. Tạo file di cư cấu trúc
-Add-Migration UpdateStructure_Latest -Context ApplicationDbContext -Project SmartWMS.Infrastructure -StartupProject SmartWMS.Api
+~~~powershell
+dotnet --version
+node --version
+dotnet restore SmartWMS.slnx --nologo
+dotnet build SmartWMS.slnx --configuration Release --no-restore --nologo
 
-# 2. Đẩy cấu trúc an toàn xuống Database
-Update-Database -Context ApplicationDbContext -Project SmartWMS.Infrastructure -StartupProject SmartWMS.Api
+npm --prefix frontend ci --no-audit --no-fund
+npm --prefix frontend run typecheck
+New-Item -ItemType Directory -Path frontend/verification/shared/evidence -Force
+npm --prefix frontend run test:sprint
+npm --prefix frontend run build
+~~~
+
+Restore/build ghi `bin/obj`, npm install ghi `node_modules` và chạy dependency lifecycle hooks, sprint ghi bundles/logs/JSON và xóa hai temporary bundles do nó tạo, Vite ghi `frontend/dist`. Một số generated/IDE files đã tracked; không stage output và không reset/clean checkout được bảo vệ. Không dùng junction tới dependencies của original. `--no-audit` của npm install không phải vulnerability scan.
+
+[verify-local.ps1](scripts/verify-local.ps1) kiểm dirty tree, SDK 10, Node 22 và dependencies rồi chạy selected checks; đọc script/side effects trước khi dùng. `-AllowDirty` không bảo vệ artifacts; `-SkipFrontendTests` phải báo NOT RUN. Xem [test strategy](docs/TEST_STRATEGY.md) để chọn đúng runner; không tự chạy SQL-capable harness hoặc rehearsal scripts.
+
+## Frontend API mode
+
+[Data mode](frontend/src/app/dataMode.ts) mặc định API; chỉ `VITE_DATA_MODE=mock` chọn demo. Trong cấu hình frontend local không tracked, dùng `VITE_DATA_MODE=api` và `VITE_API_BASE_URL` bằng **backend origin**, không kèm `/api/v1`. Adapters thêm route prefix. Không có origin trong API mode tạo configuration error; không tự fallback mock.
+
+Sau khi review environment, có thể chạy `npm --prefix frontend run dev`. Vite cần restart/rebuild khi đổi environment. Biến `VITE_*` là public browser settings: không đặt signing key, provider key, credentials hoặc database configuration vào đó.
+
+API mode cần backend/accounts/schema có sẵn trong environment được phê duyệt. Frontend setup không cấp quyền provision database. Backend startup có thể kiểm schema, migrate/seed hoặc chạy jobs theo **effective configuration**; không tự chạy API/migration/seed trên shared database để onboarding. Runtime preparation là task riêng.
+
+## Demo / mock mode
+
+`npm --prefix frontend run dev:demo` chạy Express/Vite companion với mock providers; dùng synthetic accounts, không nhập real credentials. Demo data có thể reset khi restart, một số browser stores persist. Demo auth/AI/security/mobile/Wave/Serial/LPN không phải live acceptance. Không proxy demo endpoints sang ASP.NET. Xem [demo boundary](frontend/demo/README.md) và [legacy references](frontend/legacy/README.md).
+
+## Testing and evidence
+
+CI configured hai checks: `backend-build` (SDK10 production build và isolated InboundCreateRbac authorization harness) và `frontend-quality` (Node22 install/typecheck/sprint/build). Sprint configured chín suites; products entry import `semanticProductSearch.test.tsx`, nên semantic tests nằm trong configured import chain. **Configured không có nghĩa đã executed/PASS tại HEAD hiện tại.**
+
+B1a chỉ static verification tài liệu; application build/tests **NOT RUN**, SQL/browser/live Gemini **NOT VERIFIED**. `dotnet test SmartWMS.slnx` không chứng nhận 12 console harnesses. Mock/SSR/authorization-probe checks không chứng nhận SQL atomicity hoặc browser E2E. Full coverage, safe commands và exclusions: [TEST_STRATEGY](docs/TEST_STRATEGY.md).
+
+## Documentation navigation
+
+- [AGENTS.md](AGENTS.md): repository-wide working rules và approval/data safety.
+- [PROJECT_CONTEXT](docs/PROJECT_CONTEXT.md): selected-source snapshot, M/P/O/G provenance và unknowns.
+- [DEVELOPMENT_WORKFLOW](docs/DEVELOPMENT_WORKFLOW.md): scoped changes, review, CI và release gates.
+- [TEST_STRATEGY](docs/TEST_STRATEGY.md): runner/import coverage, evidence levels và side effects.
+- [API_CONTRACT](docs/API_CONTRACT.md), [FE_API_HANDOFF](docs/FE_API_HANDOFF.md), [BACKEND_HANDOFF](docs/BACKEND_HANDOFF.md): supporting checkpoint contracts, cần đối chiếu controller/DTO hiện tại.
+- [Frontend README](frontend/README.md): historical frontend-baseline guide; còn mô tả inbound create policy trước bản sửa main và chưa cập nhật semantic search. Không lấy các câu đó thay current controller hoặc active guides.
+
+## Security, data safety and known limitations
+
+Backend authorization là authority; ba roles `Admin`, `WarehouseManager`, `Staff`. Source main giới hạn inbound create cho Admin/WM; Staff receiving và count ownership theo controller/handler. Chưa có warehouse-level ACL; JWT logout không phải revocation. Effective deployment exposure và current runtime RBAC chưa được nghiệm thu trong B1a.
+
+Giữ physical stock khác ATP, receiving delta/precondition, Pick deduct đúng một lần, transfer cùng warehouse, count snapshot/ownership, atomic request-defined kitting, global bodyless replenishment và zero-movement success. Không tự retry inventory mutation sau timeout/lost response khi chưa đối soát được kết quả.
+
+Background AI job có source tạo inbound receipt khi được bật; không coi tất cả AI paths chỉ đọc. Không tự bật Hangfire/jobs, migrations, seed hoặc live providers. Không có signing-key example trong tài liệu mới; không dùng ví dụ secret cũ làm runtime configuration. Owner đánh giá exposure/rotation riêng nếu cần.
+
+Serial/LPN/Wave, stored BOM, cross-warehouse transfer, mobile/PDA và post-pick reversal chưa được chứng nhận end-to-end. SignalR source không chứng minh production frontend realtime integration. Deployed schema/provider availability/performance/backup/release readiness vẫn **NOT VERIFIED**. Tiếp tục theo [workflow](docs/DEVELOPMENT_WORKFLOW.md) sau scope approval; B1b/B2 chưa triển khai.
