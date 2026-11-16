@@ -1,6 +1,6 @@
 # Phase B3 — direct-pick minimal WMS lifecycle
 
-Ngày 2026-10-22 (Asia/Saigon), branch `main`, base HEAD `ae171fcef83d038f9678c39470bd15c6de7f8aac`. Implementation trong working tree, **chưa stage/commit**, chờ review manifest. [Audit B3.0](PHASE_B3_AUDIT.md) ghi behavior trước sửa; quyết định forward migration/direct-pick đã được user duyệt sau audit.
+Ngày 2026-10-22 (Asia/Saigon), branch `main`, base HEAD `ae171fcef83d038f9678c39470bd15c6de7f8aac`. Implementation trong working tree, **chưa stage/commit**, chờ review manifest. Quyết định forward migration/direct-pick đã được user duyệt; scope cuối, staged compatibility và các giới hạn được ghi bên dưới. Audit B3.0 tiền triển khai đã được thay thế; manifest cuối tài liệu giữ tên files tại checkpoint lịch sử.
 
 ## Root cause và scope cuối
 
