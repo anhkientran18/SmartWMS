@@ -20,7 +20,7 @@ public class GetPaginatedSuppliersQueryHandler : IRequestHandler<GetPaginatedSup
 
     public async Task<Result<PaginatedResult<SupplierDto>>> Handle(GetPaginatedSuppliersQuery request, CancellationToken cancellationToken)
     {
-        var query = _context.Suppliers.AsNoTracking().AsQueryable();
+        var query = _context.Suppliers.AsNoTracking().Where(x => !x.IsDeleted);
 
         if (!string.IsNullOrWhiteSpace(request.SearchTerm))
         {

@@ -1,5 +1,7 @@
 # SmartWMS backend handoff — 2026-10-22 (Asia/Saigon)
 
+> Historical checkpoint evidence. Không dùng P0/P1, role hoặc uncommitted-state statements bên dưới như current B1a status. Reference hiện hành: [API rules](API_CONTRACT.md), [endpoint catalogue](FE_API_HANDOFF.md), [context](PROJECT_CONTEXT.md). LIFECYCLE_STATUS đã hợp nhất vào API rules; filenames trong historical manifests vẫn ghi đúng tên tại checkpoint cũ.
+
 > Trạng thái mới nhất B3 trong working tree, chưa commit: xem [PHASE_B3.md](PHASE_B3.md) và manifest cuối tài liệu. Checkpoint đã commit gần nhất vẫn là B2 `ae171fcef83d038f9678c39470bd15c6de7f8aac`. Receive B1 vẫn Stable trong scope None/Lot không LPN; các phần audit cũ phía dưới là lịch sử.
 
 ## Cập nhật B3 — chờ review, chưa commit
@@ -30,7 +32,7 @@
 - Đối tượng audit: **working tree tại thời điểm audit**, bao gồm thay đổi chưa commit; checkout HEAD riêng sẽ không hoàn toàn giống snapshot này.
 - Chỉ tạo tài liệu, không sửa business logic/API/migration, không commit/stage/reset. Không chạy API host, seed hay background job trên database nghiệp vụ.
 - Controller + command/query + handler + EF configuration là nguồn sự thật. Commit message, comment và HTTP 200 không phải bằng chứng workflow hoàn chỉnh.
-- Xem [lifecycle](LIFECYCLE_STATUS.md) và [API contract](API_CONTRACT.md).
+- Xem reference lifecycle/API hiện hành ở đầu tài liệu.
 
 ## Git trước khi viết tài liệu
 

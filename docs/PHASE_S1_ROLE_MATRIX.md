@@ -1,5 +1,7 @@
 # S1 role and API policy matrix
 
+> Historical S1 audit/verification matrix. Source B1a đã có thêm inbound-create Admin/WM restriction và count-assignee lookup; Staff receive và count ownership vẫn giữ. Dùng [current role rules](API_CONTRACT.md#wire-and-authorization) và [endpoint catalogue](FE_API_HANDOFF.md); không coi các YES/UNRESOLVED cũ là current permission grant.
+
 Pre-edit audit completed on 2026-10-24 at F1 checkpoint ead3c3a0b3cfd53a8248fe49062023686d671fc0, branch main. The table below records BEFORE authorization. Role cells mean role-policy admission, not successful business execution. All protected controller routes require a valid JWT. Class and method Authorize attributes intersect (AND), roles inside one attribute are alternatives (OR); no named/custom permission policy is present. No production edit preceded this matrix.
 
 ## Role model and clients

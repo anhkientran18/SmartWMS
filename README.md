@@ -1,111 +1,78 @@
-# 🚀 SmartWMS Center - Base Backend Template
+# SmartWMS
 
-Hệ thống quản lý kho hàng thông minh (**SmartWMS**) được xây dựng trên nền tảng kiến trúc sạch (**Clean Architecture**), kết hợp với tư duy thiết kế hướng miền (**Domain-Driven Design - DDD**) và mô hình tách biệt lệnh/truy vấn (**CQRS**). Hệ thống được tích hợp sâu các tác vụ tự động hóa chạy ngầm và động cơ trí tuệ nhân tạo (AI Virtual Agent) nhằm tối ưu hóa toàn diện chuỗi cung ứng vật tư, luân chuyển hàng hóa theo thời gian thực.
+SmartWMS là monorepo quản lý kho: ASP.NET Core/.NET 10, EF Core/SQL Server và React/TypeScript/Vite. Backend thực thi quyền và nghiệp vụ tồn kho; Gemini cung cấp một số chức năng hỗ trợ.
 
----
+Tài liệu này áp dụng cho source B1a `f74b00e2fdf2d9c06c59334e7b1038fa9c7766bc`, kế thừa main `ad8b620038b5beab5f6225fb5a01460bf2414b97`. Source implementation khác với runtime đã nghiệm thu. Xem [project context](docs/PROJECT_CONTEXT.md) để phân biệt main, PR #7 và original enhancements.
 
-## 🛠️ 1. Giới thiệu Base Backend Template
+## Prerequisites
 
-Template này đóng vai trò là kiến trúc thượng tầng mạnh mẽ, thiết lập sẵn các tiêu chuẩn doanh nghiệp (Enterprise Standards) giúp hệ thống dễ dàng mở rộng và bảo trì lâu dài. 
+- Git, **.NET SDK 10**, **Node.js 22 từ 22.12** và npm; PowerShell cho các lệnh dưới.
+- SQL Server và database development riêng đã có schema/accounts phù hợp khi chạy API. Chưa chốt phiên bản SQL engine hoặc chứng nhận cấu hình máy người đọc.
+- Repo chưa có `global.json`: kiểm tra `dotnet --version` chọn SDK 10 trước restore/build. Nếu máy có SDK mới hơn, chọn SDK 10 trong môi trường local trước; không tự thêm SDK selector vào patch tài liệu.
 
-### Các tính năng cốt lõi được tích hợp sẵn:
-* **Hệ thống Kiểm toán Tự động (Audit Trail Engine):** Sử dụng `ChangeTracker` ngầm để tự động bốc tách, ghi nhận lịch sử biến động dữ liệu chi tiết (`AuditLogs`) dưới dạng JSON.
-* **Động cơ Thời gian thực (Real-time Hub):** Đồng bộ hóa trạng thái bốc dỡ, nạp hàng thông qua nền tảng SignalR siêu tốc.
-* **Xử lý Tác vụ nền (Background Worker):** Đăng ký luồng quét định kỳ bằng Hangfire nhằm tự động khóa kho sản phẩm cận hạn và kích hoạt tác nhân AI.
-* **Lá chắn Lỗi tập trung:** Pipeline xử lý lỗi tối cao bằng `IExceptionHandler` của .NET giúp chuẩn hóa cấu trúc phản hồi API theo chuẩn `ProblemDetails`.
+## Install and build
 
----
+Chạy từ repository root trong checkout được phép ghi build artifacts:
 
-## 💻 2. Công nghệ sử dụng
+~~~powershell
+dotnet --version
+node --version
+dotnet restore SmartWMS.slnx --nologo
+dotnet build SmartWMS.slnx --configuration Release --no-restore --nologo
+npm --prefix frontend ci --no-audit --no-fund
+npm --prefix frontend run typecheck
+npm --prefix frontend run build
+~~~
 
-Hệ thống tận dụng tối đa sức mạnh của hệ sinh thái công nghệ mới nhất hiện nay:
+Solution có bốn production projects ở root: `SmartWMS.Api`, `SmartWMS.Application`, `SmartWMS.Domain`, `SmartWMS.Infrastructure`. Frontend ở `frontend/`; console harnesses ở `verification/`; orchestration ở `scripts/`. Backend chưa được chuyển sang `backend/src/`.
 
-* **Tầng lõi:** .NET 10 (C# 14 Web API)
-* **Cơ sở dữ liệu:** SQL Server (Relational Database)
-* **Truy cập dữ liệu:** Entity Framework Core 10 (Code-First Migration)
-* **Quản lý bất đồng bộ:** MediatR (CQRS Pattern)
-* **Bảo mật & Xác thực:** JWT Bearer Authentication
-* **Hệ thống Log:** Serilog (Structured Logging ghi song song ra Console và File tuần hoàn)
-* **Giám sát hạ tầng:** .NET Health Checks (Tự động theo dõi SQL Server và AI Hub Connection)
-* **AI Integration:** Google Gemini AI Ecosystem (AI Insight, Forecasting Demand, Vector Embeddings)
+Restore/build ghi `bin/obj`; npm cài dependencies/chạy lifecycle hooks; Vite ghi `frontend/dist`. Có generated files đã tracked: không stage chúng hoặc reset/clean checkout đang có work. Không dùng `npm ci` trên dependencies dùng chung với checkout khác.
 
----
+## Configure and run locally
 
-## 📂 3. Cấu trúc Solution
+Chuẩn bị SQL Server/database riêng trước khi chạy API. Database migration/provisioning/seed là bước có write riêng; không chạy mặc định trên database shared/demo. Startup kiểm kết nối, model và migrations; thiếu schema phù hợp có thể làm API dừng dù build thành công.
 
-Dự án được phân chia mạch lạc thành 4 phân tầng độc lập nhằm đảm bảo nguyên tắc đảo ngược phụ thuộc (**Dependency Inversion Principle**):
+Dùng environment hoặc ASP.NET User Secrets theo [Program.cs](SmartWMS.Api/Program.cs), không ghi credentials vào Git:
 
-```text
-SmartWMS/
-│
-├── 🏛️ SmartWMS.Domain/               # Tầng Miền (Lõi thực thể vô tri, không phụ thuộc bên ngoài)
-│   ├── Entities/                     # Khai báo cấu trúc bảng CSDL (Product, Bin, Zone, InboundReceipt...)
-│   ├── Enums/                        # Định danh kiểu strongly-typed (InventoryStatus, TransactionType...)
-│   └── Common/                       # Các thực thể nền, cấu trúc dùng chung (BaseEntity)
-│
-├── ⚡ SmartWMS.Application/          # Tầng Ứng dụng (Luồng nghiệp vụ xử lý Core Logic)
-│   ├── Common/                       # Các mô hình giao tiếp, Interfaces, DTOs hệ thống
-│   └── Features/                     # Phân khu CQRS (Mỗi tính năng chứa Commands, Queries, Handlers riêng)
-│       ├── InboundReceipts/          # Xử lý nhập kho, Xác nhận hộc hàng, Luân chuyển Cross-Docking
-│       ├── OutboundIssues/           # Xử lý xuất kho, thuật toán gom đơn Wave Picking
-│       └── Forecasts/                # Logic gọi AI dự báo nhu cầu thị trường (Demand Forecasting)
-│
-├── ⚙️ SmartWMS.Infrastructure/       # Tầng Hạ tầng (Kết nối CSDL, dịch vụ bên thứ ba)
-│   ├── Persistence/                  # DbContext, Cấu hình Fluent API, Migrations cấu trúc dữ liệu
-│   ├── Services/                     # Cài đặt dịch vụ AI Gemini, Barcode, Mail Agent, Picking Route Optimizer
-│   ├── SignalR/                      # Cấu hình Real-time Hub điều phối thông báo biến động kho
-│   └── HealthChecks/                 # Bộ kiểm tra trạng thái hoạt động của ổ đĩa SQL và Google AI Hub
-│
-└── 🌐 SmartWMS.Api/                  # Tầng Biên giới (Điểm tiếp nhận các HTTP Requests)
-    ├── Controllers/                  # Các Endpoints API phân quyền bảo mật chặt chẽ
-    ├── Middlewares/                  # Bộ lọc Global Exception Handler chặn bắt lỗi tập trung
-    └── Program.cs                    # Trạm khởi tạo trung tâm, cấu hình Pipeline, Seeding & Job Scheduler
-4. Yêu cầu môi trường
-Để khởi chạy dự án mượt mà trên môi trường máy cục bộ (Local Development), máy tính của bạn cần đáp ứng các điều kiện tiên quyết sau:
+| Setting | Mục đích |
+| --- | --- |
+| `ConnectionStrings:DefaultConnection` | Database development riêng; Hangfire storage có thể dùng connection này nếu không có connection riêng |
+| `JwtSettings:Secret`, `Issuer`, `Audience` | Cấu hình phát hành/kiểm JWT; signing key riêng ít nhất 32 byte, không lấy ví dụ từ lịch sử |
+| `GeminiSettings` | Provider settings theo model cấu hình hiện hành; provider không sẵn sàng phải thể hiện lỗi/fallback trung thực |
+| `DatabaseInitialization:ApplyMigrationsOnStartup`, `SeedOnStartup` | Giữ false cho lần chạy thông thường trên database đã chuẩn bị |
+| `Hangfire:EnableServer`, `RegisterRecurringJobsOnStartup`, `PrepareSchemaIfNecessary` | Giữ false trừ task riêng đã cho phép jobs/schema writes |
 
-SDK: .NET 10.0 SDK trở lên.
+Kiểm cả environment/user-secret overrides. Không tự bật background AI job: source có job tạo inbound receipt.
 
-IDE: Visual Studio 2022 (Phiên bản v17.12 trở lên) hoặc JetBrains Rider / VS Code (Đã cài C# Dev Kit).
+Sau khi đã xác nhận database/schema và effective settings phù hợp, mở hai terminals:
 
-Database Engine: SQL Server 2019, 2022 hoặc Azure SQL Database Edge.
+~~~powershell
+dotnet run --project SmartWMS.Api --launch-profile http
+~~~
 
-Công cụ hỗ trợ: cài đặt sẵn dotnet-ef toàn cục để chạy lệnh migration:
-dotnet tool install --global dotnet-ef
+Trong terminal frontend:
 
-## 📦 5. Các NuGet Package chính
-
-Các thư viện nền tảng được phân bổ chuẩn chỉ vào từng phân tầng cấu trúc để đảm bảo tính bao đóng:
-
-| Tầng Dự Án | Tên Thư Viện (NuGet Package) | Phiên Bản | Công Dụng Chính |
-| :--- | :--- | :--- | :--- |
-| **Domain** | *Không sử dụng thư viện ngoài* | - | Đảm bảo tính thuần khiết của thực thể |
-| **Application** | `MediatR` | LATEST | Điều phối luồng dữ liệu CQRS, giảm phụ thuộc |
-| **Infrastructure** | `Microsoft.EntityFrameworkCore.SqlServer` | 10.x | Trình kết nối cơ sở dữ liệu SQL Server |
-| **Infrastructure** | `Hangfire.AspNetCore` | LATEST | Tích hợp bảng điều khiển và chạy tác vụ ngầm |
-| **Infrastructure** | `Hangfire.SqlServer` | LATEST | Lưu trữ trạng thái và cấu hình của Hangfire Job |
-| **Infrastructure** | `Microsoft.Extensions.Diagnostics.HealthChecks` | 10.x | Giám sát tài nguyên và kết nối API hệ thống |
-| **Api** | `Microsoft.AspNetCore.Authentication.JwtBearer` | 10.x | Cơ chế cấp phát và giải mã Token bảo mật |
-| **Api** | `Serilog.AspNetCore` | LATEST | Ghi nhật ký cấu trúc, tối ưu giám sát lỗi |
-
-6. Cấu hình Database
-Hệ thống áp dụng cơ chế tự động hóa hoàn toàn luồng quản lý dữ liệu. Ngay khi máy chủ API được khởi chạy, hệ thống sẽ tự quét tìm Migration mới để cập nhật cấu trúc bảng, đồng thời tự động nạp dữ liệu mồi (Seed Data) cho Kho tổng, Phân khu, Hệ thống hộc hàng, tài khoản Admin tối cao và đồng bộ hóa Vector thông minh.
-
-Bước 1: Thiết lập chuỗi kết nối
-Kiên cập nhật lại chuỗi kết nối SQL Server của bạn tại tệp appsettings.json nằm trong dự án SmartWMS.Api:
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Server=YOUR_SERVER_NAME;Database=SmartWMS_DB;Trusted_Connection=True;TrustServerCertificate=True;"
-  },
-  "JwtSettings": {
-    "Secret": "ChuyenGiaQuanLyKhoHangThongMinhSmartWMSCenter2026SecurityKey!",
-    "Issuer": "SmartWMSCenter",
-    "Audience": "SmartWMSUsers"
-  }
+~~~powershell
+if (-not (Test-Path -LiteralPath 'frontend/.env.local')) {
+  Copy-Item -LiteralPath 'frontend/.env.example' -Destination 'frontend/.env.local'
 }
-Bước 2: Thực thi cập nhật thủ công (Nếu cấu hình lại Entities)
-Nếu Kiên bổ sung thực thể hoặc thay đổi cấu hình trường dữ liệu, hãy mở Package Manager Console (PMC), đặt dự án mặc định (Default project) về SmartWMS.Infrastructure và chạy bộ lệnh:
-# 1. Tạo file di cư cấu trúc
-Add-Migration UpdateStructure_Latest -Context ApplicationDbContext -Project SmartWMS.Infrastructure -StartupProject SmartWMS.Api
+# Sửa .env.local trước khi khởi động; không ghi secrets vào VITE_*.
+npm --prefix frontend run dev
+~~~
 
-# 2. Đẩy cấu trúc an toàn xuống Database
-Update-Database -Context ApplicationDbContext -Project SmartWMS.Infrastructure -StartupProject SmartWMS.Api
+Chỉ copy khi `.env.local` chưa tồn tại. Dùng `VITE_DATA_MODE=api`, `VITE_API_BASE_URL=http://localhost:5215` cho HTTP profile; HTTPS profile dùng origin `https://localhost:7085` và certificate phù hợp. Base URL là **origin**, không kèm `/api/v1`. Restart Vite khi đổi environment. Đăng nhập bằng account đã được chuẩn bị riêng; frontend không provision users/database.
+
+`npm --prefix frontend run dev:demo` là companion dùng mock/synthetic data, không chứng nhận ASP.NET/SQL/AI thật. Chỉ dùng synthetic credentials. Chi tiết ranh giới nằm ở [frontend guide](frontend/README.md) và [demo guide](frontend/demo/README.md).
+
+## Development and reference
+
+| Đọc khi cần | Tài liệu chính |
+| --- | --- |
+| Quy tắc Codex/Git/data safety | [AGENTS](AGENTS.md) |
+| Kiến trúc, source snapshot, scope và unknowns | [PROJECT_CONTEXT](docs/PROJECT_CONTEXT.md) |
+| Vòng làm việc một developer | [DEVELOPMENT_WORKFLOW](docs/DEVELOPMENT_WORKFLOW.md) |
+| Chọn checks và phân biệt SQL/API mutation tests | [TEST_STRATEGY](docs/TEST_STRATEGY.md) |
+| Inventory rules, lifecycle, retry và wire conventions | [API_CONTRACT](docs/API_CONTRACT.md) |
+| Catalogue endpoints/DTOs, RBAC và FE refresh/provider handling | [FE_API_HANDOFF](docs/FE_API_HANDOFF.md) |
+
+Không dùng báo cáo phase cũ làm hướng dẫn hiện hành. Serial/LPN/Wave, stored BOM, cross-warehouse transfer, mobile/PDA thật và post-pick reversal chưa được chứng nhận end-to-end. Production readiness, deployed schema và live providers vẫn cần nghiệm thu riêng. Các lệnh trên là hướng dẫn, **không được chạy trong lần consolidation tài liệu này**.
