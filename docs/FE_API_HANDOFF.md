@@ -1,10 +1,10 @@
-# SmartWMS backend → frontend API handoff
+# SmartWMS — Endpoint and frontend integration catalogue
 
-Checkpoint: branch `main`, S1 HEAD **`539dc542314a46207cd98313e89d04165ebed9a5`**, `feat: harden authorization and cycle count ownership`. Source inspection: 2026-10-24 (Asia/Saigon).
-
-This is the FE integration contract for the S1 baseline plus **H2 uncommitted worktree hardening**. It describes actual routed controllers, bound DTOs, validators and handlers; legacy/deferred scope remains unchanged. H2 adds a scoped count-assignee lookup, same-warehouse transfer validation, truthful product projections and best-effort product embedding. Focused and regression evidence is recorded in [H2 report](PHASE_H2.md). No FE change, live Gemini request, stage, commit or push was performed.
-
-**Tóm tắt cho FE:** Có thể tích hợp các luồng None/Lot đã mô tả, bao gồm nút “Tự động châm hàng” dành cho Admin/WM. Phải dùng đúng payload, trạng thái, role/ownership và refresh map; không dựng luồng LPN, Serial, Wave hay Cross-dock end-to-end. AI có contract đã kiểm chứng nhưng vẫn phụ thuộc provider. Các contract H2 bên dưới đã sửa projection barcode/weight và bổ sung assignee lookup; weight/dimension editing và các capability deferred vẫn không được suy đoán thành API hỗ trợ.
+> Reference cho source B1a f74b00e2fdf2d9c06c59334e7b1038fa9c7766bc; consolidation kiểm lại các stock/RBAC boundaries ngày 15/11/2026, không chạy runtime checks. [API_CONTRACT](API_CONTRACT.md) là nguồn chính cho inventory rules/lifecycle/retry; [PROJECT_CONTEXT](PROJECT_CONTEXT.md) phân biệt M/P/O/G.
+>
+> Catalogue 97 controller actions, DTO/query/response fields, provider/error và FE refresh guidance được giữ từ S1/H2 để bảo toàn technical detail và consumer verification/CoreHardeningH2/Audit.py. Readiness S/C/E/P/U là qualification trong documented scope, không current test PASS. Historical evidence ở section 17 không được regenerate bằng certifier sau thay đổi tài liệu.
+>
+> Inbound create đã được giới hạn Admin/WM trong source B1a sau S1; Staff receiving không đổi. Các client-mapping recommendations bên dưới không tạo warehouse ACL hoặc giới hạn Staff khỏi production WebApp bằng backend policy mới. Controller + handler hiện hành là authority.
 
 ## 1. Readiness and role legend
 
@@ -123,7 +123,7 @@ Request contracts (unmarked optional fields can be omitted; required fields mark
 
 | Method | Route | Readiness / roles | Purpose / input | Response / happy status | Business rejection | State / DB effect | FE refresh / limitations |
 |---|---|---|---|---|---|---|---|
-| POST | /api/v1/InboundReceipts | C / AMT | Create header/details; body InCreate. | 200 `R<Guid>` receipt ID. | 400 duplicate number/invalid bin/validation; invalid references can also surface storage errors. | Creates **New** receipt, quantityReceived0; no physical stock yet. | Refetch receipt/list; retain returned ID. Actual broad Staff planning permission remains a policy decision. |
+| POST | /api/v1/InboundReceipts | C / AM | Create header/details; body InCreate. | 200 `R<Guid>` receipt ID. | 400 duplicate number/invalid bin/validation; invalid references can also surface storage errors. | Creates **New** receipt, quantityReceived0; no physical stock yet. | Refetch receipt/list; retain returned ID. Staff403 before dispatch; receiving remains AMT. |
 | GET | /api/v1/InboundReceipts | C / AMT | Paged monitor; query `pageNumber=1,pageSize=10,searchTerm?`. | 200 `Page<Receipt>`. | 400 invalid paging. | Read-only. | Refresh on create/update/delete/receive. |
 | GET | /api/v1/InboundReceipts/list | C / AMT | Lookup/filter; `supplierId?,status?,searchKeyword?`. | 200 `R<Receipt[]>`. | 400 invalid filters/binding. | Read-only. | Use current status from response, not a guessed Pending initial state. |
 | GET | /api/v1/InboundReceipts/{id:guid} | C / AMT | Detail; required path `id`. | 200 `R<Receipt>`. | **400** missing receipt in current handler. | Read-only. | Required immediately before receive, and after409. |
@@ -506,7 +506,7 @@ LPN lifecycle; end-to-end Serial; legacy Wave/serial execution; cross-dock fulfi
 
 ## 17. Verification basis and source index
 
-Historical checkpoint evidence below remains unchanged. H2 adds new focused/regression evidence from isolated fixtures and controlled providers; no live Gemini calls. H2 source and evidence are uncommitted, with scope and commands recorded in [H2 report](PHASE_H2.md):
+Historical checkpoint evidence below retains its original scope. At that checkpoint H2 recorded focused/regression evidence from isolated fixtures and controlled providers, with no live Gemini calls. Its original worktree status and commands remain in [H2 report](PHASE_H2.md); this is not the current branch/commit status:
 
 | Checkpoint | Verification / meaning |
 |---|---|
