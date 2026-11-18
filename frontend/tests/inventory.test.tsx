@@ -188,3 +188,5 @@ test('F4.5 populated stock keeps real signed quantities, localized types and pag
   }
   cache.clear(); sessionStore.set(null);
 });
+
+import './transfers.test';

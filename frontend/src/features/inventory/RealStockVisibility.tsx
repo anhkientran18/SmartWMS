@@ -1,7 +1,7 @@
 import { ReactNode, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useQuery, useQueryClient, UseQueryResult } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Boxes, Package, AlertTriangle, RefreshCw, X, MapPin, History, Eye } from 'lucide-react';
 import { sessionStore } from '../auth/session';
 import { ApiError } from '../../services/api/apiTypes';
@@ -85,6 +85,7 @@ export default function RealStockVisibility({ embedded = false }: { embedded?: b
       <div className="flex items-center gap-3"><div className="p-2.5 bg-blue-50 border border-blue-200 text-blue-600 rounded-xl"><Boxes className="w-5 h-5" strokeWidth={1.75} /></div>
         <div><h1 id="stock-title" className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">{t('f2.title')}</h1>
         <p className="text-xs text-slate-500 mt-0.5 max-w-3xl">{t('f2.description')}</p></div></div>
+      {management && <Link className="text-sm text-blue-700 underline rounded-lg focus:ring-2 focus:ring-blue-500" to="/dashboard/inventory/transfers">{t('transfer.title')}</Link>}
       <ActionButton variant="secondary" disabled={refreshing} onClick={refresh} icon={<RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />}>{t('f2.refresh')}</ActionButton>
     </header>}
 
