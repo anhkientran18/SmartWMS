@@ -1,0 +1,676 @@
+{
+  "info": {
+    "_postman_id": "8e4f9f7d-0a1b-4c62-9f44-91a3b2c0d113",
+    "name": "SmartWMS — Complete API & Advisory AI Collection",
+    "description": "End-to-end Postman v2.1 collection for SmartWMS (main baseline after PR #15). Configure {{baseUrl}}, {{username}}, and {{password}} in SmartWMS.local.postman_environment.json; Login automatically captures {{token}}.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "01. Auth & RBAC",
+      "item": [
+        {
+          "name": "Health Check (/healthz)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/healthz"
+          }
+        },
+        {
+          "name": "Login (Auto-capture {{token}})",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200 OK', function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "if (body && body.isSuccess && body.data && body.data.token) {",
+                  "  pm.environment.set('token', body.data.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/Auth/login"
+          }
+        },
+        {
+          "name": "List Users (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/Users/list"
+          }
+        },
+        {
+          "name": "Create User (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"staff_demo\",\n  \"email\": \"staff_demo@smartwms.local\",\n  \"password\": \"REPLACE_WITH_TEMP_PASSWORD\",\n  \"lastName\": \"Warehouse\",\n  \"firstName\": \"Staff\",\n  \"role\": \"Staff\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/Users"
+          }
+        }
+      ]
+    },
+    {
+      "name": "02. Master Data",
+      "item": [
+        {
+          "name": "Create Warehouse (Admin/WM)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body && body.isSuccess && body.data) { pm.environment.set('warehouseId', body.data); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"WH-DEMO\",\n  \"name\": \"SmartWMS Demo Warehouse\",\n  \"address\": \"Ho Chi Minh City\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/Warehouses"
+          }
+        },
+        {
+          "name": "Create Zone (Admin/WM)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body && body.isSuccess && body.data) { pm.environment.set('zoneId', body.data); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"DRY-01\",\n  \"name\": \"Khu Khô (Dry Zone)\",\n  \"warehouseId\": \"{{warehouseId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/Zones"
+          }
+        },
+        {
+          "name": "Create Bin BIN-A1 (Admin/WM)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body && body.isSuccess && body.data) { pm.environment.set('binA1Id', body.data); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"purpose\": 0,\n  \"code\": \"BIN-A1\",\n  \"zoneId\": \"{{zoneId}}\",\n  \"width\": 100,\n  \"height\": 100,\n  \"depth\": 100,\n  \"maxCapacity\": 200\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/Bins"
+          }
+        },
+        {
+          "name": "Create Bin BIN-A2 (Admin/WM)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body && body.isSuccess && body.data) { pm.environment.set('binA2Id', body.data); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"purpose\": 0,\n  \"code\": \"BIN-A2\",\n  \"zoneId\": \"{{zoneId}}\",\n  \"width\": 100,\n  \"height\": 100,\n  \"depth\": 100,\n  \"maxCapacity\": 200\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/Bins"
+          }
+        },
+        {
+          "name": "Get Bin Contents (Admin/WM/Staff)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/Bins/{{binA1Id}}/contents"
+          }
+        },
+        {
+          "name": "Create Supplier (Admin/WM)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body && body.isSuccess && body.data) { pm.environment.set('supplierId', body.data); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"SUP-DEMO-01\",\n  \"name\": \"SmartWMS Demo Supplier\",\n  \"email\": \"supplier@smartwms.local\",\n  \"phone\": \"0901000001\",\n  \"address\": \"Ho Chi Minh City\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/Suppliers"
+          }
+        },
+        {
+          "name": "Create Customer (Admin/WM)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body && body.isSuccess && body.data) { pm.environment.set('customerId', body.data); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"CUS-DEMO-01\",\n  \"name\": \"SmartWMS Demo Customer\",\n  \"email\": \"customer@smartwms.local\",\n  \"phone\": \"0901000002\",\n  \"deliveryAddress\": \"District 1, Ho Chi Minh City\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/Customers"
+          }
+        },
+        {
+          "name": "Create Product — Component (Admin/WM)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body && body.isSuccess && body.data) { pm.environment.set('productCompId', body.data); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trackingMode\": 0,\n  \"sku\": \"SKU-COMP-01\",\n  \"barcode\": \"893900000001\",\n  \"name\": \"Electronic Component\",\n  \"description\": \"Dry-zone electronic warehouse component\",\n  \"unit\": \"Pcs\",\n  \"width\": 10,\n  \"height\": 10,\n  \"depth\": 10\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/Products"
+          }
+        },
+        {
+          "name": "Create Product — Kit (Admin/WM)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body && body.isSuccess && body.data) { pm.environment.set('productKitId', body.data); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trackingMode\": 0,\n  \"sku\": \"SKU-KIT-01\",\n  \"barcode\": \"893900000002\",\n  \"name\": \"Assembled Component Kit\",\n  \"description\": \"Assembled kit box\",\n  \"unit\": \"Box\",\n  \"width\": 20,\n  \"height\": 20,\n  \"depth\": 20\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/Products"
+          }
+        }
+      ]
+    },
+    {
+      "name": "03. Inbound & Putaway",
+      "item": [
+        {
+          "name": "Create Inbound Receipt (Admin/WM)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body && body.isSuccess && body.data) { pm.environment.set('inboundReceiptId', body.data); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"receiptNumber\": \"IR-DEMO-001\",\n  \"supplierId\": \"{{supplierId}}\",\n  \"binId\": \"{{binA1Id}}\",\n  \"expectedDeliveryDate\": \"2027-01-15T00:00:00.000Z\",\n  \"referenceDocument\": \"INV-DEMO-001\",\n  \"notes\": \"Demo inbound receipt\",\n  \"items\": [\n    {\n      \"productId\": \"{{productCompId}}\",\n      \"expectedQuantity\": 50,\n      \"lotNumber\": \"LOT-DEMO-01\",\n      \"expirationDate\": null\n    }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/InboundReceipts"
+          }
+        },
+        {
+          "name": "Get Inbound Receipt Detail (Capture {{inboundItemId}})",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "const itemId = body?.data?.items?.[0]?.id;",
+                  "if (itemId) { pm.environment.set('inboundItemId', itemId); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/InboundReceipts/{{inboundReceiptId}}"
+          }
+        },
+        {
+          "name": "Confirm Inbound Receipt — Delta & Optimistic Precondition",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"inboundReceiptId\": \"{{inboundReceiptId}}\",\n  \"receivedItems\": [\n    {\n      \"itemId\": \"{{inboundItemId}}\",\n      \"quantityReceived\": 50,\n      \"expectedReceivedQuantity\": 0\n    }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/InboundReceipts/confirm-receipt"
+          }
+        },
+        {
+          "name": "Get Putaway Suggestion",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/InboundReceipts/putaway-suggestion?sku=SKU-COMP-01&quantity=10"
+          }
+        }
+      ]
+    },
+    {
+      "name": "04. Inventory & Transfers",
+      "item": [
+        {
+          "name": "Get Stock Summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/Inventory/stock-summary"
+          }
+        },
+        {
+          "name": "Get Stock History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/Inventory/stock-history?pageIndex=1&pageSize=10"
+          }
+        },
+        {
+          "name": "Transfer Inventory (Same Warehouse)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productCompId}}\",\n  \"sourceBinId\": \"{{binA1Id}}\",\n  \"destinationBinId\": \"{{binA2Id}}\",\n  \"transferQuantity\": 10,\n  \"lotNumber\": \"LOT-DEMO-01\",\n  \"reason\": \"DEMO_PUTAWAY_TRANSFER\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/InventoryTransfers"
+          }
+        },
+        {
+          "name": "Adjust Stock (Admin/WM)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"binId\": \"{{binA1Id}}\",\n  \"productId\": \"{{productCompId}}\",\n  \"lotNumber\": \"LOT-DEMO-01\",\n  \"adjustmentQuantity\": 5,\n  \"reasonCode\": \"AUDIT_GAIN\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/Inventory/adjust-stock"
+          }
+        }
+      ]
+    },
+    {
+      "name": "05. Outbound",
+      "item": [
+        {
+          "name": "Create Outbound Order (Admin/WM)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body && body.isSuccess && body.data) { pm.environment.set('outboundOrderId', body.data); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderNumber\": \"SO-DEMO-001\",\n  \"customerId\": \"{{customerId}}\",\n  \"binId\": \"{{binA1Id}}\",\n  \"expectedShipDate\": \"2027-01-20T00:00:00.000Z\",\n  \"priority\": \"Normal\",\n  \"notes\": \"Demo outbound order\",\n  \"items\": [\n    {\n      \"productId\": \"{{productCompId}}\",\n      \"requestedQuantity\": 10\n    }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/OutboundOrders"
+          }
+        },
+        {
+          "name": "Allocate Pick Task (Admin/WM)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"outboundOrderId\": \"{{outboundOrderId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/OutboundOrders/allocate-pick-task"
+          }
+        },
+        {
+          "name": "Get Outbound Order Detail (Capture {{reservationId}})",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "const resId = body?.data?.items?.[0]?.reservations?.[0]?.id;",
+                  "if (resId) { pm.environment.set('reservationId', resId); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/OutboundOrders/{{outboundOrderId}}"
+          }
+        },
+        {
+          "name": "Pick Outbound Order (Admin/WM/Staff)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"reservationId\": \"{{reservationId}}\",\n      \"quantity\": 10\n    }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/OutboundOrders/{{outboundOrderId}}/pick"
+          }
+        },
+        {
+          "name": "Pack Outbound Order (Admin/WM/Staff)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/OutboundOrders/{{outboundOrderId}}/pack"
+          }
+        },
+        {
+          "name": "Ship Outbound Order (Admin/WM)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": "{{baseUrl}}/api/v1/OutboundOrders/{{outboundOrderId}}/ship"
+          }
+        }
+      ]
+    },
+    {
+      "name": "06. Cycle Count & Kitting",
+      "item": [
+        {
+          "name": "Create Cycle Count Sheet (Admin/WM)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body && body.isSuccess && body.data) { pm.environment.set('countSheetId', body.data); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"requestData\": {\n    \"binId\": \"{{binA1Id}}\",\n    \"notes\": \"Scheduled cycle count\",\n    \"assignedUserId\": \"{{assignedUserId}}\"\n  }\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/CycleCounting/create-sheet"
+          }
+        },
+        {
+          "name": "Get Cycle Count Sheet Detail (Capture {{countItemId}})",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "const itemId = body?.data?.items?.[0]?.id;",
+                  "if (itemId) { pm.environment.set('countItemId', itemId); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/CycleCounting/{{countSheetId}}"
+          }
+        },
+        {
+          "name": "Confirm Cycle Count (Assigned Staff / Admin / WM)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"countSheetId\": \"{{countSheetId}}\",\n  \"notes\": \"Verified exact physical count\",\n  \"countedItems\": [\n    {\n      \"itemId\": \"{{countItemId}}\",\n      \"countedQuantity\": 35\n    }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/CycleCounting/confirm"
+          }
+        },
+        {
+          "name": "Assemble Kit (Admin/WM — Atomic)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kitProductId\": \"{{productKitId}}\",\n  \"targetBinId\": \"{{binA2Id}}\",\n  \"assembleQuantity\": 1,\n  \"components\": [\n    {\n      \"componentProductId\": \"{{productCompId}}\",\n      \"sourceBinId\": \"{{binA1Id}}\",\n      \"quantityPerKit\": 2\n    }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/Kitting/assemble"
+          }
+        }
+      ]
+    },
+    {
+      "name": "07. Reports & Audit",
+      "item": [
+        {
+          "name": "Export Inventory Excel (.xlsx — Admin/WM)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/Reports/export/excel"
+          }
+        },
+        {
+          "name": "Get Audit Logs (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/AuditLogs?pageNumber=1&pageSize=20"
+          }
+        }
+      ]
+    },
+    {
+      "name": "08. Advisory AI (7 Endpoints)",
+      "item": [
+        {
+          "name": "1. Semantic Product Search (Admin/WM/Staff)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/Products/semantic-search?text=component"
+          }
+        },
+        {
+          "name": "2. Executive AI Dashboard (Admin/WM)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/Dashboard/executive"
+          }
+        },
+        {
+          "name": "3. AI Operational Chat (Admin/WM/Staff)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Explain FIFO vs FEFO warehouse picking policies.\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/Chat/ask"
+          }
+        },
+        {
+          "name": "4. Demand Forecast (Admin/WM)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/Forecasts/demand-prediction?sku=SKU-COMP-01"
+          }
+        },
+        {
+          "name": "5. AI Slotting Recommendations (Admin/WM)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/Dashboard/ai-slotting-recommendations"
+          }
+        },
+        {
+          "name": "6. Inbound OCR Invoice Scan (JPG/PNG/WEBP <= 5 MiB)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/v1/InboundReceipts/scan-invoice"
+          }
+        },
+        {
+          "name": "7. Inbound Damage Vision Inspection (JPG/PNG/WEBP <= 5 MiB)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/v1/InboundReceipts/report-damage"
+          }
+        }
+      ]
+    }
+  ]
+}

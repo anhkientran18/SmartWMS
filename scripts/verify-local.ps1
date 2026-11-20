@@ -23,12 +23,12 @@ try {
         throw 'Chua co frontend/node_modules. Chay npm ci trong clean worktree sau khi review lifecycle scripts.'
     }
     $sdkVersion = & dotnet --version
-    if ($LASTEXITCODE -ne 0 -or $sdkVersion -notmatch '^10\.') {
-        throw 'Can chon .NET SDK 10 truoc khi verify; xem docs/DEVELOPMENT_WORKFLOW.md.'
+    if ($LASTEXITCODE -ne 0 -or $sdkVersion -notmatch '^1[0-9]\.') {
+        throw "Can .NET SDK >= 10 truoc khi verify (hien tai: $sdkVersion); xem docs/DEVELOPMENT_WORKFLOW.md."
     }
     $nodeVersion = & node --version
-    if ($LASTEXITCODE -ne 0 -or $nodeVersion -notmatch '^v22\.') {
-        throw 'Can Node.js 22 de khop CI.'
+    if ($LASTEXITCODE -ne 0 -or $nodeVersion -notmatch '^v2[2-9]\.') {
+        throw "Can Node.js >= v22 de khop CI (hien tai: $nodeVersion)."
     }
     Write-Host 'SIDE EFFECTS: restore/build writes bin/obj/dist; sprint overwrites verification bundles/logs/results and removes two temporary bundles. No artifact cleanup by this script.'
     Write-Host 'CHECK: .NET solution restore/build; no SQL/API host/migration.'

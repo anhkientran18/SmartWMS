@@ -1,6 +1,6 @@
 # SmartWMS — Test strategy
 
-Source: B1a `f74b00e2fdf2d9c06c59334e7b1038fa9c7766bc` (code từ M trong [PROJECT_CONTEXT](PROJECT_CONTEXT.md)). Consolidation này chỉ kiểm tài liệu tĩnh; **không chạy application build/typecheck/test, SQL/API/browser hoặc live AI**.
+Tài liệu chiến lược kiểm thử cho nhánh `main` (đã hợp nhất PR #7–#15 gồm chuyển kho cùng kho, điều chỉnh/đổi trạng thái tồn kho, xuất Excel, Master Data CRUD, chuẩn hóa `backend/src/`, gia cố RBAC & Executive Dashboard, và 5 bề mặt Advisory AI còn lại). Xem thêm [Demo & E2E Runbook](DEMO_AND_E2E_RUNBOOK.md) và [SmartWMS Postman Collection](postman/SmartWMS.postman_collection.json) cho kịch bản kiểm thử tích hợp trên database cô lập.
 
 ## Select the smallest meaningful check
 
@@ -37,19 +37,19 @@ Chỉ chọn lệnh phù hợp task. `npm ci` thay node_modules và chạy hooks
 
 [run-sprint.mjs](../frontend/tests/run-sprint.mjs) chạy chín suites bằng esbuild/Node test, controlled HTTP adapters, source assertions và SSR:
 
-| Suite | Entry trong frontend/tests |
-| --- | --- |
-| auth | auth.test.ts |
-| inventory | inventory.test.tsx |
-| replenishment | replenishment.test.tsx |
-| inbound | inbound.test.tsx |
-| outbound | outbound.test.tsx |
-| cycle-count | cycle-count.test.tsx |
-| kitting | kitting.test.ts |
-| products | products.test.tsx, import semanticProductSearch.test.tsx |
-| administration | administration.test.tsx |
+| Suite | Entry trong frontend/tests | Số lượng tests |
+| --- | --- | :-: |
+| auth | `auth.test.ts` | 11 |
+| inventory | `inventory.test.tsx`, import `transfers.test.tsx`, `stockAdjustment.test.tsx`, `inventoryOperations.test.tsx`, `aiSlotting.test.tsx` | 98 |
+| replenishment | `replenishment.test.tsx` | 13 |
+| inbound | `inbound.test.tsx`, import `ocrInvoice.test.tsx`, `damageVision.test.tsx` | 53 |
+| outbound | `outbound.test.tsx`, import `customerOperations.test.tsx` | 33 |
+| cycle-count | `cycle-count.test.tsx` | 29 |
+| kitting | `kitting.test.ts` | 35 |
+| products | `products.test.tsx`, import `semanticProductSearch.test.tsx`, `productOperations.test.tsx`, `demandForecast.test.tsx` | 82 |
+| administration | `administration.test.tsx` (bao gồm Executive Dashboard & RBAC assertions), import `aiChat.test.tsx` | 30 |
 
-Products → semantic import thuộc configured coverage tại B1a; `test:products` có cùng import. Chưa có P transfers import hoặc O inventoryOperations/customerProductOperations và năm AI UI suites (chat/forecast/slotting/damage/executive-OCR) trong source này. Không nhận coverage chỉ vì tên file tồn tại ở checkout khác.
+Tổng cộng **`384/384` tests PASS trên 9 suites** khi chạy `npm --prefix frontend run test:sprint` hoặc `powershell -ExecutionPolicy Bypass -File .\scripts\verify-local.ps1`. Toàn bộ các mô-đun vận hành từ PR #7–#15 (`transfers`, `stockAdjustment`, `inventoryOperations`, `customerOperations`, `productOperations`, `ExecutiveInsightCard` / K11 RBAC, và đủ 7 bề mặt Advisory AI) đã được đấu nối vào runner chuẩn.
 
 Sprint ghi bundles tại `frontend/verification/{f1..f6,shared}/scripts`, logs/JSON tại `shared/evidence`; cần tạo evidence directory trước. Products/Kitting tạo rồi xóa temporary root bundles. Individual npm scripts xem [package.json](../frontend/package.json); administration dùng runner trực tiếp. Không có npm script `test`.
 
@@ -72,8 +72,9 @@ Mỗi run thật ghi command, exact source/patch, OS/SDK/Node/npm, exit code/cou
 
 SQL migration apply state, production authorization/token lifecycle, browser E2E, live Gemini, realtime FE, dependency/security scan, performance/backup/deployment chưa được chứng nhận bởi consolidation này. Source migrations không chứng minh database đã apply.
 
-## Historical frontend checkpoint
+## Verified checkpoints
 
-Giữ evidence trước đây ở frontend README: **06/11/2026**, source `3b6fcded123f51ff0baafcf5b4917619d495d773`, isolated Windows worktree, Node 22.23.4/npm 10.9.9/.NET SDK 10.0.202; backend restore/build, frontend clean install/typecheck/build và **9 suites/183 tests passed**.
-
-Counts lịch sử: auth 11; inventory 15; replenishment 13; inbound 20; outbound 26; cycle-count 29; kitting 35; products 24; administration 10. Đây không phải run trên B1a/consolidation, không SQL integration/live API/browser/live AI acceptance, không thay current coverage inspection.
+- **Current `main` baseline (sau PR #15 / `79a3a2bebf1a19ced56251eb8ff4d0d5d9732439`):**
+  - `scripts/verify-local.ps1`: Release `dotnet build SmartWMS.slnx` (`0` warnings/errors), `npm --prefix frontend run typecheck` (`0` errors), `npm --prefix frontend run test:sprint` (**9 suites / 384 tests passed, 0 failures**: auth 11, inventory 98, replenishment 13, inbound 53, outbound 33, cycle-count 29, kitting 35, products 82, administration 30), và `npm --prefix frontend run build` PASS.
+  - **Live SQL + HTTP E2E trên database cô lập `SmartWMS_K13_Verify` (`(localdb)\MSSQLLocalDB`, đã xóa sau kiểm thử):** 31 EF Core migrations áp dụng sạch; Hangfire `/hangfire` bị khóa (`404`); 3-Role RBAC (`Admin`, `WarehouseManager`, `Staff`) xác thực đầy đủ (`403` cho các thao tác quản trị, `200` cho `GET /api/v1/Bins/{id}/contents`); toàn bộ 8 luồng kho lõi (Master Data, Inbound delta/409 concurrency, Putaway/Transfer, Stock Adjustment + XLSX export, Outbound Allocate→Pick→Pack→Ship không trừ kép, Cycle Count ownership, Kitting atomic assembly, Audit Logs) và kiểm chứng không làm biến đổi tồn kho trên cả 7 AI endpoints đều PASS (`48/48` checks).
+- **Historical checkpoint (06/11/2026):** source `3b6fcded123f51ff0baafcf5b4917619d495d773` — **9 suites / 183 tests passed** (auth 11; inventory 15; replenishment 13; inbound 20; outbound 26; cycle-count 29; kitting 35; products 24; administration 10).
