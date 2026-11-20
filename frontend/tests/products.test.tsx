@@ -1,5 +1,6 @@
 import './semanticProductSearch.test';
 import './productOperations.test';
+import './demandForecast.test';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import axios from 'axios';

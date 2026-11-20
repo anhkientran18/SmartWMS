@@ -192,3 +192,4 @@ test('F4.5 populated stock keeps real signed quantities, localized types and pag
 import './transfers.test';
 import './stockAdjustment.test';
 import './inventoryOperations.test';
+import './aiSlotting.test';

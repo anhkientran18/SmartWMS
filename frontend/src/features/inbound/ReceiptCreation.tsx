@@ -2,7 +2,7 @@ import { FormEvent, useRef, useState, useSyncExternalStore } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Save, Inbox } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Save, Inbox, FileSearch } from 'lucide-react';
 import { sessionStore } from '../auth/session';
 import { inventoryQueries } from '../../services/inventory/inventoryQueries';
 import { adminRead, SupplierRecord } from '../../services/administration/adminApi';
@@ -11,6 +11,7 @@ import { ApiError } from '../../services/api/apiTypes';
 import { guid } from '../../services/inbound/inboundApi';
 import { AdminError, adminInput } from '../administration/RecordDialog';
 import ActionButton from '../../components/common/ActionButton';
+import OcrInvoiceModal, { OcrApplyPayload } from './OcrInvoiceModal';
 
 interface Line { key: number; productId: string; expectedQuantity: string; lotNumber: string; expirationDate: string }
 export default function ReceiptCreation() {
@@ -21,6 +22,7 @@ export default function ReceiptCreation() {
   const [header, setHeader] = useState({ receiptNumber: '', supplierId: '', warehouseId: '', zoneId: '', binId: '', expectedDeliveryDate: new Date().toISOString().slice(0, 10), referenceDocument: '', notes: '' });
   const [lines, setLines] = useState<Line[]>([{ key: 0, productId: '', expectedQuantity: '1', lotNumber: '', expirationDate: '' }]);
   const [validation, setValidation] = useState('');
+  const [ocrOpen, setOcrOpen] = useState(false);
   const warehouses = useQuery({ ...inventoryQueries.warehouses(), enabled: allowed });
   const zones = useQuery({ ...inventoryQueries.zones(), enabled: allowed });
   const bins = useQuery({ ...inventoryQueries.bins(), enabled: allowed });
@@ -42,8 +44,23 @@ export default function ReceiptCreation() {
     setValidation(''); lock.current = true; mutation.mutate();
   }
   function lineChange(key: number, value: Partial<Line>) { setLines(all => all.map(l => l.key === key ? { ...l, ...value } : l)); }
+  // Advisory OCR apply: only referenceDocument, supplierId and reviewed lines are filled.
+  // receiptNumber, expectedDeliveryDate, warehouseId, zoneId and binId stay operator-owned.
+  function handleOcrApply(payload: OcrApplyPayload) {
+    if (payload.referenceDocument) {
+      const referenceDocument = payload.referenceDocument;
+      setHeader(h => ({ ...h, referenceDocument }));
+    }
+    if (payload.supplierId) {
+      const supplierId = payload.supplierId;
+      setHeader(h => ({ ...h, supplierId }));
+    }
+    if (payload.lines.length > 0) {
+      setLines(payload.lines.map(l => ({ key: next.current++, productId: l.productId, expectedQuantity: l.expectedQuantity, lotNumber: l.lotNumber || '', expirationDate: l.expirationDate || '' })));
+    }
+  }
   if (!allowed) return <div className="p-6"><AdminError error={{ status: 403 }} /></div>;
-  return <form onSubmit={submit} className="p-4 sm:p-6 space-y-5 text-slate-900"><header className="flex flex-wrap items-center justify-between gap-4 bg-white border border-slate-200 rounded-2xl p-4"><div className="flex flex-wrap items-center gap-3"><Link to="/dashboard/orders" className="text-xs text-slate-600 flex gap-1 items-center"><ArrowLeft className="w-4 h-4" />{en ? 'Back to receipts' : 'Danh sách phiếu nhập'}</Link><h1 className="text-xl font-bold">{en ? 'Create inbound receipt' : 'Tạo mới phiếu nhập kho'}</h1></div><ActionButton type="submit" icon={<Save className="w-4 h-4" />} isLoading={mutation.isPending} disabled={uncertain || !queries.every(q => q.isSuccess)}>{en ? 'Create receipt' : 'Tạo phiếu nhập'}</ActionButton></header>
+  return <><form onSubmit={submit} className="p-4 sm:p-6 space-y-5 text-slate-900"><header className="flex flex-wrap items-center justify-between gap-4 bg-white border border-slate-200 rounded-2xl p-4"><div className="flex flex-wrap items-center gap-3"><Link to="/dashboard/orders" className="text-xs text-slate-600 flex gap-1 items-center"><ArrowLeft className="w-4 h-4" />{en ? 'Back to receipts' : 'Danh sách phiếu nhập'}</Link><h1 className="text-xl font-bold">{en ? 'Create inbound receipt' : 'Tạo mới phiếu nhập kho'}</h1></div><div className="flex flex-wrap items-center gap-2"><ActionButton type="button" variant="secondary" icon={<FileSearch className="w-4 h-4" />} disabled={mutation.isPending} onClick={() => setOcrOpen(true)}>{en ? 'Scan Invoice' : 'Quét hóa đơn'}</ActionButton><ActionButton type="submit" icon={<Save className="w-4 h-4" />} isLoading={mutation.isPending} disabled={uncertain || !queries.every(q => q.isSuccess)}>{en ? 'Create receipt' : 'Tạo phiếu nhập'}</ActionButton></div></header>
     {queries.some(q => q.isPending) && <p role="status" className="text-xs">{en ? 'Loading receipt data…' : 'Đang tải dữ liệu lập phiếu…'}</p>}{queries.filter(q => q.isError).map((q, i) => <div key={i}><AdminError error={q.error} /><ActionButton variant="secondary" onClick={() => void q.refetch()}>{en ? 'Retry' : 'Thử lại'}</ActionButton></div>)}{mutation.isError && <AdminError error={mutation.error} />}{validation && <p role="alert" className="p-3 rounded-xl bg-amber-50 text-amber-800 text-xs">{validation}</p>}
     <fieldset disabled={mutation.isPending} className="grid xl:grid-cols-[minmax(0,7fr)_minmax(0,3fr)] gap-5 min-w-0"><div className="space-y-5 min-w-0"><div className="bg-white rounded-2xl border border-slate-200 overflow-hidden"><h2 className="p-4 border-b border-slate-100 text-sm font-bold flex items-center gap-2"><Inbox className="w-4 h-4 text-blue-600" />{en ? 'Receipt information' : 'Thông tin phiếu nhập'}</h2><div className="p-5 grid md:grid-cols-2 gap-4">
       <label className="text-xs font-semibold space-y-2"><span>{en ? 'Receipt number' : 'Số phiếu nhập'} *</span><input required maxLength={50} className={adminInput} value={header.receiptNumber} onChange={e => setHeader(h => ({ ...h, receiptNumber: e.target.value }))} /></label>
@@ -56,5 +73,8 @@ export default function ReceiptCreation() {
       <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden"><div className="p-4 border-b border-slate-100 flex flex-wrap justify-between gap-3"><h2 className="text-sm font-bold">{en ? 'Inbound items' : 'Hàng hóa nhập kho'}</h2><ActionButton size="sm" icon={<Plus className="w-4 h-4" />} onClick={() => setLines(all => [...all, { key: next.current++, productId: '', expectedQuantity: '1', lotNumber: '', expirationDate: '' }])}>{en ? 'Add item' : 'Thêm mặt hàng'}</ActionButton></div><div className="overflow-x-auto"><table className="w-full text-xs text-left min-w-[620px]"><thead className="bg-slate-50 text-slate-500"><tr>{[en ? 'Product / SKU' : 'Sản phẩm / SKU', en ? 'Expected quantity' : 'Số lượng dự kiến', en ? 'Lot' : 'Số lô', en ? 'Expiry' : 'Hạn dùng', ''].map((s, i) => <th key={i} className="p-3">{s}</th>)}</tr></thead><tbody>{lines.map(l => <tr className="border-t border-slate-100" key={l.key}><td className="p-3 min-w-60"><select required aria-label={en ? 'Product' : 'Sản phẩm'} className={adminInput} value={l.productId} onChange={e => lineChange(l.key, { productId: e.target.value, lotNumber: '', expirationDate: '' })}><option value="">{en ? 'Select product' : 'Chọn sản phẩm'}</option>{products.data?.filter(p => p.trackingMode !== 2).map(p => <option key={p.id} value={p.id}>{p.sku} · {p.name}</option>)}</select></td><td className="p-3"><input aria-label={en ? 'Expected quantity' : 'Số lượng dự kiến'} type="number" required min={1} max={2147483647} step={1} className={`${adminInput} min-w-24`} value={l.expectedQuantity} onChange={e => lineChange(l.key, { expectedQuantity: e.target.value })} /></td><td className="p-3"><input aria-label={en ? 'Lot number' : 'Số lô'} required={products.data?.find(p => p.id === l.productId)?.trackingMode === 1} className={`${adminInput} min-w-28`} value={l.lotNumber} onChange={e => lineChange(l.key, { lotNumber: e.target.value })} /></td><td className="p-3"><input aria-label={en ? 'Expiration date' : 'Hạn sử dụng'} type="date" className={adminInput} value={l.expirationDate} onChange={e => lineChange(l.key, { expirationDate: e.target.value })} /></td><td className="p-3"><ActionButton variant="ghost" isIconOnly aria-label={en ? 'Remove item' : 'Xóa dòng'} disabled={lines.length === 1} icon={<Trash2 className="w-4 h-4 text-rose-600" />} onClick={() => setLines(all => all.filter(row => row.key !== l.key))} /></td></tr>)}</tbody></table></div><p className="bg-slate-50 border-t border-slate-100 p-4 text-xs">{en ? 'Items' : 'Mặt hàng'}: {lines.length} · {en ? 'Expected units' : 'Số lượng dự kiến'}: {lines.reduce((n, l) => n + (Number(l.expectedQuantity) || 0), 0)}</p></div></div>
       <aside className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4 self-start"><h2 className="text-sm font-bold">{en ? 'Inbound workflow' : 'Quy trình nhập kho'}</h2>{(en ? [['1. Create receipt', 'Creates a New receipt with zero received quantity. No inventory is added.'], ['2. Receive', 'Confirm actual quantities in the F4 receipt workflow. Receiving recognizes physical stock in the selected bin.'], ['3. Put-away / transfer', 'Move received available stock explicitly between supported bins in the same warehouse.']] : [['1. Tạo phiếu', 'Tạo phiếu Mới với số lượng đã nhận bằng 0. Chưa cộng tồn kho.'], ['2. Nhận hàng', 'Xác nhận số lượng thực nhận trong luồng F4. Nhận hàng ghi nhận tồn kho thực tế tại ô kệ đã chọn.'], ['3. Cất kệ / di chuyển', 'Di chuyển tường minh tồn kho khả dụng đã nhận giữa các ô kệ được hỗ trợ trong cùng nhà kho.']]).map(([title, body], i) => <div key={title} className={`p-4 rounded-xl border ${i === 0 ? 'bg-blue-50 border-blue-100' : i === 1 ? 'bg-amber-50 border-amber-100' : 'bg-emerald-50 border-emerald-100'}`}><h3 className="font-bold text-xs">{title}</h3><p className="text-xs leading-5 mt-2 text-slate-600">{body}</p></div>)}</aside>
     </fieldset>
-  </form>;
+  </form>
+  {/* Rendered outside the receipt form so OCR review inputs can never submit the receipt. */}
+  <OcrInvoiceModal isOpen={ocrOpen} onClose={() => setOcrOpen(false)} suppliers={suppliers.data ?? []} products={products.data ?? []} onApply={handleOcrApply} />
+  </>;
 }
