@@ -2,13 +2,16 @@ import { ReactNode, useEffect, useRef, useState, useSyncExternalStore } from 're
 import { useQuery, useQueryClient, UseQueryResult } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Boxes, Package, AlertTriangle, RefreshCw, X, MapPin, History, Eye, SlidersHorizontal, Lock } from 'lucide-react';
+import { Boxes, Package, AlertTriangle, RefreshCw, X, MapPin, History, Eye, SlidersHorizontal, Lock, FileDown, ArrowRightLeft, AlertCircle } from 'lucide-react';
 import { sessionStore } from '../auth/session';
 import { ApiError } from '../../services/api/apiTypes';
 import { canReadBinContext } from '../../services/inventory/inventoryReadApi';
 import { inventoryKey, inventoryQueries } from '../../services/inventory/inventoryQueries';
+import { exportInventoryExcel } from '../../services/inventory/inventoryMutationApi';
 import { getStockAdjustmentOperation } from '../../services/inventory/stockAdjustmentMutation';
+import { InventoryStatus, normalizeInventoryStatus } from '../../services/inventory/types';
 import StockAdjustmentModal from './StockAdjustmentModal';
+import StockStatusModal from './StockStatusModal';
 
 import KPICard from '../../components/common/KPICard';
 import PaginationFooter from '../../components/common/PaginationFooter';
@@ -58,7 +61,20 @@ export default function RealStockVisibility({ embedded = false }: { embedded?: b
   const [params] = useSearchParams();
   const [binId, setBinId] = useState(() => management ? params.get('binId') || '' : '');
   const [refreshing, setRefreshing] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [statusRefreshWarning, setStatusRefreshWarning] = useState<string | null>(null);
   const [adjustModal, setAdjustModal] = useState<{ open: boolean; binId?: string; productId?: string; lotNumber?: string }>({ open: false });
+  const [statusModal, setStatusModal] = useState<{
+    open: boolean;
+    binId: string;
+    binCode: string;
+    productId: string;
+    productName: string;
+    sku: string;
+    lotNumber: string;
+    currentStatus: string;
+  } | null>(null);
   const drawer = useRef<HTMLDialogElement>(null);
   useEffect(() => { if (binId) drawer.current?.showModal?.(); }, [binId]);
   const summary = useQuery(inventoryQueries.summary());
@@ -77,6 +93,19 @@ export default function RealStockVisibility({ embedded = false }: { embedded?: b
     try { await client.refetchQueries({ queryKey: inventoryKey, type: 'active' }); }
     finally { setRefreshing(false); }
   };
+  const handleExport = async () => {
+    if (exporting) return;
+    setExporting(true);
+    setExportError(null);
+    try {
+      await exportInventoryExcel();
+    } catch (err: unknown) {
+      const apiErr = err as ApiError;
+      setExportError(apiErr?.message || t('f2.errors.exportFailed'));
+    } finally {
+      setExporting(false);
+    }
+  };
   const visibleZones = zones.isSuccess ? zones.data.filter(z => !warehouseId || z.warehouseId === warehouseId) : [];
   const visibleBins = bins.isSuccess ? bins.data.filter(b => (!zoneId || b.zoneId === zoneId) &&
     (!warehouseId || (zones.isSuccess && zones.data.some(z => z.id === b.zoneId && z.warehouseId === warehouseId))) &&
@@ -92,10 +121,46 @@ export default function RealStockVisibility({ embedded = false }: { embedded?: b
         <p className="text-xs text-slate-500 mt-0.5 max-w-3xl">{t('f2.description')}</p></div></div>
       <div className="flex items-center gap-2 flex-wrap">
         {management && <Link className="text-sm text-blue-700 underline rounded-lg focus:ring-2 focus:ring-blue-500" to="/dashboard/inventory/transfers">{t('transfer.title')}</Link>}
+        {management && (
+          <span title={t('f2.exportExcelHint')}>
+            <ActionButton
+              variant="secondary"
+              disabled={exporting}
+              onClick={() => void handleExport()}
+              icon={<FileDown className="w-3.5 h-3.5" />}
+            >
+              {exporting ? t('f2.exportingExcel') : t('f2.exportExcel')}
+            </ActionButton>
+          </span>
+        )}
         {management && <ActionButton variant="primary" onClick={() => setAdjustModal({ open: true })} icon={<SlidersHorizontal className="w-3.5 h-3.5" />}>{t('f2.adjustStock')}</ActionButton>}
         <ActionButton variant="secondary" disabled={refreshing} onClick={refresh} icon={<RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />}>{t('f2.refresh')}</ActionButton>
       </div>
     </header>}
+
+    {exportError && (
+      <div role="alert" className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+          <span>{exportError}</span>
+        </div>
+        <button type="button" aria-label={t('f2.close')} onClick={() => setExportError(null)} className="p-1 text-slate-400 hover:text-slate-600">
+          <X className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    )}
+
+    {statusRefreshWarning && (
+      <div role="alert" className="p-3.5 rounded-2xl border border-amber-300 bg-amber-50 text-amber-900 text-xs flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+          <span>{statusRefreshWarning}</span>
+        </div>
+        <button type="button" aria-label={t('f2.close')} onClick={() => setStatusRefreshWarning(null)} className="p-1 text-amber-700 hover:text-amber-900">
+          <X className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    )}
 
     {management && (adjustState.phase === 'uncertain' || adjustState.phase === 'pending') && (
       <div role="alert" className="p-4 rounded-2xl border border-amber-300 bg-amber-50 text-amber-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -172,7 +237,7 @@ export default function RealStockVisibility({ embedded = false }: { embedded?: b
     </section>
 
     <section className={panel} aria-labelledby="bins-title">
-      <div className="stock-section-heading"><MapPin aria-hidden="true" className="stock-section-icon text-blue-600 bg-blue-50 border-blue-200" /><div><h2 id="bins-title" className="font-bold text-sm text-slate-900">{t('f2.binContext')}</h2><p className="text-xs text-slate-500 mt-1">{t('f2.binDescription')}</p></div></div>
+      <div className="stock-section-heading"><MapPin aria-hidden="true" className="stock-section-icon text-blue-600 bg-blue-50 border-blue-200" /><div><h2 id="bins-title" className="font-bold text-sm text-slate-900">{t('f2.binContext')}</h2><p className="text-xs text-slate-500 mt-1">{t('f2.binDescription')}</p>{management && <p className="text-[11px] text-slate-500 mt-1">{t('f2.exportExcelHint')}</p>}</div></div>
       {!management ? <p>{t('f2.managementOnly')}</p> : <>
         <div className="stock-filter-band flex flex-wrap gap-3">
           <label className="text-xs font-medium text-slate-600 max-w-full">{t('f2.warehouse')}<select className={`${control} block mt-1`} disabled={!warehouses.isSuccess || !zones.isSuccess} value={warehouseId} onChange={e => { setWarehouseId(e.target.value); setZoneId(''); }}>
@@ -208,25 +273,47 @@ export default function RealStockVisibility({ embedded = false }: { embedded?: b
               // Index is only a rendering key: the contract has no inventory-row ID.
               const product = products.isSuccess ? products.data.find(p => p.id === row.productId) : undefined;
               const knownStatus = ['Available', 'Reserved', 'QCHold', 'Damaged', 'Expired'].includes(row.status);
+              const isRowReserved = normalizeInventoryStatus(row.status) === InventoryStatus.Reserved;
               return <tr key={index}><td className="font-mono">{row.sku || row.productId}</td><td>{row.productName || missing}</td><td className="text-right font-mono tabular-nums">{number(row.quantity)} {product?.unit}</td>
                 <td><StatusBadge showDot variant={row.status === 'Available' ? 'green' : row.status === 'Reserved' ? 'blue' : row.status === 'QCHold' ? 'amber' : row.status === 'Damaged' ? 'red' : 'gray'} label={knownStatus ? t(`f2.statuses.${row.status}`) : row.status || missing} /></td><td>{row.lotNumber || '—'}</td>
                 <td>{row.expirationDate === 'Không có hạn dùng' || !row.expirationDate ? t('f2.noExpiry') : row.expirationDate}</td>
                 <td>{product ? product.barcode || missing : t('f2.metadataUnavailable')}</td><td className="text-right font-mono tabular-nums">{product ? product.weight === 0 ? missing : number(product.weight) : t('f2.metadataUnavailable')}</td>
                 <td className="text-right whitespace-nowrap">
-                  <button
-                    type="button"
-                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:border-blue-200 hover:text-blue-700"
-                    title={t('f2.adjust')}
-                    onClick={() => setAdjustModal({
-                      open: true,
-                      binId,
-                      productId: row.productId,
-                      lotNumber: row.lotNumber || '',
-                    })}
-                  >
-                    <SlidersHorizontal aria-hidden="true" className="w-3.5 h-3.5" />
-                    <span>{t('f2.adjust')}</span>
-                  </button>
+                  <div className="inline-flex items-center justify-end gap-1.5">
+                    <button
+                      type="button"
+                      disabled={isRowReserved}
+                      className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:border-blue-200 hover:text-blue-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                      title={isRowReserved ? t('f2.reservedNotice') : t('f2.changeStatus')}
+                      onClick={() => setStatusModal({
+                        open: true,
+                        binId,
+                        binCode: detail.data?.code || selectedBin?.code || binId,
+                        productId: row.productId,
+                        productName: row.productName || (product?.name ?? ''),
+                        sku: row.sku || (product?.sku ?? ''),
+                        lotNumber: row.lotNumber || '',
+                        currentStatus: row.status,
+                      })}
+                    >
+                      <ArrowRightLeft aria-hidden="true" className="w-3.5 h-3.5" />
+                      <span>{t('f2.changeStatus')}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:border-blue-200 hover:text-blue-700"
+                      title={t('f2.adjust')}
+                      onClick={() => setAdjustModal({
+                        open: true,
+                        binId,
+                        productId: row.productId,
+                        lotNumber: row.lotNumber || '',
+                      })}
+                    >
+                      <SlidersHorizontal aria-hidden="true" className="w-3.5 h-3.5" />
+                      <span>{t('f2.adjust')}</span>
+                    </button>
+                  </div>
                 </td></tr>;
             })}
           </ReadTable> : <SharedStateView type="empty" title={t('f2.contentsEmpty')} subtitle={t('f2.emptyHint')} />}
@@ -237,16 +324,33 @@ export default function RealStockVisibility({ embedded = false }: { embedded?: b
     </dialog>}
 
     {management && (
-      <StockAdjustmentModal
-        isOpen={adjustModal.open}
-        onClose={() => setAdjustModal({ open: false })}
-        onSuccess={refresh}
-        initialBinId={adjustModal.binId}
-        initialProductId={adjustModal.productId}
-        initialLotNumber={adjustModal.lotNumber}
-        bins={bins.isSuccess ? bins.data : []}
-        products={products.isSuccess ? products.data : []}
-      />
+      <>
+        <StockAdjustmentModal
+          isOpen={adjustModal.open}
+          onClose={() => setAdjustModal({ open: false })}
+          onSuccess={refresh}
+          initialBinId={adjustModal.binId}
+          initialProductId={adjustModal.productId}
+          initialLotNumber={adjustModal.lotNumber}
+          bins={bins.isSuccess ? bins.data : []}
+          products={products.isSuccess ? products.data : []}
+        />
+        {statusModal && (
+          <StockStatusModal
+            isOpen={statusModal.open}
+            onClose={() => setStatusModal(null)}
+            onSuccess={refresh}
+            onRefreshWarning={msg => setStatusRefreshWarning(msg)}
+            binId={statusModal.binId}
+            binCode={statusModal.binCode}
+            productId={statusModal.productId}
+            productName={statusModal.productName}
+            sku={statusModal.sku}
+            lotNumber={statusModal.lotNumber}
+            currentStatus={statusModal.currentStatus}
+          />
+        )}
+      </>
     )}
   </section>;
 }

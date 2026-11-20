@@ -1873,9 +1873,27 @@
     "cancel": "Cancel",
     "submitting": "Processing…",
     "confirmAdjust": "Confirm Adjustment",
+    "exportExcel": "Export Bin Capacity Excel",
+    "exportingExcel": "Exporting Excel...",
+    "exportExcelHint": "Exports active bin capacity and occupancy summary (Bin Code, Zone, Max Capacity, Current Occupancy, Utilization %); not a SKU/Lot stock ledger.",
+    "changeStatus": "Change Status",
+    "changeStatusTitle": "Change Stock Status",
+    "currentStatus": "Current status",
+    "targetStatus": "Target status",
+    "reservedNotice": "Cannot manually switch to Reserved status. Reservations are exclusively managed by outbound allocation.",
+    "reasonQcInspection": "QC inspection hold (QC_INSPECTION)",
+    "reasonDefectFound": "Defect discovered (DEFECT_FOUND)",
+    "reasonExpiryApproach": "Nearing expiration (EXPIRY_APPROACH)",
+    "reasonQcPassed": "QC inspection passed (QC_PASSED)",
+    "confirmChange": "Confirm Status Change",
+    "statusRefreshWarning": "Stock status was updated, but refreshing inventory reads failed — please refresh the page.",
     "errors": {
       "adjustFailed": "Inventory adjustment failed.",
-      "invalidAdjustPayload": "Invalid stock adjustment payload."
+      "invalidAdjustPayload": "Invalid stock adjustment payload.",
+      "statusFailed": "Stock status change failed.",
+      "invalidStatusPayload": "Invalid status transition. Target status must differ from current status and cannot be Reserved.",
+      "reservedLocked": "This stock row is currently Reserved for outbound allocation and cannot be manually status-changed.",
+      "exportFailed": "Bin capacity Excel report export failed."
     },
     "adjustSafety": {
       "bannerTitle": "Unresolved stock adjustment requires reconciliation",
