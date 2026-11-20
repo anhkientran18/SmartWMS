@@ -1,14 +1,14 @@
 # SmartWMS
 
-SmartWMS là monorepo quản lý kho: ASP.NET Core/.NET 10, EF Core/SQL Server và React/TypeScript/Vite. Backend thực thi quyền và nghiệp vụ tồn kho; Gemini cung cấp một số chức năng hỗ trợ.
+SmartWMS là monorepo quản lý kho: ASP.NET Core/.NET 10, EF Core/SQL Server và React/TypeScript/Vite. Backend thực thi quyền (3-role RBAC: `Admin`, `WarehouseManager`, `Staff`) và nghiệp vụ tồn kho lõi; Google Gemini cung cấp 7 tính năng hỗ trợ (Advisory AI) hoàn toàn không tự ghi tồn kho.
 
-Tài liệu này áp dụng cho source B1a `f74b00e2fdf2d9c06c59334e7b1038fa9c7766bc`, kế thừa main `ad8b620038b5beab5f6225fb5a01460bf2414b97`. Source implementation khác với runtime đã nghiệm thu. Xem [project context](docs/PROJECT_CONTEXT.md) để phân biệt main, PR #7 và original enhancements.
+Baseline kiểm chứng tự động hiện hành trên `main` (sau hợp nhất PR #7–#15): Release backend build (`0` warnings/errors), frontend TypeScript `typecheck` (`0` errors), frontend production `build`, và **384/384 tests PASS trên toàn bộ 9 suites** (`npm --prefix frontend run test:sprint`). Xem [Demo & E2E Runbook](docs/DEMO_AND_E2E_RUNBOOK.md) và bộ [Postman Collection](docs/postman/SmartWMS.postman_collection.json) để chạy kịch bản vận hành và kiểm chứng E2E local.
 
 ## Prerequisites
 
-- Git, **.NET SDK 10**, **Node.js 22 từ 22.12** và npm; PowerShell cho các lệnh dưới.
-- SQL Server và database development riêng đã có schema/accounts phù hợp khi chạy API. Chưa chốt phiên bản SQL engine hoặc chứng nhận cấu hình máy người đọc.
-- Repo chưa có `global.json`: kiểm tra `dotnet --version` chọn SDK 10 trước restore/build. Nếu máy có SDK mới hơn, chọn SDK 10 trong môi trường local trước; không tự thêm SDK selector vào patch tài liệu.
+- Git, **.NET SDK 10+** (`net10.0`), **Node.js 22+** và npm; PowerShell cho các lệnh dưới.
+- SQL Server / LocalDB và database development cô lập cho lần chạy API cục bộ.
+- Có thể chạy nhanh bộ kiểm tra local bằng `powershell -ExecutionPolicy Bypass -File .\scripts\verify-local.ps1`.
 
 ## Install and build
 
@@ -68,6 +68,8 @@ Chỉ copy khi `.env.local` chưa tồn tại. Dùng `VITE_DATA_MODE=api`, `VITE
 
 | Đọc khi cần | Tài liệu chính |
 | --- | --- |
+| Hướng dẫn chạy Demo 3 vai trò & E2E local | [DEMO_AND_E2E_RUNBOOK](docs/DEMO_AND_E2E_RUNBOOK.md) |
+| Bộ Postman Collection & Environment mẫu | [SmartWMS.postman_collection.json](docs/postman/SmartWMS.postman_collection.json) ([local env](docs/postman/SmartWMS.local.postman_environment.json)) |
 | Quy tắc Codex/Git/data safety | [AGENTS](AGENTS.md) |
 | Kiến trúc, source snapshot, scope và unknowns | [PROJECT_CONTEXT](docs/PROJECT_CONTEXT.md) |
 | Vòng làm việc một developer | [DEVELOPMENT_WORKFLOW](docs/DEVELOPMENT_WORKFLOW.md) |
@@ -75,4 +77,4 @@ Chỉ copy khi `.env.local` chưa tồn tại. Dùng `VITE_DATA_MODE=api`, `VITE
 | Inventory rules, lifecycle, retry và wire conventions | [API_CONTRACT](docs/API_CONTRACT.md) |
 | Catalogue endpoints/DTOs, RBAC và FE refresh/provider handling | [FE_API_HANDOFF](docs/FE_API_HANDOFF.md) |
 
-Không dùng báo cáo phase cũ làm hướng dẫn hiện hành. Serial/LPN/Wave, stored BOM, cross-warehouse transfer, mobile/PDA thật và post-pick reversal chưa được chứng nhận end-to-end. Production readiness, deployed schema và live providers vẫn cần nghiệm thu riêng. Các lệnh trên là hướng dẫn, **không được chạy trong lần consolidation tài liệu này**.
+Không dùng báo cáo phase cũ làm hướng dẫn hiện hành. Serial/LPN/Wave, stored BOM, cross-warehouse transfer, mobile/PDA thật và post-pick reversal chưa thuộc phạm vi nghiệm thu end-to-end. Production readiness, deployed schema và live providers cần nghiệm thu riêng trên môi trường đích.
