@@ -1776,6 +1776,50 @@
     "email": {
       "to": "GỬI TỚI:",
       "subject": "TIÊU ĐỀ:"
+    },
+    "executive": {
+      "title": "Tổng quan Điều hành & Phân tích AI",
+      "subtitle": "Dữ liệu điều hành chuẩn xác và phân tích hiệu suất kho bãi.",
+      "aiAnalysisTitle": "Đánh giá Chiến lược AI",
+      "aiGenerated": "Tạo bởi AI",
+      "aiOfflineBadge": "Chế độ Chuẩn",
+      "aiUnavailableNotice": "Phân tích AI hiện chưa khả dụng. Dữ liệu vận hành được cập nhật trực tiếp từ cơ sở dữ liệu kho.",
+      "inboundPipeline": "Tiến độ Phiếu Nhập Kho",
+      "outboundPipeline": "Tiến độ Lệnh Xuất Kho",
+      "recentTransactions": "Giao Dịch Sổ Kho Gần Đây",
+      "totalCount": "Tổng: {{count}}",
+      "inboundStatuses": {
+        "Completed": "Hoàn tất",
+        "New": "Mới",
+        "Processing": "Đang xử lý",
+        "Received": "Đã nhận",
+        "Confirmed": "Đã xác nhận",
+        "Cancelled": "Đã hủy"
+      },
+      "outboundStatuses": {
+        "Allocated": "Đã phân bổ",
+        "Packed": "Đã đóng gói",
+        "Pending": "Chờ xử lý",
+        "Picked": "Đã lấy hàng",
+        "Shipped": "Đã xuất hàng",
+        "Completed": "Hoàn tất",
+        "Cancelled": "Đã hủy"
+      },
+      "transactionTypes": {
+        "SHIP_CONFIRM": "Xác nhận xuất",
+        "OUTBOUND": "Xuất kho",
+        "RESERVATION": "Giữ hàng",
+        "INBOUND": "Nhập kho",
+        "TRANSFER": "Điều chuyển",
+        "ADJUSTMENT": "Điều chỉnh",
+        "RESERVATION_RELEASE": "Giải phóng giữ hàng",
+        "STATUS_CHANGE": "Đổi trạng thái",
+        "KITTING_ISSUE": "Xuất đóng gói kit",
+        "KITTING_RECEIPT": "Nhập thành phẩm kit",
+        "FEFO_AUTO_LOCK": "Khóa tự động FEFO",
+        "WAVE_OUTBOUND": "Xuất theo đợt",
+        "OUTBOUND_SERIAL": "Xuất theo số seri"
+      }
     }
   },
   "f2": {

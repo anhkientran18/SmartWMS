@@ -194,7 +194,7 @@ var authorization = app.Services.GetRequiredService<IAuthorizationService>();
 foreach (var endpoint in endpoints)
 {
     var action = endpoint.Metadata.GetMetadata<ControllerActionDescriptor>()!;
-    var isCreate = action.ActionName == "CreateInboundReceipt";
+    var isCreate = action.ActionName is "CreateInboundReceipt" or "Update" or "DeleteInboundReceipt";
     var data = endpoint.Metadata.GetOrderedMetadata<IAuthorizeData>();
     Check(endpoint.Metadata.GetMetadata<IAllowAnonymous>() is null
         && data.Count == (isCreate ? 2 : 1)

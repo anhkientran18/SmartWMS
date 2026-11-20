@@ -5,7 +5,7 @@ import axios from 'axios';
 import { QueryClient, MutationObserver, QueryObserver, QueryClientProvider } from '@tanstack/react-query';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
-import { outboundApi, outboundOrder, outboundCommand, availableOutboundActions, canExecuteOutbound, validateOutboundCreate } from '../src/services/outbound/outboundApi';
+import { outboundApi, outboundOrder, outboundCommand, availableOutboundActions, canCreateOutbound, canExecuteOutbound, validateOutboundCreate } from '../src/services/outbound/outboundApi';
 import { outboundQueries, outboundMutationOptions, createOutboundMutationOptions } from '../src/services/outbound/outboundQueries';
 import { inventoryQueries } from '../src/services/inventory/inventoryQueries';
 import { httpClient } from '../src/services/api/httpClient';
@@ -72,4 +72,13 @@ test('query identity includes filters and cancellation reaches canonical HTTP',a
 });
 test('reviewed source bin refresh leaves other-bin snapshots valid',async()=>{
  ok(true);const client=cache();client.setQueryData(outboundQueries.detail(order.id).queryKey,order);const source=inventoryQueries.contents(order.binId).queryKey;const other=inventoryQueries.contents(id(99)).queryKey;client.setQueryData(source,0);client.setQueryData(other,0);const mutation=new MutationObserver(client,outboundMutationOptions(client));await mutation.mutate(outboundCommand(order,'pick'));assert.equal(client.getQueryState(source)?.isInvalidated,true);assert.equal(client.getQueryState(other)?.isInvalidated,false);client.clear();
+});
+test('canCreateOutbound restricts order creation to Admin and WarehouseManager while preserving Staff Pick/Pack execution',async()=>{
+ assert.equal(canCreateOutbound('Admin'),true);assert.equal(canCreateOutbound('WarehouseManager'),true);assert.equal(canCreateOutbound('Staff'),false);
+ sessionStore.set(user('Staff'));let calls=0;httpClient.defaults.adapter=async c=>{calls++;return response(c,{isSuccess:true,data:true});};
+ await assert.rejects(outboundApi.create(body),(e:any)=>e.status===403);assert.equal(calls,0);
+ await outboundApi.execute(outboundCommand(order,'pick'));await outboundApi.execute({id:order.id,action:'pack'});assert.equal(calls,2);
+ const client=cache();client.setQueryData(outboundQueries.list({pageNumber:1,pageSize:10}).queryKey,{items:[{...order,items:[]}],pageIndex:1,pageSize:10,totalCount:1,totalPages:1});client.setQueryData(outboundQueries.customers().queryKey,[]);
+ const staffListHtml=renderToStaticMarkup(<QueryClientProvider client={client}><MemoryRouter><RealOutbound/></MemoryRouter></QueryClientProvider>);
+ assert.ok(!staffListHtml.includes('/dashboard/orders/outbound/create'));assert.match(staffListHtml,/SO-PERSISTED/);client.clear();
 });

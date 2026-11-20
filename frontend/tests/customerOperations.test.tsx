@@ -29,11 +29,11 @@ const response = (config: any, data: any, status = 200) => ({
   statusText: String(status),
 });
 
-test('canManageCustomers role guard admits Admin, WarehouseManager, Staff and denies unauthenticated or unknown roles without HTTP calls', async () => {
-  for (const role of ['Admin', 'WarehouseManager', 'Staff']) {
+test('canManageCustomers role guard admits Admin, WarehouseManager and denies Staff, unauthenticated or unknown roles without HTTP calls', async () => {
+  for (const role of ['Admin', 'WarehouseManager']) {
     assert.equal(canManageCustomers(role), true);
   }
-  for (const role of [undefined, '', 'Guest', 'Viewer']) {
+  for (const role of ['Staff', undefined, '', 'Guest', 'Viewer']) {
     assert.equal(canManageCustomers(role), false);
   }
 
@@ -43,24 +43,26 @@ test('canManageCustomers role guard admits Admin, WarehouseManager, Staff and de
     return response(config, { isSuccess: true, data: id(1) });
   };
 
-  sessionStore.set(null);
-  await assert.rejects(
-    () => customerApi.createCustomer({ code: 'CUST-01', name: 'Customer 01' }),
-    (err: any) => err?.status === 403
-  );
-  await assert.rejects(
-    () => customerApi.updateCustomer({ id: id(1), code: 'CUST-01', name: 'Customer 01' }),
-    (err: any) => err?.status === 403
-  );
-  await assert.rejects(
-    () => customerApi.getCustomerById(id(1)),
-    (err: any) => err?.status === 403
-  );
+  for (const session of [null, user('Staff')]) {
+    sessionStore.set(session);
+    await assert.rejects(
+      () => customerApi.createCustomer({ code: 'CUST-01', name: 'Customer 01' }),
+      (err: any) => err?.status === 403
+    );
+    await assert.rejects(
+      () => customerApi.updateCustomer({ id: id(1), code: 'CUST-01', name: 'Customer 01' }),
+      (err: any) => err?.status === 403
+    );
+    await assert.rejects(
+      () => customerApi.getCustomerById(id(1)),
+      (err: any) => err?.status === 403
+    );
+  }
   assert.equal(calls, 0);
 });
 
 test('customerApi.createCustomer sends POST /api/v1/Customers with trimmed payload and zero nameEn keys (G07)', async () => {
-  sessionStore.set(user('Staff'));
+  sessionStore.set(user('Admin'));
   let capturedMethod = '';
   let capturedUrl = '';
   let capturedBody: Record<string, unknown> = {};
@@ -217,6 +219,18 @@ test('RealCreateOutbound renders inline New Customer trigger button in VI and EN
     );
     assert.ok(html.includes(dict.customer.newCustomer));
     assert.ok(html.includes('id="outbound-customer-select"'));
+
+    sessionStore.set(user('Staff'));
+    const staffHtml = renderToStaticMarkup(
+      <QueryClientProvider client={qc}>
+        <MemoryRouter>
+          <RealCreateOutbound />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+    assert.ok(staffHtml.includes(dict.f5.errors.forbidden));
+    assert.ok(!staffHtml.includes(dict.customer.newCustomer));
+    sessionStore.set(user('Admin'));
     qc.clear();
   }
   await i18n.changeLanguage('vi-VN');

@@ -47,10 +47,12 @@ public class ProductsController : ControllerBase
     public async Task<IActionResult> GetPaged([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string? searchKeyword = null)
         => (await _mediator.Send(new GetPaginatedProductsQuery(new ProductPaginatedListQueryRequest { PageIndex = pageNumber, PageSize = pageSize, SearchKeyword = searchKeyword }))).ToActionResult();
 
+    [Authorize(Roles = "Admin,WarehouseManager")]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateProductRequest request)
         => (await _mediator.Send(new CreateProductCommand(request))).ToActionResult();
 
+    [Authorize(Roles = "Admin,WarehouseManager")]
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateProductRequest request)
     {
@@ -58,6 +60,7 @@ public class ProductsController : ControllerBase
         return (await _mediator.Send(new UpdateProductCommand(request))).ToActionResult();
     }
 
+    [Authorize(Roles = "Admin,WarehouseManager")]
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
         => (await _mediator.Send(new DeleteProductCommand(new DeleteProductRequest { Id = id }))).ToActionResult();

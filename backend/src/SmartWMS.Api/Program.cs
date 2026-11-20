@@ -206,7 +206,10 @@ app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseHangfireDashboard("/hangfire");
+if (enableHangfireServer)
+{
+    app.UseHangfireDashboard("/hangfire");
+}
 app.MapControllers();
 app.MapHub<InventoryHub>("/hubs/inventory");
 

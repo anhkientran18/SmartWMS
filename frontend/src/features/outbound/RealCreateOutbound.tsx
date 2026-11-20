@@ -7,9 +7,9 @@ import { sessionStore } from '../auth/session';
 import { canReadBinContext } from '../../services/inventory/inventoryReadApi';
 import { inventoryQueries } from '../../services/inventory/inventoryQueries';
 import { createSubmissionGate } from '../../services/inventory/replenishmentMutation';
-import { CreateOutbound, canExecuteOutbound, validateOutboundCreate } from '../../services/outbound/outboundApi';
+import { CreateOutbound, canCreateOutbound, validateOutboundCreate } from '../../services/outbound/outboundApi';
 import { createOutboundMutationOptions, outboundKey, outboundQueries } from '../../services/outbound/outboundQueries';
-import { customerApi, CustomerRecord } from '../../services/customers/customerApi';
+import { canManageCustomers, customerApi, CustomerRecord } from '../../services/customers/customerApi';
 import CustomerModal from '../customers/CustomerModal';
 import { OutboundError, OutboundDetail, OutboundStatus, outboundButton as button, outboundInput as input } from './RealOutbound';
 
@@ -17,9 +17,9 @@ const createButton = `${button} !bg-emerald-600 !border-emerald-600 !text-white 
 
 export default function RealCreateOutbound() {
   const { t } = useTranslation(); const navigate = useNavigate(); const client = useQueryClient(); const session = useSyncExternalStore(sessionStore.subscribe, sessionStore.get, sessionStore.get);
-  const context = canReadBinContext(session?.role); const allowed = canExecuteOutbound(session?.role);
-  const products = useQuery(inventoryQueries.products()); const customers = useQuery(outboundQueries.customers()); const bins = useQuery({ ...inventoryQueries.bins(), enabled: context });
-  const zones = useQuery({ ...inventoryQueries.zones(), enabled: context }); const warehouses = useQuery({ ...inventoryQueries.warehouses(), enabled: context });
+  const context = canReadBinContext(session?.role); const allowed = canCreateOutbound(session?.role); const canEditCustomers = canManageCustomers(session?.role);
+  const products = useQuery({ ...inventoryQueries.products(), enabled: allowed }); const customers = useQuery({ ...outboundQueries.customers(), enabled: allowed }); const bins = useQuery({ ...inventoryQueries.bins(), enabled: context && allowed });
+  const zones = useQuery({ ...inventoryQueries.zones(), enabled: context && allowed }); const warehouses = useQuery({ ...inventoryQueries.warehouses(), enabled: context && allowed });
   const mutation = useMutation(createOutboundMutationOptions(client)); const writing = useIsMutating({ mutationKey: outboundKey }) > 0; const gate = useRef(createSubmissionGate());
   const [body, setBody] = useState<CreateOutbound>({ orderNumber: '', customerId: null, binId: '', expectedShipDate: `${new Date().toISOString().slice(0, 10)}T00:00:00Z`, priority: 'Normal', notes: '', items: [{ productId: '', requestedQuantity: 1 }] });
   const [created, setCreated] = useState(''); const [failure, setFailure] = useState<unknown>(null); const [uncertain, setUncertain] = useState(false);
@@ -60,7 +60,7 @@ export default function RealCreateOutbound() {
         <div className="text-xs text-slate-600 font-semibold space-y-2">
           <div className="flex items-center justify-between gap-2">
             <label htmlFor="outbound-customer-select" className="block font-semibold">{t('f5.customer')}</label>
-            <div className="flex items-center gap-2">
+            {canEditCustomers && <div className="flex items-center gap-2">
               {body.customerId && (
                 <button
                   type="button"
@@ -80,7 +80,7 @@ export default function RealCreateOutbound() {
                 <Plus className="w-3.5 h-3.5" />
                 <span>{t('customer.newCustomer')}</span>
               </button>
-            </div>
+            </div>}
           </div>
           <select id="outbound-customer-select" className={input} disabled={customers.isPending || customers.isError} value={body.customerId ?? ''} onChange={e => set('customerId', e.target.value || null)}><option value="">{t('f5.noCustomer')}</option>{customers.data?.map(c => <option key={c.id} value={c.id}>{c.code} · {c.name}</option>)}</select>
         </div>
