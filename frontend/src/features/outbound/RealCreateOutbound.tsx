@@ -2,13 +2,15 @@ import { useRef, useState, useSyncExternalStore } from 'react';
 import { useIsMutating, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, CheckCircle2, Plus, Trash2, Truck, Package, MapPin } from 'lucide-react';
+import { ChevronLeft, CheckCircle2, Edit2, Plus, Trash2, Truck, Package, MapPin } from 'lucide-react';
 import { sessionStore } from '../auth/session';
 import { canReadBinContext } from '../../services/inventory/inventoryReadApi';
 import { inventoryQueries } from '../../services/inventory/inventoryQueries';
 import { createSubmissionGate } from '../../services/inventory/replenishmentMutation';
 import { CreateOutbound, canExecuteOutbound, validateOutboundCreate } from '../../services/outbound/outboundApi';
 import { createOutboundMutationOptions, outboundKey, outboundQueries } from '../../services/outbound/outboundQueries';
+import { customerApi, CustomerRecord } from '../../services/customers/customerApi';
+import CustomerModal from '../customers/CustomerModal';
 import { OutboundError, OutboundDetail, OutboundStatus, outboundButton as button, outboundInput as input } from './RealOutbound';
 
 const createButton = `${button} !bg-emerald-600 !border-emerald-600 !text-white hover:!bg-emerald-700`;
@@ -21,6 +23,8 @@ export default function RealCreateOutbound() {
   const mutation = useMutation(createOutboundMutationOptions(client)); const writing = useIsMutating({ mutationKey: outboundKey }) > 0; const gate = useRef(createSubmissionGate());
   const [body, setBody] = useState<CreateOutbound>({ orderNumber: '', customerId: null, binId: '', expectedShipDate: `${new Date().toISOString().slice(0, 10)}T00:00:00Z`, priority: 'Normal', notes: '', items: [{ productId: '', requestedQuantity: 1 }] });
   const [created, setCreated] = useState(''); const [failure, setFailure] = useState<unknown>(null); const [uncertain, setUncertain] = useState(false);
+  const [customerModalOpen, setCustomerModalOpen] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState<CustomerRecord | null>(null);
   const choices = products.isError ? [] : products.data?.filter(p => [0, 1].includes(p.trackingMode)) ?? [];
   let valid = false; try { validateOutboundCreate(body); valid = body.items.every(l => choices.some(p => p.id === l.productId)); } catch { /* Draft remains visibly incomplete. */ }
   const set = <K extends keyof CreateOutbound>(key: K, value: CreateOutbound[K]) => setBody(current => ({ ...current, [key]: value }));
@@ -29,6 +33,21 @@ export default function RealCreateOutbound() {
     try { const id = await mutation.mutateAsync(body); setCreated(id); }
     catch (error) { setFailure(error); const status = (error as { status?: number }).status; if (status !== 400 && status !== 403 && status !== 401) setUncertain(true); }
   });
+  const openCreateCustomer = () => {
+    setEditingCustomer(null);
+    setCustomerModalOpen(true);
+  };
+  const openEditCustomer = async () => {
+    if (!body.customerId) return;
+    const selected = customers.data?.find(c => c.id === body.customerId);
+    try {
+      const detail = await customerApi.getCustomerById(body.customerId);
+      setEditingCustomer(detail);
+    } catch {
+      if (selected) setEditingCustomer({ id: selected.id, code: selected.code, name: selected.name });
+    }
+    setCustomerModalOpen(true);
+  };
   const selectedBin = bins.data?.find(b => b.id === body.binId); const zone = zones.data?.find(z => z.id === selectedBin?.zoneId); const warehouse = warehouses.data?.find(w => w.id === zone?.warehouseId);
   return <main className="bg-slate-50 min-h-screen min-w-0">
     <header className="sticky top-0 z-20 bg-white border-b border-slate-200 p-4 sm:px-6 flex items-center justify-between gap-4 flex-wrap"><div className="flex gap-3 items-center min-w-0 flex-wrap"><button className={button} disabled={writing} onClick={() => navigate('/dashboard/orders?flow=outbound')}><ChevronLeft className="w-4 h-4" />{t('outboundForm:backToList')}</button><div><h1 className="text-xl font-bold text-slate-900">{t('f5.create')}</h1><p className="text-xs text-slate-500 mt-1">{t('f5.createScope')}</p></div>{body.orderNumber && <span className="max-w-full break-all font-mono text-xs px-2 py-1 rounded border border-slate-200 bg-slate-50 text-slate-600">{body.orderNumber}</span>}</div><div className="flex flex-wrap gap-2"><button type="button" className={button} disabled={writing} onClick={() => navigate('/dashboard/orders?flow=outbound')}>{t('f5.back')}</button><button form="outbound-create-form" type="submit" className={createButton} disabled={!allowed || !valid || writing || !!created || uncertain}><CheckCircle2 className="w-4 h-4" />{t(writing ? 'f5.processing' : 'f5.create')}</button></div></header>
@@ -38,7 +57,33 @@ export default function RealCreateOutbound() {
     <form id="outbound-create-form" onSubmit={e => { e.preventDefault(); void submit(); }}><fieldset disabled={writing || !!created || uncertain || !allowed} className="space-y-5">
       <section className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden"><div className="p-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3"><h2 className="text-sm font-bold flex items-center gap-2"><Truck className="w-4 h-4 text-emerald-600" />{t('f5.orderInfo')}</h2><div className="flex flex-wrap items-center gap-2 text-xs text-slate-500"><span>{t('f5.initialStatus')}</span><OutboundStatus value="Pending" /></div></div><div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 p-5">
         <label className="text-xs text-slate-600 font-semibold space-y-2"><span>{t('f5.reference')} *</span><input required maxLength={50} className={input} value={body.orderNumber} onChange={e => set('orderNumber', e.target.value)} /></label>
-        <label className="text-xs text-slate-600 font-semibold space-y-2"><span>{t('f5.customer')}</span><select className={input} disabled={customers.isPending || customers.isError} value={body.customerId ?? ''} onChange={e => set('customerId', e.target.value || null)}><option value="">{t('f5.noCustomer')}</option>{customers.data?.map(c => <option key={c.id} value={c.id}>{c.code} · {c.name}</option>)}</select></label>
+        <div className="text-xs text-slate-600 font-semibold space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <label htmlFor="outbound-customer-select" className="block font-semibold">{t('f5.customer')}</label>
+            <div className="flex items-center gap-2">
+              {body.customerId && (
+                <button
+                  type="button"
+                  aria-label={t('common.buttons.edit')}
+                  onClick={() => void openEditCustomer()}
+                  className="text-xs font-semibold text-slate-600 hover:text-blue-600 inline-flex items-center gap-1 cursor-pointer transition-colors"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                  <span>{t('common.buttons.edit')}</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={openCreateCustomer}
+                className="text-xs font-semibold text-blue-600 hover:text-blue-800 inline-flex items-center gap-1 cursor-pointer transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>{t('customer.newCustomer')}</span>
+              </button>
+            </div>
+          </div>
+          <select id="outbound-customer-select" className={input} disabled={customers.isPending || customers.isError} value={body.customerId ?? ''} onChange={e => set('customerId', e.target.value || null)}><option value="">{t('f5.noCustomer')}</option>{customers.data?.map(c => <option key={c.id} value={c.id}>{c.code} · {c.name}</option>)}</select>
+        </div>
         <label className="text-xs text-slate-600 font-semibold space-y-2"><span>{t('f5.expectedDate')} *</span><input required type="date" min={new Date().toISOString().slice(0, 10)} className={input} value={body.expectedShipDate.slice(0, 10)} onChange={e => set('expectedShipDate', e.target.value ? `${e.target.value}T00:00:00Z` : '')} /></label>
         <label className="text-xs text-slate-600 font-semibold space-y-2"><span>{t('f5.source')} *</span>{context && !bins.isError ? <select className={input} required disabled={bins.isPending} value={body.binId} onChange={e => set('binId', e.target.value)}><option value="">{t('f5.select')}</option>{bins.data?.map(b => <option key={b.id} value={b.id}>{b.code}</option>)}</select> : <input className={`${input} font-mono`} required value={body.binId} onChange={e => set('binId', e.target.value.trim())} />}</label>
         <label className="text-xs text-slate-600 font-semibold space-y-2"><span>{t('f5.priority')}</span><select className={input} value={body.priority} onChange={e => set('priority', e.target.value)}>{['Normal', 'High', 'Urgent'].map(p => <option key={p} value={p}>{t(`f5.priorities.${p}`)}</option>)}</select></label>
@@ -53,5 +98,19 @@ export default function RealCreateOutbound() {
       })}</tbody></table></div>
       <div className="p-4 bg-slate-50 flex flex-wrap justify-between gap-3 text-xs"><p className="text-slate-500">{t('f5.availabilityMeaning')}</p><p>{t('f5.totalRequested')}: <strong className="font-mono text-emerald-700">{body.items.every(l => Number.isInteger(l.requestedQuantity) && l.requestedQuantity > 0) ? body.items.reduce((n, l) => n + l.requestedQuantity, 0) : '—'}</strong></p></div></section>
     </fieldset></form>{created && <OutboundDetail id={created} close={() => navigate('/dashboard/orders?flow=outbound')} />}
+    <CustomerModal
+      isOpen={customerModalOpen}
+      onClose={() => {
+        setCustomerModalOpen(false);
+        setEditingCustomer(null);
+      }}
+      editCustomer={editingCustomer}
+      onSuccess={async (newId) => {
+        await client.invalidateQueries({ queryKey: outboundQueries.customers().queryKey });
+        if (newId) set('customerId', newId);
+        setCustomerModalOpen(false);
+        setEditingCustomer(null);
+      }}
+    />
   </div></main>;
 }

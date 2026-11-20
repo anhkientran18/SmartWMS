@@ -93,7 +93,14 @@
         "timeout": "Yêu cầu tìm kiếm ngữ nghĩa đã quá thời gian chờ. Vui lòng thử lại.",
         "general": "Tìm kiếm ngữ nghĩa thất bại. Tìm kiếm sản phẩm tiêu chuẩn vẫn hoạt động bình thường."
       }
-    }
+    },
+    "addProduct": "+ Thêm sản phẩm",
+    "createProductTitle": "Thêm sản phẩm mới",
+    "editProductTitle": "Chỉnh sửa sản phẩm",
+    "createProductSubtitle": "Khai báo mã SKU, tên sản phẩm, đơn vị tính và chế độ theo dõi.",
+    "createProductBtn": "Tạo sản phẩm",
+    "saveProductFailed": "Không thể lưu thông tin sản phẩm. Vui lòng kiểm tra lại dữ liệu.",
+    "trackingModeChangeWarning": "Lưu ý: Máy chủ sẽ từ chối đổi Chế độ theo dõi (409 Conflict) nếu sản phẩm đã có serial, tồn kho hoặc chứng từ/workflow đang mở."
   },
   "f7": {
     "nav": "Lắp ráp Kit",
@@ -320,7 +327,9 @@
       "full": "Đầy",
       "online": "Bản xem thử demo",
       "live": "Trực tuyến"
-    }
+    },
+    "cancel": "Hủy",
+    "saveChanges": "Lưu thay đổi"
   },
   "header": {
     "searchPlaceholder": "Hỏi Trợ Lý AI: 'Tìm các lô cận bảo quản tại Zone B'...",
@@ -2190,5 +2199,18 @@
       "quantity": "Nhập số nguyên dương trong giới hạn hỗ trợ.",
       "reason": "Nhập lý do từ 1–500 ký tự."
     }
+  },
+  "customer": {
+    "newCustomer": "+ Khách hàng mới",
+    "createTitle": "Thêm khách hàng mới",
+    "editTitle": "Chỉnh sửa khách hàng",
+    "createSubtitle": "Khai báo thông tin đối tác khách hàng cho đơn xuất kho.",
+    "code": "Mã khách hàng",
+    "name": "Tên khách hàng",
+    "email": "Email",
+    "phone": "Số điện thoại",
+    "deliveryAddress": "Địa chỉ giao hàng",
+    "createBtn": "Tạo khách hàng",
+    "saveFailed": "Không thể lưu thông tin khách hàng. Vui lòng kiểm tra lại dữ liệu."
   }
 }
