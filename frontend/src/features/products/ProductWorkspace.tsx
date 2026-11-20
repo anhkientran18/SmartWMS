@@ -1,7 +1,7 @@
 import { ReactNode, useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, Barcode, Eye, Layers, Package, QrCode, RefreshCw, Search, Sparkles, X } from 'lucide-react';
+import { AlertTriangle, Barcode, Edit2, Eye, Layers, Package, Plus, QrCode, RefreshCw, Search, Sparkles, X } from 'lucide-react';
 import ActionButton from '../../components/common/ActionButton';
 import PaginationFooter from '../../components/common/PaginationFooter';
 import SharedStateView from '../../components/common/SharedStateView';
@@ -10,6 +10,8 @@ import { ApiError } from '../../services/api/apiTypes';
 import { canReadProducts, ProductDetail, ProductRead, BarcodeResolution } from '../../services/inventory/inventoryReadApi';
 import { inventoryQueries } from '../../services/inventory/inventoryQueries';
 import { createBarcodeLookup } from '../../services/inventory/productLookup';
+import { canManageProducts } from '../../services/products/productMutationApi';
+import ProductFormModal from './ProductFormModal';
 import SemanticProductSearchModal from './SemanticProductSearchModal';
 
 const inputClass = 'w-full min-w-0 border border-slate-200 bg-white rounded-xl py-2.5 px-3 text-xs';
@@ -86,8 +88,10 @@ function QrPanel({ product, initiallyRequested }: { product: ProductDetail; init
     <ProductLabelPreview product={product}>{!requested ? <p className="text-xs text-slate-500 text-center max-w-56">{t('f8.qrHint')}</p> : qr.isFetching ? <p role="status" className="text-xs text-slate-500">{t('f8.loading')}</p> : qr.isError ? <Failure error={qr.error as unknown as ApiError} /> : qr.data && <img src={qr.data} alt={t('f8.qrAlt', { sku: product.sku })} className="w-44 h-44 max-w-full object-contain" />}</ProductLabelPreview>
   </section>;
 }
-function ProductDialog({ id, showQr, onClose }: { id: string; showQr: boolean; onClose: () => void }) {
+function ProductDialog({ id, showQr, onClose, onEdit }: { id: string; showQr: boolean; onClose: () => void; onEdit?: (product: ProductDetail) => void }) {
   const { t } = useTranslation(); const dialog = useRef<HTMLDialogElement>(null);
+  const session = useSyncExternalStore(sessionStore.subscribe, sessionStore.get, sessionStore.get);
+  const canManage = canManageProducts(session?.role);
   const detail = useQuery(inventoryQueries.product(id));
   // Removal closes the native dialog. A StrictMode cleanup close would queue
   // onClose after the second setup and dismiss the newly opened detail.
@@ -96,7 +100,7 @@ function ProductDialog({ id, showQr, onClose }: { id: string; showQr: boolean; o
     <div className="flex flex-col max-h-[90dvh]"><header className="bg-white px-5 py-4 flex gap-3 items-center shrink-0 border-b border-slate-200"><span className="rounded-xl border border-blue-100 bg-blue-50 p-2.5 text-blue-600"><Package className="w-5 h-5" /></span><h2 id="product-detail-title" className="text-base font-bold flex-1">{t('f8.detail')}</h2><button type="button" onClick={onClose} aria-label={t('f8.close')} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"><X className="w-4 h-4" /></button></header>
       <div className="p-5 sm:p-6 overflow-y-auto min-h-0 space-y-5">
         {detail.isPending ? <div role="status"><SharedStateView type="loading" title={t('f8.loading')} /></div> : detail.isError ? <Failure error={detail.error as unknown as ApiError} retry={() => void detail.refetch()} /> : <>
-          <div className="flex justify-between gap-3 items-start"><div className="min-w-0"><p className="font-mono text-xs text-blue-700 break-all">{detail.data.sku}</p><h3 className="text-base font-bold text-slate-900 mt-1 break-words">{detail.data.name}</h3></div><ActionButton variant="secondary" size="sm" disabled={detail.isFetching} aria-label={t('f8.refreshDetail')} icon={<RefreshCw className="w-3.5 h-3.5" />} onClick={() => void detail.refetch()} /></div>
+          <div className="flex justify-between gap-3 items-start"><div className="min-w-0"><p className="font-mono text-xs text-blue-700 break-all">{detail.data.sku}</p><h3 className="text-base font-bold text-slate-900 mt-1 break-words">{detail.data.name}</h3></div><div className="flex items-center gap-1.5">{canManage && onEdit && <ActionButton variant="secondary" size="sm" icon={<Edit2 className="w-3.5 h-3.5" />} onClick={() => onEdit(detail.data)}>{t('common.buttons.edit')}</ActionButton>}<ActionButton variant="secondary" size="sm" disabled={detail.isFetching} aria-label={t('f8.refreshDetail')} icon={<RefreshCw className="w-3.5 h-3.5" />} onClick={() => void detail.refetch()} /></div></div>
           {detail.isFetching && <p role="status" className="text-xs text-amber-800">{t('f8.refreshing')}</p>}
           <ProductFields product={detail.data} /><p className="text-xs text-slate-500">{t('f8.trackingHint')}</p><QrPanel key={detail.data.sku} product={detail.data} initiallyRequested={showQr} />
         </>}
@@ -129,8 +133,10 @@ export function ProductMetrics({ total, items, busy }: { total?: number; items?:
     <p className="text-xs text-slate-500 pr-14 leading-5">{card.label}</p><p className={'text-2xl font-bold tracking-tight mt-1 pr-12 ' + (index === 3 ? 'text-rose-600' : 'text-slate-900')}>{card.value}</p><p className="text-xs text-slate-500 mt-2 leading-5">{card.note}</p>
   </div>)}</section>;
 }
-export function ProductCatalogTable({ items, onOpen }: { items: ProductRead[]; onOpen: (id: string, qr?: boolean) => void }) {
+export function ProductCatalogTable({ items, onOpen, onEdit }: { items: ProductRead[]; onOpen: (id: string, qr?: boolean) => void; onEdit?: (product: ProductRead) => void }) {
   const { t, i18n } = useTranslation();
+  const session = useSyncExternalStore(sessionStore.subscribe, sessionStore.get, sessionStore.get);
+  const canManage = canManageProducts(session?.role);
   return <div className="overflow-x-auto"><table className="enterprise-table w-full min-w-[880px] text-left"><colgroup><col style={{ width: '14%' }} /><col style={{ width: '14%' }} /><col style={{ width: '42%' }} /><col style={{ width: '8%' }} /><col style={{ width: '10%' }} /><col style={{ width: '12%' }} /></colgroup>
     <thead className="bg-slate-50"><tr>{['sku', 'barcode', 'identity', 'unit', 'weight', 'actions'].map(field => <th className={field === 'weight' || field === 'actions' ? 'text-right' : ''} key={field}>{t('f8.' + field)}</th>)}</tr></thead>
     <tbody>{items.map(product => <tr key={product.id} className="border-t border-slate-100 hover:bg-slate-50/80">
@@ -139,18 +145,23 @@ export function ProductCatalogTable({ items, onOpen }: { items: ProductRead[]; o
       <td><strong className="block text-[13px] font-semibold text-slate-900 break-words">{product.name}</strong><span className="block mt-1 text-xs text-slate-500 break-words whitespace-pre-wrap">{product.description || '—'}</span></td>
       <td><span className="inline-block rounded border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs break-words">{product.unit || '—'}</span></td>
       <td className="text-right font-mono tabular-nums">{new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 8 }).format(product.weight)}</td>
-      <td><div className="flex justify-end gap-1"><ActionButton variant="ghost" size="sm" isIconOnly icon={<Eye className="w-4 h-4" />} tooltip={t('f8.detailFor', { sku: product.sku })} onClick={() => onOpen(product.id)} /><ActionButton variant="ghost" size="sm" isIconOnly icon={<QrCode className="w-4 h-4" />} tooltip={t('f8.qrFor', { sku: product.sku })} onClick={() => onOpen(product.id, true)} /></div></td>
+      <td><div className="flex justify-end gap-1">{canManage && <ActionButton variant="ghost" size="sm" isIconOnly icon={<Edit2 className="w-4 h-4 text-blue-600" />} tooltip={t('common.buttons.edit')} onClick={() => onEdit?.(product)} />}<ActionButton variant="ghost" size="sm" isIconOnly icon={<Eye className="w-4 h-4" />} tooltip={t('f8.detailFor', { sku: product.sku })} onClick={() => onOpen(product.id)} /><ActionButton variant="ghost" size="sm" isIconOnly icon={<QrCode className="w-4 h-4" />} tooltip={t('f8.qrFor', { sku: product.sku })} onClick={() => onOpen(product.id, true)} /></div></td>
     </tr>)}</tbody></table></div>;
 }
 function Catalog() {
-  const { t } = useTranslation(); const [draft, setDraft] = useState(''); const [search, setSearch] = useState(''); const [page, setPage] = useState(1);
+  const { t } = useTranslation(); const client = useQueryClient();
+  const session = useSyncExternalStore(sessionStore.subscribe, sessionStore.get, sessionStore.get);
+  const canManage = canManageProducts(session?.role);
+  const [draft, setDraft] = useState(''); const [search, setSearch] = useState(''); const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<{ id: string; qr: boolean }>(); const [lookupOpen, setLookupOpen] = useState(false);
   const [semanticOpen, setSemanticOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false); const [editingProduct, setEditingProduct] = useState<ProductRead | null>(null);
   const catalog = useQuery(inventoryQueries.productsPage(page, search));
   // The unfiltered total reuses the same fixed-20 page key. Initial observers
   // deduplicate; filtered result totals are never presented as global KPIs.
   const total = useQuery(inventoryQueries.productsPage(1, ''));
   const openProduct = (id: string, qr = false) => setSelected({ id, qr });
+  const openEditProduct = (product: ProductRead) => { setSelected(undefined); setEditingProduct(product); setFormOpen(true); };
   const refresh = () => { void catalog.refetch(); if (page !== 1 || search) void total.refetch(); };
   return <div className="p-4 sm:p-6 space-y-6 min-w-0">
     <header><h1 className="text-xl font-bold text-slate-900">{t('f8.title')}</h1><p className="text-xs text-slate-500 mt-1.5">{t('f8.subtitle')}</p></header>
@@ -162,17 +173,28 @@ function Catalog() {
       <ActionButton variant="secondary" disabled={catalog.isFetching || total.isFetching} icon={<RefreshCw className="w-4 h-4" />} onClick={refresh}>{t('f8.refresh')}</ActionButton>
       <ActionButton variant="secondary" icon={<Barcode className="w-4 h-4" />} onClick={() => setLookupOpen(true)}>{t('f8.analyzeBarcode')}</ActionButton>
       <ActionButton variant="secondary" icon={<Sparkles className="w-4 h-4 text-blue-600" />} onClick={() => setSemanticOpen(true)}>{t('f8.semanticSearch.button')}</ActionButton>
+      {canManage && <ActionButton variant="primary" icon={<Plus className="w-4 h-4" />} onClick={() => { setEditingProduct(null); setFormOpen(true); }}>{t('f8.addProduct')}</ActionButton>}
     </form>
     <section className="bg-white border border-slate-200 rounded-2xl shadow-2xs min-w-0 overflow-hidden" aria-labelledby="product-catalog-title">
       <div className="px-5 py-4 bg-slate-50/80 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2"><h2 id="product-catalog-title" className="flex gap-2 items-center text-sm font-semibold"><Package className="w-4 h-4 text-blue-600" />{t('f8.catalogList')}</h2>{catalog.isSuccess && <span className="text-xs text-slate-500 font-mono">{t('f8.resultCount', { count: catalog.data.totalCount })}</span>}</div>
       {catalog.isFetching && !catalog.isPending && <p role="status" className="px-5 py-2 text-xs text-amber-800">{t('f8.refreshing')}</p>}
       {catalog.isPending ? <div role="status"><SharedStateView type={catalog.isPaused ? 'offline' : 'loading'} title={t(catalog.isPaused ? 'f8.errors.network' : 'f8.loading')} /></div> : catalog.isError ? <Failure error={catalog.error as unknown as ApiError} retry={refresh} /> : <>
-        {catalog.data.items.length ? <ProductCatalogTable items={catalog.data.items} onOpen={openProduct} /> : <SharedStateView type={search ? 'search-empty' : 'empty'} title={t(search ? 'f8.noMatches' : 'f8.empty')} subtitle={t('f8.emptyHint')} />}
+        {catalog.data.items.length ? <ProductCatalogTable items={catalog.data.items} onOpen={openProduct} onEdit={openEditProduct} /> : <SharedStateView type={search ? 'search-empty' : 'empty'} title={t(search ? 'f8.noMatches' : 'f8.empty')} subtitle={t('f8.emptyHint')} />}
         <PaginationFooter pageIndex={catalog.data.pageIndex} pageSize={catalog.data.pageSize} totalCount={catalog.data.totalCount} totalPages={catalog.data.totalPages} disabled={catalog.isFetching} onPageChange={setPage} />
       </>}
     </section>
     {lookupOpen && <BarcodeLookup onClose={() => setLookupOpen(false)} onOpen={id => { setLookupOpen(false); openProduct(id); }} />}
     {semanticOpen && <SemanticProductSearchModal onClose={() => setSemanticOpen(false)} onOpen={id => { setSemanticOpen(false); openProduct(id); }} />}
-    {selected && <ProductDialog key={selected.id} id={selected.id} showQr={selected.qr} onClose={() => setSelected(undefined)} />}
+    {selected && <ProductDialog key={selected.id} id={selected.id} showQr={selected.qr} onClose={() => setSelected(undefined)} onEdit={openEditProduct} />}
+    <ProductFormModal
+      isOpen={formOpen}
+      onClose={() => { setFormOpen(false); setEditingProduct(null); }}
+      editProduct={editingProduct}
+      onSuccess={() => {
+        void client.invalidateQueries({ queryKey: ['private', 'inventory', 'products'] });
+        void client.invalidateQueries({ queryKey: ['f1', 'inventory', 'products'] });
+        refresh();
+      }}
+    />
   </div>;
 }

@@ -93,7 +93,14 @@
         "timeout": "Semantic search request timed out. Please try again.",
         "general": "Semantic search failed. Standard product search remains available."
       }
-    }
+    },
+    "addProduct": "+ Add Product",
+    "createProductTitle": "Create New Product",
+    "editProductTitle": "Edit Product",
+    "createProductSubtitle": "Define SKU, product name, unit of measure and tracking mode.",
+    "createProductBtn": "Create Product",
+    "saveProductFailed": "Failed to save product information. Please verify your inputs.",
+    "trackingModeChangeWarning": "Note: The server rejects Tracking Mode changes (409 Conflict) once the product has serials, inventory, or open documents/workflows."
   },
   "f7": {
     "nav": "Kit assembly",
@@ -320,7 +327,9 @@
       "full": "Full",
       "online": "Demo preview",
       "live": "Live"
-    }
+    },
+    "cancel": "Cancel",
+    "saveChanges": "Save Changes"
   },
   "header": {
     "searchPlaceholder": "Ask AI Agent: 'Find all expired lots in Zone B'...",
@@ -2190,5 +2199,18 @@
       "quantity": "Enter a positive whole number within the supported range.",
       "reason": "Enter a reason of 1–500 characters."
     }
+  },
+  "customer": {
+    "newCustomer": "+ New Customer",
+    "createTitle": "Create New Customer",
+    "editTitle": "Edit Customer",
+    "createSubtitle": "Register customer partner details for outbound orders.",
+    "code": "Customer Code",
+    "name": "Customer Name",
+    "email": "Email",
+    "phone": "Phone Number",
+    "deliveryAddress": "Delivery Address",
+    "createBtn": "Create Customer",
+    "saveFailed": "Failed to save customer information. Please verify your inputs."
   }
 }

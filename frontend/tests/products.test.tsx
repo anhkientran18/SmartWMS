@@ -1,4 +1,5 @@
 import './semanticProductSearch.test';
+import './productOperations.test';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import axios from 'axios';
@@ -156,13 +157,13 @@ test('KPI global total is independent of page counts and unavailable data never 
   const pending = renderToStaticMarkup(<ProductMetrics busy />);
   assert.equal((pending.match(/>—<\/p>/g) || []).length, 4); assert.ok(pending.includes('aria-busy="true"'));
 });
-test('approved primary table hierarchy retains description, unitless weight and accessible read actions', async () => {
-  await i18n.changeLanguage('en-US');
+test('approved primary table hierarchy retains description, unitless weight and accessible read and edit actions without delete', async () => {
+  ok(); await i18n.changeLanguage('en-US');
   const html = renderToStaticMarkup(<ProductCatalogTable items={[product]} onOpen={() => {}} />);
   const labels = ['SKU', 'Barcode', 'Product name &amp; description', 'Unit', 'Weight', 'Actions'];
   let index = -1; for (const label of labels) { const next = html.indexOf('>' + label + '</th>'); assert.ok(next > index, label); index = next; }
-  assert.ok(html.includes('Real description')); assert.ok(html.includes('View product SKU-A')); assert.ok(html.includes('Preview QR for product SKU-A'));
-  assert.ok(!html.includes('kg')); assert.ok(!html.includes('Tracking mode')); assert.ok(!/Create product|Edit product|Delete product/.test(html));
+  assert.ok(html.includes('Real description')); assert.ok(html.includes('View product SKU-A')); assert.ok(html.includes('Preview QR for product SKU-A')); assert.ok(html.includes('title="Edit"'));
+  assert.ok(!html.includes('kg')); assert.ok(!html.includes('Tracking mode')); assert.ok(!/Delete product|title="Delete"/.test(html));
 });
 test('label preview includes only canonical identity and its supplied QR content', async () => {
   for (const language of ['en-US', 'vi-VN']) {
