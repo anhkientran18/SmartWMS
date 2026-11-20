@@ -263,7 +263,7 @@ test('production route/link and sprint wiring retain existing routes, demo bound
   for (const route of ['/dashboard/inventory', '/dashboard/inventory/transfers', '/dashboard/replenishment', '/dashboard/orders', '/dashboard/cycle-counting/*', '/dashboard/products', '/dashboard/orders/inbound/create', '/dashboard/orders/outbound/create']) assert.ok(apiTree.includes(`path="${route}"`), route);
   assert.equal(app.match(/path="\/dashboard\/inventory\/transfers"/g).length, 1); assert.match(stock, /management && <Link[^>]*to="\/dashboard\/inventory\/transfers"/);
   assert.match(readFileSync('tests/run-sprint.mjs', 'utf8'), /'inventory'/); assert.match(readFileSync('tests/inventory.test.tsx', 'utf8'), /import '\.\/transfers.test'/);
-  const controller = readFileSync('../SmartWMS.Api/Controllers/InventoryTransfersController.cs', 'utf8'); assert.match(controller, /Admin,WarehouseManager,Staff/); assert.match(controller, /\[FromBody\] CreateInventoryTransferRequest request/);
+  const controller = readFileSync('../backend/src/SmartWMS.Api/Controllers/InventoryTransfersController.cs', 'utf8'); assert.match(controller, /Admin,WarehouseManager,Staff/); assert.match(controller, /\[FromBody\] CreateInventoryTransferRequest request/);
   const workspace = readFileSync('src/features/inventory/InventoryTransferWorkspace.tsx', 'utf8'); assert.match(workspace, /review\.revision === revision/); assert.match(workspace, /<dialog/);
 });
 

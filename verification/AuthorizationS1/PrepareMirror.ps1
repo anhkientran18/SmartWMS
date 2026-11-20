@@ -3,12 +3,12 @@ $ErrorActionPreference = 'Stop'
 $repo = (Get-Location).Path
 $mirror = Join-Path $repo 'obj/S1/source'
 New-Item -ItemType Directory -Force $mirror | Out-Null
-$files = @((git ls-files) + (git ls-files --others --exclude-standard verification/AuthorizationS1 SmartWMS.Application/Features/CycleCounting)) | Sort-Object -Unique
+$files = @((git ls-files) + (git ls-files --others --exclude-standard verification/AuthorizationS1 backend/src/SmartWMS.Application/Features/CycleCounting)) | Sort-Object -Unique
 foreach ($relative in $files) {
     if ($relative -match '(^|/)(obj|bin)/|\.user$' -or $relative -notmatch '\.(cs|csproj|json|slnx|resx)$') { continue }
     $target = Join-Path $mirror $relative
     New-Item -ItemType Directory -Force (Split-Path $target) | Out-Null
-    if ($relative -eq 'SmartWMS.Infrastructure/Services/PasswordHasher.cs') {
+    if ($relative -eq 'backend/src/SmartWMS.Infrastructure/Services/PasswordHasher.cs') {
         [IO.File]::WriteAllLines($target, [string[]](git show "HEAD:$relative"), [Text.UTF8Encoding]::new($false))
     } else { Copy-Item -LiteralPath (Join-Path $repo $relative) -Destination $target -Force }
 }

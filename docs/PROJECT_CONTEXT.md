@@ -16,7 +16,7 @@ PR #8 là Draft/chưa merge theo task; CI Success do owner cung cấp gắn vớ
 
 ## Architecture
 
-[Solution](../SmartWMS.slnx) chứa bốn production projects ở root. API → Application + Infrastructure; Application → Domain; Infrastructure → Application + Domain. Domain không phụ thuộc Infrastructure. Application dùng IApplicationDbContext và một số EF extensions; không phải package-free model thuần.
+[Solution](../SmartWMS.slnx) chứa bốn production projects ở `backend/src/`. API → Application + Infrastructure; Application → Domain; Infrastructure → Application + Domain. Domain không phụ thuộc Infrastructure. Application dùng IApplicationDbContext và một số EF extensions; không phải package-free model thuần.
 
 ~~~text
 React production route / TanStack Query / Axios
@@ -26,7 +26,7 @@ React production route / TanStack Query / Axios
   → EF Core / SQL Server hoặc external provider
 ~~~
 
-.NET 10, EF Core SQL Server 10.0.8, MediatR 12.2.0, FluentValidation 12.1.1; React 19, TypeScript 5.8, Vite 6, Tailwind 4, Query 5, Axios/i18next. Exact versions theo project/package/lock files. Backend vẫn ở root, frontend tại `frontend/`, harnesses tại `verification/`, shared orchestration tại `scripts/`; planned `backend/src/` restructuring chưa triển khai.
+.NET 10, EF Core SQL Server 10.0.8, MediatR 12.2.0, FluentValidation 12.1.1; React 19, TypeScript 5.8, Vite 6, Tailwind 4, Query 5, Axios/i18next. Exact versions theo project/package/lock files. Backend nằm ở `backend/src/` (`backend/src/SmartWMS.*`), frontend tại `frontend/`, harnesses tại `verification/`, shared orchestration tại `scripts/`.
 
 Production UI bắt đầu ở [App.tsx](../frontend/src/app/App.tsx), [dataMode.ts](../frontend/src/app/dataMode.ts). API mode mặc định; mock/demo và legacy không quyết định backend contract.
 

@@ -1,6 +1,6 @@
 # SmartWMS — Development workflow
 
-Vòng làm việc cho một developer. [AGENTS](../AGENTS.md) quy định an toàn; [PROJECT_CONTEXT](PROJECT_CONTEXT.md) ghi source snapshot. Source layout vẫn ở root, chưa có `backend/src/`.
+Vòng làm việc cho một developer. [AGENTS](../AGENTS.md) quy định an toàn; [PROJECT_CONTEXT](PROJECT_CONTEXT.md) ghi source snapshot. Backend production projects nằm trong `backend/src/`.
 
 ## One task, one reviewable change
 

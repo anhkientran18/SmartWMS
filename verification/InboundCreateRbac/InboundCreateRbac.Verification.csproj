@@ -8,6 +8,6 @@
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <ProjectReference Include="../../SmartWMS.Api/SmartWMS.Api.csproj" />
+    <ProjectReference Include="../../backend/src/SmartWMS.Api/SmartWMS.Api.csproj" />
   </ItemGroup>
 </Project>
