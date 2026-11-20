@@ -2,11 +2,13 @@ import { ReactNode, useEffect, useRef, useState, useSyncExternalStore } from 're
 import { useQuery, useQueryClient, UseQueryResult } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Boxes, Package, AlertTriangle, RefreshCw, X, MapPin, History, Eye } from 'lucide-react';
+import { Boxes, Package, AlertTriangle, RefreshCw, X, MapPin, History, Eye, SlidersHorizontal, Lock } from 'lucide-react';
 import { sessionStore } from '../auth/session';
 import { ApiError } from '../../services/api/apiTypes';
 import { canReadBinContext } from '../../services/inventory/inventoryReadApi';
 import { inventoryKey, inventoryQueries } from '../../services/inventory/inventoryQueries';
+import { getStockAdjustmentOperation } from '../../services/inventory/stockAdjustmentMutation';
+import StockAdjustmentModal from './StockAdjustmentModal';
 
 import KPICard from '../../components/common/KPICard';
 import PaginationFooter from '../../components/common/PaginationFooter';
@@ -32,7 +34,7 @@ function LocationCode({ code }: { code: string }) {
 }
 function ReadTable({ labels, children }: { labels: string[]; children: ReactNode }) {
   const { t } = useTranslation();
-  const numeric = [t('f2.physical'), t('f2.delta'), t('f2.occupancy'), t('f2.capacity'), t('f2.weight')];
+  const numeric = [t('f2.physical'), t('f2.delta'), t('f2.occupancy'), t('f2.capacity'), t('f2.weight'), t('f2.actions')];
   return <div className="overflow-x-auto"><table className="enterprise-table stock-table w-full text-left">
     <thead className="text-slate-500 bg-slate-50"><tr>{labels.map(label => <th key={label} className={`whitespace-nowrap ${numeric.includes(label) ? 'text-right' : ''}`}>{label}</th>)}</tr></thead>
     <tbody className="divide-y divide-slate-100 [&_tr]:hover:bg-slate-50/80">{children}</tbody>
@@ -42,8 +44,10 @@ function ReadTable({ labels, children }: { labels: string[]; children: ReactNode
 export default function RealStockVisibility({ embedded = false }: { embedded?: boolean }) {
   const { t, i18n } = useTranslation();
   const client = useQueryClient();
-  const session = useSyncExternalStore(sessionStore.subscribe, sessionStore.get, () => null);
+  const session = useSyncExternalStore(sessionStore.subscribe, sessionStore.get, sessionStore.get);
   const management = canReadBinContext(session?.role);
+  const adjustOperation = getStockAdjustmentOperation(client);
+  const adjustState = useSyncExternalStore(adjustOperation.subscribe, adjustOperation.getState, adjustOperation.getState);
   const [pageIndex, setPageIndex] = useState(1);
   const [productId, setProductId] = useState('');
   const [transactionType, setTransactionType] = useState('');
@@ -54,8 +58,9 @@ export default function RealStockVisibility({ embedded = false }: { embedded?: b
   const [params] = useSearchParams();
   const [binId, setBinId] = useState(() => management ? params.get('binId') || '' : '');
   const [refreshing, setRefreshing] = useState(false);
+  const [adjustModal, setAdjustModal] = useState<{ open: boolean; binId?: string; productId?: string; lotNumber?: string }>({ open: false });
   const drawer = useRef<HTMLDialogElement>(null);
-  useEffect(() => { if (binId) drawer.current?.showModal(); }, [binId]);
+  useEffect(() => { if (binId) drawer.current?.showModal?.(); }, [binId]);
   const summary = useQuery(inventoryQueries.summary());
   const alerts = useQuery(inventoryQueries.alerts());
   const history = useQuery(inventoryQueries.history({ pageIndex, pageSize: 10, productId: productId || undefined, transactionType: transactionType || undefined }));
@@ -85,9 +90,43 @@ export default function RealStockVisibility({ embedded = false }: { embedded?: b
       <div className="flex items-center gap-3"><div className="p-2.5 bg-blue-50 border border-blue-200 text-blue-600 rounded-xl"><Boxes className="w-5 h-5" strokeWidth={1.75} /></div>
         <div><h1 id="stock-title" className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">{t('f2.title')}</h1>
         <p className="text-xs text-slate-500 mt-0.5 max-w-3xl">{t('f2.description')}</p></div></div>
-      {management && <Link className="text-sm text-blue-700 underline rounded-lg focus:ring-2 focus:ring-blue-500" to="/dashboard/inventory/transfers">{t('transfer.title')}</Link>}
-      <ActionButton variant="secondary" disabled={refreshing} onClick={refresh} icon={<RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />}>{t('f2.refresh')}</ActionButton>
+      <div className="flex items-center gap-2 flex-wrap">
+        {management && <Link className="text-sm text-blue-700 underline rounded-lg focus:ring-2 focus:ring-blue-500" to="/dashboard/inventory/transfers">{t('transfer.title')}</Link>}
+        {management && <ActionButton variant="primary" onClick={() => setAdjustModal({ open: true })} icon={<SlidersHorizontal className="w-3.5 h-3.5" />}>{t('f2.adjustStock')}</ActionButton>}
+        <ActionButton variant="secondary" disabled={refreshing} onClick={refresh} icon={<RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />}>{t('f2.refresh')}</ActionButton>
+      </div>
     </header>}
+
+    {management && (adjustState.phase === 'uncertain' || adjustState.phase === 'pending') && (
+      <div role="alert" className="p-4 rounded-2xl border border-amber-300 bg-amber-50 text-amber-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-start gap-2.5 text-xs">
+          <Lock className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+          <div>
+            <p className="font-bold text-amber-900">{t('f2.adjustSafety.bannerTitle')}</p>
+            <p className="text-amber-800 mt-0.5">{t('f2.adjustSafety.bannerDesc')}</p>
+          </div>
+        </div>
+        <ActionButton
+          variant="secondary"
+          onClick={() => setAdjustModal({
+            open: true,
+            binId: adjustState.request?.binId,
+            productId: adjustState.request?.productId,
+            lotNumber: adjustState.request?.lotNumber,
+          })}
+          icon={<SlidersHorizontal className="w-3.5 h-3.5" />}
+        >
+          {t('f2.adjustSafety.openReconcile')}
+        </ActionButton>
+      </div>
+    )}
+
+    {management && adjustState.phase === 'succeeded' && adjustState.refreshWarning && (
+      <div role="alert" className="p-3.5 rounded-2xl border border-amber-300 bg-amber-50 text-amber-900 text-xs flex items-center gap-2">
+        <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+        <span>{t('f2.adjustSafety.refreshWarning')}</span>
+      </div>
+    )}
 
     <InventoryReadState query={summary}>
       {summary.isSuccess && <><div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
@@ -164,7 +203,7 @@ export default function RealStockVisibility({ embedded = false }: { embedded?: b
         <p className="text-xs text-slate-500">{t('f2.contentsDescription')}</p>
         <InventoryReadState query={contents}>{contents.isSuccess && <>
           <div className="rounded-xl border border-slate-200 p-4 space-y-2"><p className="flex flex-wrap justify-between gap-2 text-xs text-slate-500"><span>{t('f2.occupancy')}: <strong className="font-mono text-slate-900">{number(contents.data.currentOccupancy)} / {number(contents.data.maxCapacity)}</strong></span><span className="font-mono text-slate-900">{number(contents.data.utilizationPercentage)}%</span></p>{contents.data.maxCapacity > 0 && <progress aria-label={t('f2.occupancy')} className={`stock-capacity-bar ${contents.data.utilizationPercentage >= 100 ? 'text-rose-500' : contents.data.utilizationPercentage >= 80 ? 'text-amber-500' : 'text-emerald-500'}`} max={100} value={Math.min(100, contents.data.utilizationPercentage)} />}</div>
-          {contents.data.items.length ? <ReadTable labels={['SKU', t('f2.product'), t('f2.physical'), t('f2.status'), t('f2.lot'), t('f2.expiration'), t('f2.barcode'), t('f2.weight')]}>
+          {contents.data.items.length ? <ReadTable labels={['SKU', t('f2.product'), t('f2.physical'), t('f2.status'), t('f2.lot'), t('f2.expiration'), t('f2.barcode'), t('f2.weight'), t('f2.actions')]}>
             {contents.data.items.map((row, index) => {
               // Index is only a rendering key: the contract has no inventory-row ID.
               const product = products.isSuccess ? products.data.find(p => p.id === row.productId) : undefined;
@@ -172,7 +211,23 @@ export default function RealStockVisibility({ embedded = false }: { embedded?: b
               return <tr key={index}><td className="font-mono">{row.sku || row.productId}</td><td>{row.productName || missing}</td><td className="text-right font-mono tabular-nums">{number(row.quantity)} {product?.unit}</td>
                 <td><StatusBadge showDot variant={row.status === 'Available' ? 'green' : row.status === 'Reserved' ? 'blue' : row.status === 'QCHold' ? 'amber' : row.status === 'Damaged' ? 'red' : 'gray'} label={knownStatus ? t(`f2.statuses.${row.status}`) : row.status || missing} /></td><td>{row.lotNumber || '—'}</td>
                 <td>{row.expirationDate === 'Không có hạn dùng' || !row.expirationDate ? t('f2.noExpiry') : row.expirationDate}</td>
-                <td>{product ? product.barcode || missing : t('f2.metadataUnavailable')}</td><td className="text-right font-mono tabular-nums">{product ? product.weight === 0 ? missing : number(product.weight) : t('f2.metadataUnavailable')}</td></tr>;
+                <td>{product ? product.barcode || missing : t('f2.metadataUnavailable')}</td><td className="text-right font-mono tabular-nums">{product ? product.weight === 0 ? missing : number(product.weight) : t('f2.metadataUnavailable')}</td>
+                <td className="text-right whitespace-nowrap">
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:border-blue-200 hover:text-blue-700"
+                    title={t('f2.adjust')}
+                    onClick={() => setAdjustModal({
+                      open: true,
+                      binId,
+                      productId: row.productId,
+                      lotNumber: row.lotNumber || '',
+                    })}
+                  >
+                    <SlidersHorizontal aria-hidden="true" className="w-3.5 h-3.5" />
+                    <span>{t('f2.adjust')}</span>
+                  </button>
+                </td></tr>;
             })}
           </ReadTable> : <SharedStateView type="empty" title={t('f2.contentsEmpty')} subtitle={t('f2.emptyHint')} />}
         </>}</InventoryReadState>
@@ -180,5 +235,18 @@ export default function RealStockVisibility({ embedded = false }: { embedded?: b
         </div>
       </div>
     </dialog>}
+
+    {management && (
+      <StockAdjustmentModal
+        isOpen={adjustModal.open}
+        onClose={() => setAdjustModal({ open: false })}
+        onSuccess={refresh}
+        initialBinId={adjustModal.binId}
+        initialProductId={adjustModal.productId}
+        initialLotNumber={adjustModal.lotNumber}
+        bins={bins.isSuccess ? bins.data : []}
+        products={products.isSuccess ? products.data : []}
+      />
+    )}
   </section>;
 }
