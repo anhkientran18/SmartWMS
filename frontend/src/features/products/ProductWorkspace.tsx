@@ -1,7 +1,7 @@
 import { ReactNode, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, Barcode, Edit2, Eye, Layers, Package, Plus, QrCode, RefreshCw, Search, Sparkles, X } from 'lucide-react';
+import { AlertTriangle, Barcode, Edit2, Eye, Layers, Package, Plus, QrCode, RefreshCw, Search, Sparkles, TrendingUp, X } from 'lucide-react';
 import ActionButton from '../../components/common/ActionButton';
 import PaginationFooter from '../../components/common/PaginationFooter';
 import SharedStateView from '../../components/common/SharedStateView';
@@ -13,6 +13,10 @@ import { createBarcodeLookup } from '../../services/inventory/productLookup';
 import { canManageProducts } from '../../services/products/productMutationApi';
 import ProductFormModal from './ProductFormModal';
 import SemanticProductSearchModal from './SemanticProductSearchModal';
+import DemandForecastModal, { DemandForecastModalProduct } from './DemandForecastModal';
+
+// Advisory demand forecast is restricted to the backend ForecastsController roles.
+export const canForecastDemand = (role?: string) => role === 'Admin' || role === 'WarehouseManager';
 
 const inputClass = 'w-full min-w-0 border border-slate-200 bg-white rounded-xl py-2.5 px-3 text-xs';
 export function productErrorKey(error: ApiError | undefined, barcode = false) {
@@ -88,7 +92,7 @@ function QrPanel({ product, initiallyRequested }: { product: ProductDetail; init
     <ProductLabelPreview product={product}>{!requested ? <p className="text-xs text-slate-500 text-center max-w-56">{t('f8.qrHint')}</p> : qr.isFetching ? <p role="status" className="text-xs text-slate-500">{t('f8.loading')}</p> : qr.isError ? <Failure error={qr.error as unknown as ApiError} /> : qr.data && <img src={qr.data} alt={t('f8.qrAlt', { sku: product.sku })} className="w-44 h-44 max-w-full object-contain" />}</ProductLabelPreview>
   </section>;
 }
-function ProductDialog({ id, showQr, onClose, onEdit }: { id: string; showQr: boolean; onClose: () => void; onEdit?: (product: ProductDetail) => void }) {
+function ProductDialog({ id, showQr, onClose, onEdit, onForecast }: { id: string; showQr: boolean; onClose: () => void; onEdit?: (product: ProductDetail) => void; onForecast?: (product: ProductDetail) => void }) {
   const { t } = useTranslation(); const dialog = useRef<HTMLDialogElement>(null);
   const session = useSyncExternalStore(sessionStore.subscribe, sessionStore.get, sessionStore.get);
   const canManage = canManageProducts(session?.role);
@@ -100,7 +104,7 @@ function ProductDialog({ id, showQr, onClose, onEdit }: { id: string; showQr: bo
     <div className="flex flex-col max-h-[90dvh]"><header className="bg-white px-5 py-4 flex gap-3 items-center shrink-0 border-b border-slate-200"><span className="rounded-xl border border-blue-100 bg-blue-50 p-2.5 text-blue-600"><Package className="w-5 h-5" /></span><h2 id="product-detail-title" className="text-base font-bold flex-1">{t('f8.detail')}</h2><button type="button" onClick={onClose} aria-label={t('f8.close')} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"><X className="w-4 h-4" /></button></header>
       <div className="p-5 sm:p-6 overflow-y-auto min-h-0 space-y-5">
         {detail.isPending ? <div role="status"><SharedStateView type="loading" title={t('f8.loading')} /></div> : detail.isError ? <Failure error={detail.error as unknown as ApiError} retry={() => void detail.refetch()} /> : <>
-          <div className="flex justify-between gap-3 items-start"><div className="min-w-0"><p className="font-mono text-xs text-blue-700 break-all">{detail.data.sku}</p><h3 className="text-base font-bold text-slate-900 mt-1 break-words">{detail.data.name}</h3></div><div className="flex items-center gap-1.5">{canManage && onEdit && <ActionButton variant="secondary" size="sm" icon={<Edit2 className="w-3.5 h-3.5" />} onClick={() => onEdit(detail.data)}>{t('common.buttons.edit')}</ActionButton>}<ActionButton variant="secondary" size="sm" disabled={detail.isFetching} aria-label={t('f8.refreshDetail')} icon={<RefreshCw className="w-3.5 h-3.5" />} onClick={() => void detail.refetch()} /></div></div>
+          <div className="flex justify-between gap-3 items-start"><div className="min-w-0"><p className="font-mono text-xs text-blue-700 break-all">{detail.data.sku}</p><h3 className="text-base font-bold text-slate-900 mt-1 break-words">{detail.data.name}</h3></div><div className="flex items-center gap-1.5">{canManage && onEdit && <ActionButton variant="secondary" size="sm" icon={<Edit2 className="w-3.5 h-3.5" />} onClick={() => onEdit(detail.data)}>{t('common.buttons.edit')}</ActionButton>}{onForecast && <ActionButton variant="secondary" size="sm" icon={<TrendingUp className="w-3.5 h-3.5 text-blue-600" />} onClick={() => onForecast(detail.data)}>{t('f8.demandForecast.button')}</ActionButton>}<ActionButton variant="secondary" size="sm" disabled={detail.isFetching} aria-label={t('f8.refreshDetail')} icon={<RefreshCw className="w-3.5 h-3.5" />} onClick={() => void detail.refetch()} /></div></div>
           {detail.isFetching && <p role="status" className="text-xs text-amber-800">{t('f8.refreshing')}</p>}
           <ProductFields product={detail.data} /><p className="text-xs text-slate-500">{t('f8.trackingHint')}</p><QrPanel key={detail.data.sku} product={detail.data} initiallyRequested={showQr} />
         </>}
@@ -155,6 +159,8 @@ function Catalog() {
   const [draft, setDraft] = useState(''); const [search, setSearch] = useState(''); const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<{ id: string; qr: boolean }>(); const [lookupOpen, setLookupOpen] = useState(false);
   const [semanticOpen, setSemanticOpen] = useState(false);
+  const canForecast = canForecastDemand(session?.role);
+  const [forecastProduct, setForecastProduct] = useState<DemandForecastModalProduct | null>(null);
   const [formOpen, setFormOpen] = useState(false); const [editingProduct, setEditingProduct] = useState<ProductRead | null>(null);
   const catalog = useQuery(inventoryQueries.productsPage(page, search));
   // The unfiltered total reuses the same fixed-20 page key. Initial observers
@@ -185,7 +191,8 @@ function Catalog() {
     </section>
     {lookupOpen && <BarcodeLookup onClose={() => setLookupOpen(false)} onOpen={id => { setLookupOpen(false); openProduct(id); }} />}
     {semanticOpen && <SemanticProductSearchModal onClose={() => setSemanticOpen(false)} onOpen={id => { setSemanticOpen(false); openProduct(id); }} />}
-    {selected && <ProductDialog key={selected.id} id={selected.id} showQr={selected.qr} onClose={() => setSelected(undefined)} onEdit={openEditProduct} />}
+    {selected && <ProductDialog key={selected.id} id={selected.id} showQr={selected.qr} onClose={() => setSelected(undefined)} onEdit={openEditProduct} onForecast={canForecast ? (p => { setSelected(undefined); setForecastProduct({ sku: p.sku, name: p.name, unit: p.unit }); }) : undefined} />}
+    {forecastProduct && <DemandForecastModal product={forecastProduct} onClose={() => setForecastProduct(null)} />}
     <ProductFormModal
       isOpen={formOpen}
       onClose={() => { setFormOpen(false); setEditingProduct(null); }}

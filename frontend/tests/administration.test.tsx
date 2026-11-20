@@ -196,3 +196,5 @@ test('K11 backend controllers and Program.cs enforce RBAC hardening, BinsControl
   const program = readFileSync('../backend/src/SmartWMS.Api/Program.cs', 'utf8');
   assert.match(program, /if\s*\(enableHangfireServer\)\s*\{\s*app\.UseHangfireDashboard\("\/hangfire"\);\s*\}/);
 });
+
+import './aiChat.test';

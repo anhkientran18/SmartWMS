@@ -15,6 +15,7 @@ import KPICard from '../../components/common/KPICard';
 import PaginationFooter from '../../components/common/PaginationFooter';
 import SharedStateView from '../../components/common/SharedStateView';
 import InboundReceivingModal from './InboundReceivingModal';
+import DamageVisionModal from './DamageVisionModal';
 
 const button = 'inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed';
 const primary = `${button} !bg-blue-600 !border-blue-600 !text-white hover:!bg-blue-700`;
@@ -31,12 +32,16 @@ export default function RealInbound({ flowNavigation, initialReceiptId = '' }: {
   const { t } = useTranslation(); const list = useQuery(inboundQueries.list());
   const writing = useIsMutating({ mutationKey: ['private', 'inbound'] }) > 0;
   const [selected, setSelected] = useState(initialReceiptId);
+  const [damageModalOpen, setDamageModalOpen] = useState(false);
+  const session = useSyncExternalStore(sessionStore.subscribe, sessionStore.get, sessionStore.get);
+  // Advisory-only Damage Vision: same roles as backend report-damage (Admin, WarehouseManager, Staff).
+  const canInspectDamage = canExecuteInbound(session?.role);
   const [search, setSearch] = useState(''); const [status, setStatus] = useState(''); const [page, setPage] = useState(1);
   const records = list.isError ? [] : list.data ?? [];
   const filtered = records.filter(r => (!status || r.status === status) && `${r.receiptNumber} ${r.supplierName} ${r.referenceDocument}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()));
   const pages = Math.max(1, Math.ceil(filtered.length / 10)); const currentPage = Math.min(page, pages);
   return <main className="w-full flex flex-col p-4 sm:p-6 font-sans animate-fadeIn bg-slate-50 min-h-screen gap-5">
-    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4"><div className="flex items-center gap-3"><div className="p-2.5 bg-blue-50 border border-blue-200 text-blue-600 rounded-xl"><Inbox className="h-5 w-5" strokeWidth={1.75} /></div><div><h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">{t('f4.title')}</h1><p className="text-xs text-slate-500 font-medium mt-0.5">{t('f4.scope')}</p></div></div><button className={button} disabled={list.isFetching || writing} onClick={() => void list.refetch()}><RefreshCw className="w-4 h-4" />{t('f4.refresh')}</button></div>
+    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4"><div className="flex items-center gap-3"><div className="p-2.5 bg-blue-50 border border-blue-200 text-blue-600 rounded-xl"><Inbox className="h-5 w-5" strokeWidth={1.75} /></div><div><h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">{t('f4.title')}</h1><p className="text-xs text-slate-500 font-medium mt-0.5">{t('f4.scope')}</p></div></div><div className="flex flex-wrap items-center gap-2">{canInspectDamage && <button type="button" className={button} onClick={() => setDamageModalOpen(true)}><Eye className="w-4 h-4 text-purple-600" />{t('f4.damageVision.button')}</button>}<button className={button} disabled={list.isFetching || writing} onClick={() => void list.refetch()}><RefreshCw className="w-4 h-4" />{t('f4.refresh')}</button></div></div>
     <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
       <KPICard appearance="inventory" label={t('f4.totalReceipts')} value={list.isPending || list.isError ? '—' : records.length} icon={Inbox} variant="blue" />
       <KPICard appearance="inventory" label={t('f4.awaiting')} value={list.isPending || list.isError ? '—' : records.filter(r => ['New', 'Pending'].includes(r.status)).length} icon={Clock} variant="amber" />
@@ -54,6 +59,7 @@ export default function RealInbound({ flowNavigation, initialReceiptId = '' }: {
       {filtered.slice((currentPage - 1) * 10, currentPage * 10).map(r => <tr key={r.id} className="hover:bg-blue-50/30 transition-colors"><td className="px-4 py-3"><span className="font-mono text-xs font-bold text-blue-700 break-all">{r.receiptNumber}</span>{r.referenceDocument && <small className="block text-slate-400 mt-1 break-all">{r.referenceDocument}</small>}</td><td className="px-4 py-3 font-medium text-slate-700 break-words">{r.supplierName || t('f4.unavailable')}</td><td className="px-4 py-3 text-slate-500 text-xs">{r.expectedDeliveryDate?.slice(0, 10) || t('f4.unavailable')}</td><td className="px-4 py-3"><Status value={r.status} /></td><td className="px-4 py-3"><button className={button} disabled={writing} onClick={() => setSelected(r.id)}><Eye className="w-4 h-4" />{t('f4.detail')}</button></td></tr>)}
     </tbody></table>{filtered.length === 0 && <SharedStateView type={search || status ? "search-empty" : "empty"} title={t('f4.empty')} subtitle={t('f2.emptyHint')} />}</div><PaginationFooter pageIndex={currentPage} pageSize={10} totalCount={filtered.length} totalPages={pages} disabled={list.isFetching || writing} onPageChange={setPage} /></div>}
     {selected && <ReceiptDetail key={selected} id={selected} close={() => setSelected('')} />}
+    {damageModalOpen && <DamageVisionModal onClose={() => setDamageModalOpen(false)} />}
   </main>;
 }
 function ReceiptDetail({ id, close }: { id: string; close: () => void }) {

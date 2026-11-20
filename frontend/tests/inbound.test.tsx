@@ -146,3 +146,6 @@ test('enterprise list renders persisted reference and backend status in VI and E
     client.clear();
   }
 });
+
+import './ocrInvoice.test';
+import './damageVision.test';

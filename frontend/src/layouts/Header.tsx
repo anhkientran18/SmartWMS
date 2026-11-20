@@ -18,6 +18,7 @@ import {
   Check,
 } from "lucide-react";
 import LanguageDropdown from "./LanguageDropdown";
+import AiChatDrawer from "../features/chat/AiChatDrawer";
 import { SystemNotification } from "../types/index";
 
 interface HeaderProps {
@@ -48,6 +49,7 @@ export default function Header({
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [isAiDrawerOpen, setIsAiDrawerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -68,10 +70,22 @@ export default function Header({
   }, []);
 
   const openAIChat = (query?: string) => {
+    if (!isDemoMode) {
+      setIsAiDrawerOpen(true);
+    }
     window.dispatchEvent(
       new CustomEvent("open-ai-chat", { detail: query || "" }),
     );
   };
+
+  useEffect(() => {
+    if (isDemoMode) return;
+    const handleOpenChat = () => {
+      setIsAiDrawerOpen(true);
+    };
+    window.addEventListener("open-ai-chat", handleOpenChat);
+    return () => window.removeEventListener("open-ai-chat", handleOpenChat);
+  }, []);
 
   const handleSearchSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -204,6 +218,7 @@ export default function Header({
   const unreadCount = notifications.filter((n) => !n.read && !n.resolved).length;
 
   return (
+    <>
     <header className="min-h-14 py-2 gap-2 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6 shrink-0 z-20 select-none">
       {/* Left: Dynamic Breadcrumbs navigation */}
       <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -397,6 +412,20 @@ export default function Header({
           )}
         </div>}
 
+        {/* Production AI Guidance Assistant Trigger Button (API Mode) */}
+        {!isDemoMode && (
+          <button
+            type="button"
+            onClick={() => setIsAiDrawerOpen(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-slate-600 hover:text-blue-700 hover:bg-blue-50/70 border border-slate-200/80 transition-colors cursor-pointer shadow-2xs text-xs font-medium"
+            title={t("aiChat.triggerTooltip")}
+            aria-label={t("aiChat.triggerTooltip")}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-blue-600" strokeWidth={1.75} />
+            <span className="hidden sm:inline">{t("aiChat.title")}</span>
+          </button>
+        )}
+
         {/* Language Switcher Dropdown (VN Tiếng Việt) */}
         {onChangeLang && (
           <LanguageDropdown currentLang={currentLang} onChangeLang={onChangeLang} variant="light" />
@@ -494,5 +523,9 @@ export default function Header({
         </div>
       </div>
     </header>
+    {!isDemoMode && (
+      <AiChatDrawer isOpen={isAiDrawerOpen} onClose={() => setIsAiDrawerOpen(false)} />
+    )}
+    </>
   );
 }

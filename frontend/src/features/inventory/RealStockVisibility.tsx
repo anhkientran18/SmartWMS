@@ -2,7 +2,7 @@ import { ReactNode, useEffect, useRef, useState, useSyncExternalStore } from 're
 import { useQuery, useQueryClient, UseQueryResult } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Boxes, Package, AlertTriangle, RefreshCw, X, MapPin, History, Eye, SlidersHorizontal, Lock, FileDown, ArrowRightLeft, AlertCircle } from 'lucide-react';
+import { Boxes, Package, AlertTriangle, RefreshCw, X, MapPin, History, Eye, SlidersHorizontal, Lock, FileDown, ArrowRightLeft, AlertCircle, Sparkles } from 'lucide-react';
 import { sessionStore } from '../auth/session';
 import { ApiError } from '../../services/api/apiTypes';
 import { canReadBinContext } from '../../services/inventory/inventoryReadApi';
@@ -12,6 +12,7 @@ import { getStockAdjustmentOperation } from '../../services/inventory/stockAdjus
 import { InventoryStatus, normalizeInventoryStatus } from '../../services/inventory/types';
 import StockAdjustmentModal from './StockAdjustmentModal';
 import StockStatusModal from './StockStatusModal';
+import AiSlottingModal from './AiSlottingModal';
 
 import KPICard from '../../components/common/KPICard';
 import PaginationFooter from '../../components/common/PaginationFooter';
@@ -65,6 +66,7 @@ export default function RealStockVisibility({ embedded = false }: { embedded?: b
   const [exportError, setExportError] = useState<string | null>(null);
   const [statusRefreshWarning, setStatusRefreshWarning] = useState<string | null>(null);
   const [adjustModal, setAdjustModal] = useState<{ open: boolean; binId?: string; productId?: string; lotNumber?: string }>({ open: false });
+  const [slottingModalOpen, setSlottingModalOpen] = useState(false);
   const [statusModal, setStatusModal] = useState<{
     open: boolean;
     binId: string;
@@ -133,6 +135,7 @@ export default function RealStockVisibility({ embedded = false }: { embedded?: b
             </ActionButton>
           </span>
         )}
+        {management && <ActionButton variant="secondary" onClick={() => setSlottingModalOpen(true)} icon={<Sparkles className="w-3.5 h-3.5 text-purple-600" />}>{t('f2.slotting.button')}</ActionButton>}
         {management && <ActionButton variant="primary" onClick={() => setAdjustModal({ open: true })} icon={<SlidersHorizontal className="w-3.5 h-3.5" />}>{t('f2.adjustStock')}</ActionButton>}
         <ActionButton variant="secondary" disabled={refreshing} onClick={refresh} icon={<RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />}>{t('f2.refresh')}</ActionButton>
       </div>
@@ -348,6 +351,13 @@ export default function RealStockVisibility({ embedded = false }: { embedded?: b
             sku={statusModal.sku}
             lotNumber={statusModal.lotNumber}
             currentStatus={statusModal.currentStatus}
+          />
+        )}
+        {slottingModalOpen && (
+          <AiSlottingModal
+            onClose={() => setSlottingModalOpen(false)}
+            zones={zones.isSuccess ? zones.data : []}
+            initialZoneId={zoneId}
           />
         )}
       </>

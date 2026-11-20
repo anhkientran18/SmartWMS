@@ -100,7 +100,33 @@
     "createProductSubtitle": "Khai báo mã SKU, tên sản phẩm, đơn vị tính và chế độ theo dõi.",
     "createProductBtn": "Tạo sản phẩm",
     "saveProductFailed": "Không thể lưu thông tin sản phẩm. Vui lòng kiểm tra lại dữ liệu.",
-    "trackingModeChangeWarning": "Lưu ý: Máy chủ sẽ từ chối đổi Chế độ theo dõi (409 Conflict) nếu sản phẩm đã có serial, tồn kho hoặc chứng từ/workflow đang mở."
+    "trackingModeChangeWarning": "Lưu ý: Máy chủ sẽ từ chối đổi Chế độ theo dõi (409 Conflict) nếu sản phẩm đã có serial, tồn kho hoặc chứng từ/workflow đang mở.",
+    "demandForecast": {
+      "button": "Dự báo nhu cầu",
+      "tooltip": "Dự báo nhu cầu AI cho {{sku}}",
+      "subtitle": "Dự phóng nhu cầu xuất kho bằng AI dựa trên lịch sử tiêu thụ thực tế.",
+      "advisoryTitle": "Dự báo Nhu cầu Xuất kho Tham khảo",
+      "advisoryText": "Dự báo này được AI tạo dựa trên lịch sử xuất kho thực tế (nhặt hàng) trong 90 ngày qua trên toàn bộ hệ thống kho. Dự báo chỉ mang tính tham khảo và KHÔNG cấu thành lệnh điều chuyển, bổ sung tồn kho, giữ chỗ hay đơn mua hàng. Dữ liệu vận hành thực tế luôn là nguồn chuẩn xác.",
+      "loading": "Đang phân tích 90 ngày xuất kho và tạo dự báo AI…",
+      "insufficientHistoryTitle": "Chưa Đủ Lịch Sử Xuất Kho",
+      "insufficientHistoryMessage": "Hệ thống chưa có đủ dữ liệu xuất kho của sản phẩm này trong 90 ngày qua để AI tiến hành dự báo. Dữ liệu danh mục sản phẩm tiêu chuẩn vẫn hoạt động bình thường.",
+      "errorTitle": "Không Thể Tải Dự Báo Nhu Cầu",
+      "chartTitle": "Lịch Sử Xuất Kho & Dự Báo AI",
+      "legendHistory": "Xuất kho ghi nhận (cửa sổ 90 ngày)",
+      "legendForecast": "Điểm dự báo AI trả về",
+      "noPoints": "Chưa có điểm dữ liệu để biểu diễn đồ thị.",
+      "metrics": {
+        "forecastPoints": "Số điểm dự báo trả về",
+        "pointsCount": "{{count}} điểm",
+        "returnedPointsOnly": "Tạo trong khung 30 ngày",
+        "forecastTotal": "Tổng trên các điểm dự báo",
+        "acrossPoints": "Tổng trên {{count}} điểm dự báo trả về",
+        "dailyAverage": "Trung bình mỗi điểm dự báo",
+        "perDayAverage": "Trung bình trên các điểm trả về",
+        "historyPoints": "Xuất kho ghi nhận (cửa sổ 90 ngày)",
+        "historyDaysCount": "{{count}} ngày có phát sinh"
+      }
+    }
   },
   "f7": {
     "nav": "Lắp ráp Kit",
@@ -267,6 +293,35 @@
     "success": {
       "receive": "Đã nhận hàng. Chi tiết phiếu nhập và tồn kho đang được cập nhật.",
       "putaway": "Đã chuyển hàng. Cất kệ không thay đổi trạng thái phiếu nhập."
+    },
+    "damageVision": {
+      "button": "Kiểm tra hư hại (AI)",
+      "title": "Giám Định Hư Hại Hàng Hóa Bằng AI",
+      "subtitle": "Đánh giá trực quan tình trạng bao bì và hàng hóa nhập kho bằng thị giác máy tính.",
+      "advisoryTitle": "Đánh Giá Trực Quan Mang Tính Tham Khảo",
+      "advisoryText": "Đánh giá của AI này chỉ dựa trên các dấu hiệu nhìn thấy được từ hình ảnh tải lên. Bao bì hư hại không đồng nghĩa với việc sản phẩm bên trong bị hư hỏng. Vui lòng kiểm tra thực tế trước khi ra quyết định nhập kho hoặc phân loại tồn kho.",
+      "privacyNotice": "Hình ảnh đã chọn được gửi đến nhà cung cấp AI để phân tích thị giác. SmartWMS không gửi mã SKU, nhà cung cấp, vị trí kho, số lượng hay danh tính người dùng trong yêu cầu này.",
+      "dropzoneTitle": "Nhấp để chọn ảnh hoặc kéo thả ảnh chụp kiểm hàng vào đây",
+      "supportedFormats": "Định dạng hỗ trợ: JPG, PNG, WEBP (Tối đa 5 MiB)",
+      "changeImage": "Đổi ảnh khác",
+      "clearImage": "Xóa ảnh",
+      "analyzeButton": "Phân Tích Hư Hại",
+      "analyzing": "Đang phân tích…",
+      "loadingText": "Mô hình thị giác AI đang kiểm tra hình ảnh để phát hiện lỗi hoặc hư hỏng…",
+      "errorTitle": "Giám Định Hư Hại Không Thành Công",
+      "resultHeader": "Kết Quả Giám Định",
+      "generatedAt": "Thời điểm phân tích: {{time}}",
+      "damageTypeLabel": "Dạng hư hại / khuyết tật:",
+      "descriptionLabel": "Đánh giá trực quan / Mô tả hư hại:",
+      "recommendedActionLabel": "Khuyến nghị xử lý từ AI:",
+      "severity": {
+        "low": "Mức độ AI: Thấp",
+        "medium": "Mức độ AI: Trung bình",
+        "high": "Mức độ AI: Cao"
+      },
+      "errors": {
+        "singleFileOnly": "Vui lòng chỉ chọn 1 hình ảnh duy nhất cho mỗi lần phân tích."
+      }
     }
   },
   "f1": {
@@ -1974,17 +2029,56 @@
       "storageWarning": "Không thể cập nhật nhật ký an toàn trong sessionStorage. Vui lòng kiểm tra bộ nhớ trình duyệt.",
       "noLot": "Không có lô",
       "errors": {
-        "storage": "Bộ nhớ phiên (sessionStorage) không khả dụng, bị đầy hoặc dữ liệu nhật ký không hợp lệ. Hệ thống đã chặn gửi lệnh POST để đảm bảo an toàn.",
-        "locked": "Thao tác điều chỉnh đang bị khóa do có giao dịch đang xử lý hoặc chờ đối soát.",
-        "contract": "Phản hồi từ máy chủ không đúng định dạng hợp đồng dữ liệu; trạng thái giao dịch được chuyển sang chờ đối soát.",
         "400": "Yêu cầu điều chỉnh bị từ chối (400): Dữ liệu hoặc quy tắc nghiệp vụ không hợp lệ.",
         "401": "Phiên đăng nhập đã hết hạn (401). Vui lòng đăng nhập lại.",
         "403": "Bạn không có quyền thực hiện điều chỉnh tồn kho (403).",
         "404": "Không tìm thấy ô kệ hoặc sản phẩm chỉ định (404).",
         "409": "Xung đột dữ liệu đồng thời (409). Tồn kho chưa bị thay đổi bởi yêu cầu này; vui lòng kiểm tra lại và gửi lại.",
         "422": "Dữ liệu điều chỉnh không thể xử lý (422). Vui lòng kiểm tra lại số lượng và lý do.",
+        "storage": "Bộ nhớ phiên (sessionStorage) không khả dụng, bị đầy hoặc dữ liệu nhật ký không hợp lệ. Hệ thống đã chặn gửi lệnh POST để đảm bảo an toàn.",
+        "locked": "Thao tác điều chỉnh đang bị khóa do có giao dịch đang xử lý hoặc chờ đối soát.",
+        "contract": "Phản hồi từ máy chủ không đúng định dạng hợp đồng dữ liệu; trạng thái giao dịch được chuyển sang chờ đối soát.",
         "network": "Mất kết nối mạng hoặc quá thời gian chờ — kết quả chưa xác định, cần đối soát trước khi thử lại.",
         "server": "Máy chủ trả về lỗi 5xx — kết quả chưa xác định, cần đối soát trước khi thử lại."
+      }
+    },
+    "slotting": {
+      "button": "Khuyến nghị Slotting (AI)",
+      "title": "Khuyến Nghị Vị Trí Lưu Kho Bằng AI",
+      "subtitle": "Phân tích tần suất xuất kho 30 ngày để đề xuất khu vực lưu kho tối ưu và giảm quãng đường di chuyển.",
+      "advisoryTitle": "Khuyến Nghị Tối Ưu Khu Vực Mang Tính Tham Khảo",
+      "advisoryText": "Khuyến nghị tối ưu vị trí dựa trên tần suất xuất kho gần đây và khu vực hiện tại. Sức chứa thực tế và điều kiện vận hành vẫn cần nhân viên kho xác nhận.",
+      "groundingNote": "Dựa trên dữ liệu giao dịch xuất kho thực tế trong 30 ngày. Không tự động chuyển kho, giữ hàng hay cất kệ.",
+      "privacyNotice": "Phân tích được thực hiện bằng dịch vụ AI (Google Gemini). Dữ liệu gửi đi bao gồm mã SKU, tên sản phẩm, số lượng xuất và tên khu vực. Giá cả, thông tin khách hàng và nhà cung cấp không bao giờ được gửi.",
+      "scopeLabel": "Phạm vi / Khu vực lưu kho:",
+      "allZones": "Tất cả các khu vực đủ điều kiện",
+      "generate": "Tạo khuyến nghị",
+      "generating": "Đang phân tích…",
+      "retry": "Thử lại",
+      "loading": "Đang phân tích tần suất xuất kho 30 ngày và tạo khuyến nghị khu vực lưu kho…",
+      "empty": "Không có khuyến nghị vị trí lưu kho nào cho phạm vi đã chọn.",
+      "emptyHint": "Đảm bảo sản phẩm có tồn kho thực tế và có phát sinh giao dịch xuất kho trong 30 ngày qua.",
+      "recommendationsCount_one": "{{count}} khuyến nghị tối ưu khu vực",
+      "recommendationsCount_other": "{{count}} khuyến nghị tối ưu khu vực",
+      "displayOrderNotice": "Xếp theo tần suất xuất kho giảm dần",
+      "sku": "Mã SKU",
+      "productName": "Tên sản phẩm",
+      "currentZone": "Khu vực hiện tại",
+      "suggestedZone": "Khu vực đề xuất",
+      "velocity": "Tần suất 30 ngày",
+      "reasoning": "Lý do & Cơ sở từ AI",
+      "sameZoneOptimal": "Không đề xuất đổi khu vực",
+      "velocityFast": "Xuất nhanh (Fast)",
+      "velocityMedium": "Xuất vừa (Medium)",
+      "velocitySlow": "Xuất chậm (Slow)",
+      "errors": {
+        "title": "Không Thể Tạo Khuyến Nghị",
+        "scopeUnavailable": "Không thể tạo khuyến nghị cho phạm vi đã chọn. Khu vực có thể không còn hoạt động hoặc chưa có đủ dữ liệu xuất kho.",
+        "invalidResponse": "Không thể xử lý phản hồi khuyến nghị từ AI.",
+        "providerUnavailable": "Dịch vụ AI slotting hiện không khả dụng. Hoạt động kho vẫn diễn ra bình thường.",
+        "timeout": "Yêu cầu AI slotting đã hết thời gian chờ.",
+        "forbidden": "Bạn không có quyền xem khuyến nghị vị trí lưu kho.",
+        "unknown": "Không thể tải khuyến nghị vị trí lưu kho. Hoạt động kho vẫn diễn ra bình thường."
       }
     }
   },
@@ -2226,12 +2320,12 @@
       "uncertain": "Chưa rõ kết quả — cần đối soát"
     },
     "errors": {
-      "review": "Giao dịch này đang khóa. Kiểm tra kết quả hiện tại trước khi tiếp tục.",
-      "storage": "Bộ nhớ an toàn luân chuyển không khả dụng hoặc hỏng. Giữ tab này và liên hệ người phụ trách để đối soát trước khi xóa dữ liệu trình duyệt. Chưa gửi giao dịch mới.",
       "400": "Kiểm tra dữ liệu luân chuyển.",
       "401": "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.",
       "403": "Bạn không có quyền thực hiện thao tác này.",
       "409": "Tồn kho đã thay đổi đồng thời. Làm mới và xem lại trước lần gửi mới.",
+      "review": "Giao dịch này đang khóa. Kiểm tra kết quả hiện tại trước khi tiếp tục.",
+      "storage": "Bộ nhớ an toàn luân chuyển không khả dụng hoặc hỏng. Giữ tab này và liên hệ người phụ trách để đối soát trước khi xóa dữ liệu trình duyệt. Chưa gửi giao dịch mới.",
       "network": "Chưa nhận được phản hồi đáng tin cậy.",
       "server": "Server chưa cung cấp kết quả đáng tin cậy."
     },
@@ -2256,5 +2350,50 @@
     "deliveryAddress": "Địa chỉ giao hàng",
     "createBtn": "Tạo khách hàng",
     "saveFailed": "Không thể lưu thông tin khách hàng. Vui lòng kiểm tra lại dữ liệu."
+  },
+  "inbound": {
+    "ocr": {
+      "modalTitle": "Quét Hóa Đơn Nhập Kho (OCR)",
+      "modalSubtitle": "Bóc tách thông tin hóa đơn bằng AI và kiểm tra trước khi đưa vào phiếu nhập.",
+      "errors": {
+        "noFile": "Chưa chọn tệp tin.",
+        "pdfNotSupported": "Định dạng PDF không được hỗ trợ. Vui lòng tải lên ảnh JPG, PNG hoặc WEBP.",
+        "emptyFile": "Tệp tin đã chọn bị rỗng.",
+        "fileTooLarge": "Dung lượng tệp vượt quá giới hạn 5 MiB.",
+        "invalidType": "Định dạng tệp không được hỗ trợ. Chỉ chấp nhận ảnh JPG, PNG và WEBP.",
+        "badRequest": "Tài liệu ảnh không hợp lệ để bóc tách OCR.",
+        "aiInvalid": "AI không thể trích xuất cấu trúc hóa đơn hợp lệ từ ảnh.",
+        "aiUnavailable": "Dịch vụ AI hiện không khả dụng hoặc chưa được cấu hình."
+      }
+    }
+  },
+  "aiChat": {
+    "title": "Trợ lý Tư vấn Vận hành AI",
+    "badge": "Tư vấn nghiệp vụ",
+    "triggerTooltip": "Mở Trợ lý Tư vấn Vận hành AI",
+    "disclaimerTitle": "Lưu ý về nguồn dữ liệu",
+    "disclaimerText": "Trợ lý AI chỉ cung cấp hướng dẫn nghiệp vụ và nguyên lý logistics chung. Dữ liệu thực tế tại các màn hình hệ thống (Tồn kho, Đơn hàng, Phiếu nhập) là nguồn thông tin chuẩn xác và có hiệu lực cao nhất.",
+    "statelessNotice": "Mỗi câu hỏi được xử lý độc lập. AI không lưu giữ ngữ cảnh của các tin nhắn trước.",
+    "welcomeMessage": "Xin chào! Tôi là Trợ lý Tư vấn Nghiệp vụ SmartWMS. Tôi có thể hỗ trợ giải thích các khái niệm kho bãi, quy tắc FIFO/FEFO, phương pháp sắp xếp put-away hoặc các bước điều tra sai lệch tồn kho. Bạn cần hỗ trợ gì hôm nay?",
+    "inputPlaceholder": "Hỏi về quy trình kho và hướng dẫn vận hành chung...",
+    "charCounter": "{{count}} / 2000",
+    "send": "Gửi",
+    "sending": "Đang suy nghĩ...",
+    "clearTranscript": "Làm mới hội thoại",
+    "quickPromptsTitle": "Chủ đề gợi ý",
+    "quickPrompts": {
+      "fifoFefo": "Phân biệt nguyên tắc FIFO và FEFO",
+      "discrepancy": "Các bước điều tra sai lệch tồn kho",
+      "putaway": "Kinh nghiệm sắp xếp hàng hóa put-away",
+      "cycleCount": "Danh mục kiểm tra chuẩn bị kiểm kê"
+    },
+    "errors": {
+      "empty": "Nội dung tin nhắn không được để trống.",
+      "tooLong": "Tin nhắn không được vượt quá 2000 ký tự.",
+      "responseInvalid": "Không thể xử lý phản hồi từ AI. Vui lòng thử lại.",
+      "unavailable": "Dịch vụ tư vấn AI hiện không khả dụng. Các nghiệp vụ SmartWMS khác vẫn hoạt động bình thường.",
+      "timeout": "Yêu cầu tới AI đã hết thời gian chờ. Vui lòng thử lại.",
+      "general": "Không thể kết nối tới dịch vụ tư vấn AI. Vui lòng thử lại sau."
+    }
   }
 }
