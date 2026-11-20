@@ -28,11 +28,11 @@ const response = (config: any, data: any, status = 200) => ({
   statusText: String(status),
 });
 
-test('canManageProducts role guard admits Admin, WarehouseManager, Staff and denies unauthenticated or unknown roles without HTTP calls', async () => {
-  for (const role of ['Admin', 'WarehouseManager', 'Staff']) {
+test('canManageProducts role guard admits Admin, WarehouseManager and denies Staff, unauthenticated or unknown roles without HTTP calls', async () => {
+  for (const role of ['Admin', 'WarehouseManager']) {
     assert.equal(canManageProducts(role), true);
   }
-  for (const role of [undefined, '', 'Guest', 'Viewer']) {
+  for (const role of ['Staff', undefined, '', 'Guest', 'Viewer']) {
     assert.equal(canManageProducts(role), false);
   }
 
@@ -42,30 +42,32 @@ test('canManageProducts role guard admits Admin, WarehouseManager, Staff and den
     return response(config, { isSuccess: true, data: id(1) });
   };
 
-  sessionStore.set(null);
-  await assert.rejects(
-    () =>
-      productMutationApi.createProduct({
-        sku: 'SKU-01',
-        name: 'Product 01',
-        unit: 'Pcs',
-        weight: 1,
-        trackingMode: 0,
-      }),
-    (err: any) => err?.status === 403
-  );
-  await assert.rejects(
-    () =>
-      productMutationApi.updateProduct({
-        id: id(1),
-        sku: 'SKU-01',
-        name: 'Product 01',
-        unit: 'Pcs',
-        weight: 1,
-        trackingMode: 0,
-      }),
-    (err: any) => err?.status === 403
-  );
+  for (const session of [null, user('Staff')]) {
+    sessionStore.set(session);
+    await assert.rejects(
+      () =>
+        productMutationApi.createProduct({
+          sku: 'SKU-01',
+          name: 'Product 01',
+          unit: 'Pcs',
+          weight: 1,
+          trackingMode: 0,
+        }),
+      (err: any) => err?.status === 403
+    );
+    await assert.rejects(
+      () =>
+        productMutationApi.updateProduct({
+          id: id(1),
+          sku: 'SKU-01',
+          name: 'Product 01',
+          unit: 'Pcs',
+          weight: 1,
+          trackingMode: 0,
+        }),
+      (err: any) => err?.status === 403
+    );
+  }
   assert.equal(calls, 0);
 });
 
@@ -272,6 +274,16 @@ test('ProductWorkspace renders Add Product and row-level Edit buttons for author
     );
     assert.ok(tableHtml.includes(`title="${dict.common.buttons.edit}"`));
     assert.ok(!tableHtml.includes(`title="${dict.common.buttons.delete}"`));
+
+    sessionStore.set(user('Staff'));
+    const staffWorkspaceHtml = renderToStaticMarkup(
+      <QueryClientProvider client={qc}>
+        <ProductWorkspace />
+      </QueryClientProvider>
+    );
+    assert.ok(!staffWorkspaceHtml.includes(dict.f8.addProduct));
+    assert.ok(!staffWorkspaceHtml.includes(`title="${dict.common.buttons.edit}"`));
+    sessionStore.set(user('Admin'));
     qc.clear();
   }
   await i18n.changeLanguage('vi-VN');

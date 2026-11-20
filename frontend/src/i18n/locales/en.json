@@ -1776,6 +1776,50 @@
     "email": {
       "to": "TO:",
       "subject": "SUBJECT:"
+    },
+    "executive": {
+      "title": "Executive Overview & AI Insights",
+      "subtitle": "Authoritative operational intelligence and warehouse performance analysis.",
+      "aiAnalysisTitle": "AI Strategic Assessment",
+      "aiGenerated": "AI Generated",
+      "aiOfflineBadge": "Standard Mode",
+      "aiUnavailableNotice": "AI insight is currently unavailable. Authoritative operational metrics are displayed directly from the warehouse database.",
+      "inboundPipeline": "Inbound Receipts Pipeline",
+      "outboundPipeline": "Outbound Orders Pipeline",
+      "recentTransactions": "Recent Ledger Transactions",
+      "totalCount": "Total: {{count}}",
+      "inboundStatuses": {
+        "Completed": "Completed",
+        "New": "New",
+        "Processing": "Processing",
+        "Received": "Received",
+        "Confirmed": "Confirmed",
+        "Cancelled": "Cancelled"
+      },
+      "outboundStatuses": {
+        "Allocated": "Allocated",
+        "Packed": "Packed",
+        "Pending": "Pending",
+        "Picked": "Picked",
+        "Shipped": "Shipped",
+        "Completed": "Completed",
+        "Cancelled": "Cancelled"
+      },
+      "transactionTypes": {
+        "SHIP_CONFIRM": "Ship Confirm",
+        "OUTBOUND": "Outbound",
+        "RESERVATION": "Reservation",
+        "INBOUND": "Inbound",
+        "TRANSFER": "Transfer",
+        "ADJUSTMENT": "Adjustment",
+        "RESERVATION_RELEASE": "Release Reservation",
+        "STATUS_CHANGE": "Status Change",
+        "KITTING_ISSUE": "Kit Component Issue",
+        "KITTING_RECEIPT": "Kit Finished Receipt",
+        "FEFO_AUTO_LOCK": "FEFO Auto Lock",
+        "WAVE_OUTBOUND": "Wave Outbound",
+        "OUTBOUND_SERIAL": "Serial Outbound"
+      }
     }
   },
   "f2": {

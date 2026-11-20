@@ -35,10 +35,12 @@ public class CustomersController : ControllerBase
     public async Task<IActionResult> GetById(Guid id)
         => (await _mediator.Send(new GetCustomerByIdQuery(id))).ToActionResult();
 
+    [Authorize(Roles = "Admin,WarehouseManager")]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateCustomerRequest request)
         => (await _mediator.Send(new CreateCustomerCommand(request))).ToActionResult();
 
+    [Authorize(Roles = "Admin,WarehouseManager")]
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCustomerRequest request)
     {
@@ -48,6 +50,7 @@ public class CustomersController : ControllerBase
         return (await _mediator.Send(new UpdateCustomerCommand(request))).ToActionResult();
     }
 
+    [Authorize(Roles = "Admin,WarehouseManager")]
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
         => (await _mediator.Send(new DeleteCustomerCommand(new DeleteCustomerRequest { Id = id }))).ToActionResult();

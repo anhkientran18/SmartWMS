@@ -47,6 +47,7 @@ public class InboundReceiptsController : ControllerBase
     public async Task<IActionResult> ConfirmInboundReceipt([FromBody] ReceiveInboundReceiptRequest request)
         => (await _mediator.Send(new ReceiveInboundReceiptCommand(request))).ToActionResult();
 
+    [Authorize(Roles = "Admin,WarehouseManager")]
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateInboundReceiptRequest request)
     {
@@ -56,6 +57,7 @@ public class InboundReceiptsController : ControllerBase
         return (await _mediator.Send(new UpdateInboundReceiptCommand(request))).ToActionResult();
     }
 
+    [Authorize(Roles = "Admin,WarehouseManager")]
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteInboundReceipt(Guid id)
         => (await _mediator.Send(new DeleteInboundReceiptCommand(new DeleteInboundReceiptRequest { Id = id }))).ToActionResult();

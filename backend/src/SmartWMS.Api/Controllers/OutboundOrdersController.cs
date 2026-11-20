@@ -47,10 +47,12 @@ public class OutboundOrdersController : ControllerBase
     public async Task<IActionResult> GetById(Guid id)
         => (await _mediator.Send(new GetOutboundOrderByIdQuery(new OutboundOrderByIdQueryRequest { Id = id }))).ToActionResult();
 
+    [Authorize(Roles = "Admin,WarehouseManager")]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateOutboundOrderRequest request)
         => (await _mediator.Send(new CreateOutboundOrderCommand(request))).ToActionResult();
 
+    [Authorize(Roles = "Admin,WarehouseManager")]
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateOutboundOrderRequest request)
     {
@@ -60,14 +62,17 @@ public class OutboundOrdersController : ControllerBase
         return (await _mediator.Send(new UpdateOutboundOrderCommand(request))).ToActionResult();
     }
 
+    [Authorize(Roles = "Admin,WarehouseManager")]
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
         => (await _mediator.Send(new DeleteOutboundOrderCommand(new DeleteOutboundOrderRequest { Id = id }))).ToActionResult();
 
+    [Authorize(Roles = "Admin,WarehouseManager")]
     [HttpPost("allocate-pick-task")]
     public async Task<IActionResult> AllocatePickTask([FromBody] CreatePickTaskRequest request)
         => (await _mediator.Send(new CreatePickTaskCommand(request))).ToActionResult();
 
+    [Authorize(Roles = "Admin,WarehouseManager")]
     [HttpPost("create-wave-pick")]
     public async Task<IActionResult> CreateWavePick([FromBody] CreateWavePickRequest request)
         => (await _mediator.Send(new CreateWavePickTaskCommand(request))).ToActionResult();
@@ -84,6 +89,7 @@ public class OutboundOrdersController : ControllerBase
     public async Task<IActionResult> Pack(Guid id, CancellationToken ct)
         => (await _mediator.Send(new PackOutboundOrderCommand(id), ct)).ToActionResult();
 
+    [Authorize(Roles = "Admin,WarehouseManager")]
     [HttpPost("{id:guid}/ship")]
     public async Task<IActionResult> Ship(Guid id, [FromBody] ShipOutboundOrderRequest request, CancellationToken cancellationToken)
         => (await _mediator.Send(new ShipOutboundOrderCommand(id, request), cancellationToken)).ToActionResult();

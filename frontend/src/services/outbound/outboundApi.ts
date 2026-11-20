@@ -16,8 +16,10 @@ const object = (v: unknown): v is Record<string, any> => !!v && typeof v === 'ob
 const count = (v: unknown): v is number => Number.isInteger(v) && Number(v) >= 0 && Number(v) <= 2147483647;
 const date = (v: unknown) => typeof v === 'string' && Number.isFinite(Date.parse(v));
 export function outboundContractError(): never { throw normalizeApiError(502, { code: 'FE_OUTBOUND_CONTRACT' }); }
+export const canCreateOutbound = (role?: string) => role === 'Admin' || role === 'WarehouseManager';
 export const canExecuteOutbound = (role?: string) => ['Admin', 'WarehouseManager', 'Staff'].includes(role ?? '');
 function authorize() { if (isDemoMode || !canExecuteOutbound(sessionStore.get()?.role)) throw normalizeApiError(403); }
+function authorizeCreate() { if (isDemoMode || !canCreateOutbound(sessionStore.get()?.role)) throw normalizeApiError(403); }
 function unwrap(v: unknown): any { if (!object(v) || v.isSuccess !== true) outboundContractError(); return v.data; }
 export const outboundStatuses = ['Pending', 'Allocated', 'Picked', 'Packed', 'Shipped', 'Cancelled', 'Waved'] as const;
 export const outboundStatusKey = (s: string) => outboundStatuses.find(value => value === s);
@@ -90,7 +92,7 @@ export const outboundApi = {
     return v.map(({ id, code, name }) => ({ id, code, name }));
   },
   create: async (body: CreateOutbound) => {
-    authorize(); validateOutboundCreate(body);
+    authorizeCreate(); validateOutboundCreate(body);
     const { orderNumber, customerId, binId, expectedShipDate, priority, notes, items } = body;
     const id = unwrap((await httpClient.post('/api/v1/OutboundOrders', { orderNumber, customerId, binId, expectedShipDate, priority, notes, items: items.map(({ productId, requestedQuantity }) => ({ productId, requestedQuantity })) })).data);
     if (!guid(id)) outboundContractError(); return id;

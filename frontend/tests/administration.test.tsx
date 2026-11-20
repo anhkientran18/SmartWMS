@@ -1,11 +1,22 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import axios from 'axios';
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
 import { adminRead, adminWrite, adminDelete, validAdminData } from '../src/services/administration/adminApi';
 import { httpClient } from '../src/services/api/httpClient';
 import { sessionStore } from '../src/features/auth/session';
 import { safeAuditValues } from '../src/features/administration/AuditLogWorkspace';
+import { canViewExecutiveDashboard, getExecutiveDashboard, ExecutiveDashboardData } from '../src/services/dashboard/executiveDashboardApi';
+import ExecutiveInsightCard from '../src/features/dashboard/ExecutiveInsightCard';
+import OperationalDashboard from '../src/features/dashboard/OperationalDashboard';
+import { inventoryQueries } from '../src/services/inventory/inventoryQueries';
 import i18n from '../src/i18n';
+import en from '../src/i18n/locales/en.json';
+import vi from '../src/i18n/locales/vi.json';
 
 const id = '50000000-0000-0000-0000-000000000001';
 const response = (config: any, data: unknown, status = 200) => ({ config, data, status, headers: {}, statusText: String(status) });
@@ -62,4 +73,126 @@ test('Audit detail safely redacts nested credentials without evaluating JSON str
 test('VI and EN authorization errors are available without depending on server prose', async () => {
   await i18n.changeLanguage('en-US'); assert.ok(i18n.t('f1.errors.403').length > 5);
   await i18n.changeLanguage('vi-VN'); assert.ok(i18n.t('f1.errors.403').length > 5);
+});
+test('K11 executiveDashboardApi restricts Staff with 403 and normalizes Admin/WarehouseManager executive payload', async () => {
+  assert.equal(canViewExecutiveDashboard('Admin'), true);
+  assert.equal(canViewExecutiveDashboard('WarehouseManager'), true);
+  assert.equal(canViewExecutiveDashboard('Staff'), false);
+  assert.equal(canViewExecutiveDashboard(undefined), false);
+
+  let calls = 0;
+  httpClient.defaults.adapter = async config => { calls++; return response(config, { isSuccess: true, data: {} }); };
+  sessionStore.set({ token: `fixture.${btoa(JSON.stringify({ exp: Date.now() / 1000 + 3600 }))}.unsigned`, username: 'staff-user', role: 'Staff' });
+  await assert.rejects(() => getExecutiveDashboard(), (err: any) => err?.status === 403);
+  assert.equal(calls, 0);
+
+  session();
+  httpClient.defaults.adapter = async config => {
+    assert.equal(config.url, '/api/v1/Dashboard/executive');
+    return response(config, {
+      isSuccess: true,
+      data: {
+        warehouse: {
+          totalProducts: 45,
+          totalActiveBins: 120,
+          globalOccupancyRate: 68.5,
+          lowStockAlerts: [{ productId: id, sku: 'SKU-01', productName: 'Widget A', currentStock: 5 }],
+          recentTransactions: [{ sku: 'SKU-01', transactionType: 'INBOUND', quantityChanged: 20, location: 'BIN-01', createdAt: '2026-10-31T10:00:00Z' }],
+        },
+        inventory: { totalProducts: 45, totalQuantity: 1500, lowStockItems: 3 },
+        inboundReceiptsByStatus: { New: 4, Processing: 2, Completed: 18 },
+        outboundOrdersByStatus: { Pending: 1, Picked: 3, Shipped: 25 },
+        aiInsight: {
+          totalProducts: 45,
+          totalBins: 120,
+          overallOccupancyPercentage: 68.5,
+          aiExecutiveSummary: 'Storage occupancy is healthy at 68.5%.',
+          aiAvailable: true,
+          aiErrorCode: null,
+        },
+      },
+    });
+  };
+  const data = await getExecutiveDashboard();
+  assert.equal(data.warehouse.totalProducts, 45);
+  assert.equal(data.inboundReceiptsByStatus['New'], 4);
+  assert.equal(data.outboundOrdersByStatus['Shipped'], 25);
+  assert.equal(data.aiInsight.aiAvailable, true);
+});
+test('K11 ExecutiveInsightCard and OperationalDashboard render for Admin/WarehouseManager, hide for Staff, and handle AI offline fallback', async () => {
+  const sampleData: ExecutiveDashboardData = {
+    warehouse: {
+      totalProducts: 50,
+      totalActiveBins: 100,
+      globalOccupancyRate: 70,
+      lowStockAlerts: [],
+      recentTransactions: [{ sku: 'SKU-01', transactionType: 'INBOUND', quantityChanged: 10, location: 'BIN-A', createdAt: '2026-10-31T12:00:00Z' }],
+    },
+    inventory: { totalProducts: 50, totalQuantity: 1000, lowStockItems: 0 },
+    inboundReceiptsByStatus: { New: 3, Completed: 9 },
+    outboundOrdersByStatus: { Pending: 2, Shipped: 10 },
+    aiInsight: {
+      totalProducts: 50,
+      totalBins: 100,
+      overallOccupancyPercentage: 70,
+      aiExecutiveSummary: 'AI operational assessment: optimal storage capacity.',
+      aiAvailable: true,
+      aiErrorCode: null,
+    },
+  };
+
+  await i18n.changeLanguage('en-US');
+  const onlineHtml = renderToStaticMarkup(<ExecutiveInsightCard data={sampleData} />);
+  assert.ok(onlineHtml.includes('AI operational assessment: optimal storage capacity.'));
+  assert.ok(onlineHtml.includes(en.dashboard.executive.aiGenerated));
+  assert.ok(onlineHtml.includes('SKU-01'));
+
+  const offlineHtml = renderToStaticMarkup(
+    <ExecutiveInsightCard data={{ ...sampleData, aiInsight: { ...sampleData.aiInsight, aiAvailable: false, aiExecutiveSummary: '' } }} />
+  );
+  assert.ok(offlineHtml.includes(en.dashboard.executive.aiOfflineBadge));
+  assert.ok(offlineHtml.includes(en.dashboard.executive.aiUnavailableNotice));
+
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+  qc.setQueryData(inventoryQueries.summary().queryKey, { totalProducts: 50, totalQuantity: 1000, lowStockItems: 0 });
+  qc.setQueryData(inventoryQueries.alerts().queryKey, []);
+  qc.setQueryData(['private', 'dashboard', 'occupancy'], []);
+  qc.setQueryData(['private', 'dashboard', 'chart', 7], []);
+  qc.setQueryData(['private', 'dashboard', 'executive'], sampleData);
+
+  session();
+  const adminDashHtml = renderToStaticMarkup(<QueryClientProvider client={qc}><MemoryRouter><OperationalDashboard /></MemoryRouter></QueryClientProvider>);
+  assert.ok(adminDashHtml.includes(en.dashboard.executive.subtitle));
+  assert.ok(adminDashHtml.includes('AI operational assessment: optimal storage capacity.'));
+
+  sessionStore.set({ token: `fixture.${btoa(JSON.stringify({ exp: Date.now() / 1000 + 3600 }))}.unsigned`, username: 'staff-user', role: 'Staff' });
+  const staffDashHtml = renderToStaticMarkup(<QueryClientProvider client={qc}><MemoryRouter><OperationalDashboard /></MemoryRouter></QueryClientProvider>);
+  assert.ok(!staffDashHtml.includes(en.dashboard.executive.subtitle));
+  qc.clear();
+
+  const leaves = (obj: Record<string, any>, prefix = ''): string[] =>
+    Object.entries(obj).flatMap(([k, v]) => (v && typeof v === 'object' ? leaves(v, `${prefix}${k}.`) : [`${prefix}${k}`]));
+  assert.deepEqual(leaves(vi.dashboard.executive).sort(), leaves(en.dashboard.executive).sort());
+  await i18n.changeLanguage('vi-VN');
+});
+test('K11 backend controllers and Program.cs enforce RBAC hardening, BinsController intersection fix, and Hangfire dashboard guard', () => {
+  const products = readFileSync('../backend/src/SmartWMS.Api/Controllers/ProductsController.cs', 'utf8');
+  assert.equal((products.match(/\[Authorize\(Roles = "Admin,WarehouseManager"\)\]/g) ?? []).length, 3);
+
+  const customers = readFileSync('../backend/src/SmartWMS.Api/Controllers/CustomersController.cs', 'utf8');
+  assert.equal((customers.match(/\[Authorize\(Roles = "Admin,WarehouseManager"\)\]/g) ?? []).length, 3);
+
+  const inbound = readFileSync('../backend/src/SmartWMS.Api/Controllers/InboundReceiptsController.cs', 'utf8');
+  assert.equal((inbound.match(/\[Authorize\(Roles = "Admin,WarehouseManager"\)\]/g) ?? []).length, 3);
+
+  const outbound = readFileSync('../backend/src/SmartWMS.Api/Controllers/OutboundOrdersController.cs', 'utf8');
+  assert.equal((outbound.match(/\[Authorize\(Roles = "Admin,WarehouseManager"\)\]/g) ?? []).length, 6);
+
+  const bins = readFileSync('../backend/src/SmartWMS.Api/Controllers/BinsController.cs', 'utf8');
+  assert.match(bins, /\[Authorize\]\r?\n\[ApiController\]/);
+  assert.match(bins, /\[Authorize\(Roles = "Admin,WarehouseManager,Staff"\)\]\r?\n\s*\[HttpGet\("\{id:guid\}\/contents"\)\]/);
+  assert.equal((bins.match(/\[Authorize\(Roles = "Admin,WarehouseManager"\)\]/g) ?? []).length, 6);
+
+  const program = readFileSync('../backend/src/SmartWMS.Api/Program.cs', 'utf8');
+  assert.match(program, /if\s*\(enableHangfireServer\)\s*\{\s*app\.UseHangfireDashboard\("\/hangfire"\);\s*\}/);
 });

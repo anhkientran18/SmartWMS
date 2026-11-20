@@ -24,7 +24,7 @@ export interface UpdateProductPayload {
 }
 
 export const canManageProducts = (role?: string) =>
-  ['Admin', 'WarehouseManager', 'Staff'].includes(role ?? '');
+  role === 'Admin' || role === 'WarehouseManager';
 
 function authorize() {
   if (isDemoMode || !canManageProducts(sessionStore.get()?.role)) {

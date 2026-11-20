@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace SmartWMS.Api.Controllers;
 
-[Authorize(Roles = "Admin,WarehouseManager")]
+[Authorize]
 [ApiController]
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/[controller]")]
@@ -25,12 +25,14 @@ public class BinsController : ControllerBase
     private readonly IMediator _mediator;
     public BinsController(IMediator mediator) => _mediator = mediator;
 
+    [Authorize(Roles = "Admin,WarehouseManager")]
     [HttpGet("list")]
     public async Task<IActionResult> GetList([FromQuery] Guid? zoneId = null, [FromQuery] string? searchKeyword = null)
     => (await _mediator.Send(new GetBinListQuery(new BinListQueryRequest { ZoneId = zoneId, SearchKeyword = searchKeyword }))).ToActionResult();
 
     // 1. GET /api/v1/bins
     // Chuẩn RESTful: Lấy danh sách ô kệ, lọc linh hoạt qua Query Params (zoneId, searchTerm, pageNumber, pageSize)
+    [Authorize(Roles = "Admin,WarehouseManager")]
     [HttpGet]
     public async Task<IActionResult> GetPaginatedBins(
         [FromQuery] Guid? zoneId = null,
@@ -47,6 +49,7 @@ public class BinsController : ControllerBase
 
     // 2. GET /api/v1/bins/{id}
     // Lấy thông tin chi tiết 1 ô kệ theo ID
+    [Authorize(Roles = "Admin,WarehouseManager")]
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id)
         => (await _mediator.Send(new GetBinByIdQuery(new BinByIdQueryRequest { Id = id }))).ToActionResult();
@@ -59,11 +62,13 @@ public class BinsController : ControllerBase
         => (await _mediator.Send(new GetBinContentQuery(new BinContentQueryRequest { BinId = id }))).ToActionResult();
 
     // 4. POST /api/v1/bins - Tạo ô kệ mới
+    [Authorize(Roles = "Admin,WarehouseManager")]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateBinRequest request)
         => (await _mediator.Send(new CreateBinCommand(request))).ToActionResult();
 
     // 5. PUT /api/v1/bins/{id} - Cập nhật thông tin ô kệ
+    [Authorize(Roles = "Admin,WarehouseManager")]
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateBinRequest request)
     {
@@ -72,6 +77,7 @@ public class BinsController : ControllerBase
     }
 
     // 6. DELETE /api/v1/bins/{id} - Xóa ô kệ
+    [Authorize(Roles = "Admin,WarehouseManager")]
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id)
         => (await _mediator.Send(new DeleteBinCommand(new DeleteBinRequest { Id = id }))).ToActionResult();

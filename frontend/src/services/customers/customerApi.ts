@@ -25,7 +25,7 @@ export interface UpdateCustomerPayload extends CreateCustomerPayload {
 }
 
 export const canManageCustomers = (role?: string) =>
-  ['Admin', 'WarehouseManager', 'Staff'].includes(role ?? '');
+  role === 'Admin' || role === 'WarehouseManager';
 
 function authorize() {
   if (isDemoMode || !canManageCustomers(sessionStore.get()?.role)) {
