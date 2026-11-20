@@ -3,12 +3,12 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = (Get-Location).Path
 $mirror = Join-Path $repoRoot 'obj/F1/source'
 New-Item -ItemType Directory -Force -Path $mirror | Out-Null
-$files = @((git ls-files) + (git ls-files --others --exclude-standard verification/AcceptanceF1 SmartWMS.Application/Common/Exceptions)) | Sort-Object -Unique
+$files = @((git ls-files) + (git ls-files --others --exclude-standard verification/AcceptanceF1 backend/src/SmartWMS.Application/Common/Exceptions)) | Sort-Object -Unique
 foreach ($relative in $files) {
     if ($relative -match '(^|/)(obj|bin)/' -or $relative -match '\.user$' -or $relative -notmatch '\.(cs|csproj|json|slnx|resx)$') { continue }
     $destination = Join-Path $mirror $relative
     New-Item -ItemType Directory -Force -Path (Split-Path $destination) | Out-Null
-    if ($relative -eq 'SmartWMS.Infrastructure/Services/PasswordHasher.cs') {
+    if ($relative -eq 'backend/src/SmartWMS.Infrastructure/Services/PasswordHasher.cs') {
         # Use the committed dependency; do not depend on or rewrite the dirty baseline.
         $content = git show "HEAD:$relative"
         [System.IO.File]::WriteAllLines($destination, [string[]]$content, [System.Text.UTF8Encoding]::new($false))

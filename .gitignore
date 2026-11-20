@@ -11,7 +11,7 @@
 .vs/
 
 # Logs (Chặn toàn bộ file nhật ký hệ thống và thư mục Logs rác)
-SmartWMS.Api/Logs/
+backend/src/SmartWMS.Api/Logs/
 Logs/
 *.log
 smartwms-log-*.txt

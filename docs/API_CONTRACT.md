@@ -7,7 +7,7 @@ Tài liệu này hợp nhất lifecycle trước đây ở LIFECYCLE_STATUS và 
 ## Wire and authorization
 
 - Base route thường `/api/v1`; controller là authority. Tên command/query không tự tạo public endpoint. JSON DTOs dùng camelCase; body trực tiếp trừ wrapper được controller bind rõ, như Cycle Count create.
-- Success qua [ResultExtensions](../SmartWMS.Api/Extensions/ResultExtensions.cs) là HTTP 200 + Result, kể cả create/delete; không mặc định 201/204. Reports/export trả binary XLSX; vision endpoints có custom envelope.
+- Success qua [ResultExtensions](../backend/src/SmartWMS.Api/Extensions/ResultExtensions.cs) là HTTP 200 + Result, kể cả create/delete; không mặc định 201/204. Reports/export trả binary XLSX; vision endpoints có custom envelope.
 - Result failure có `isSuccess:false,message,errorCode,errors`; exception/model binding có ProblemDetails/ValidationProblemDetails. Middleware 401/403 có thể bodyless; path/body ID mismatch có thể chỉ có message. Không parse business flow từ message tiếng Việt.
 - 400 validation/business rejection; 401 authentication; 403 role/ownership; mapped not-found 404 (một số legacy missing-object vẫn 400); 409 conflict/uniqueness/state; unexpected/storage 500. Provider/schema/timeout có 502/503/504; provider 401 không phải FE login expiry.
 - Enum numeric: TrackingMode None=0/Lot=1/Serial=2, BinPurpose Storage=0/Staging=1, InventoryStatus Available=1/Reserved=2/QCHold=3/Damaged=4/Expired=5. Bin-content display status/expiry có thể là string; không dùng display value làm mutation payload.
@@ -24,7 +24,7 @@ Tài liệu này hợp nhất lifecycle trước đây ở LIFECYCLE_STATUS và 
 | Bin contents | Admin/WM do controller/method intersection |
 | Product/Customer master CRUD và một số outbound planning/ship | Broad Staff admission vẫn có; product policy chưa được giải quyết bởi tài liệu |
 
-Nguồn: [Inbound controller](../SmartWMS.Api/Controllers/InboundReceiptsController.cs), [Inventory controller](../SmartWMS.Api/Controllers/InventoryController.cs), [Cycle controller](../SmartWMS.Api/Controllers/CycleCountingController.cs), [CycleCountAccess](../SmartWMS.Application/Features/CycleCounting/CycleCountAccess.cs), [S1 historical matrix](PHASE_S1_ROLE_MATRIX.md). Matrix S1 trước inbound-create fix không được dùng để cho Staff tạo receipt.
+Nguồn: [Inbound controller](../backend/src/SmartWMS.Api/Controllers/InboundReceiptsController.cs), [Inventory controller](../backend/src/SmartWMS.Api/Controllers/InventoryController.cs), [Cycle controller](../backend/src/SmartWMS.Api/Controllers/CycleCountingController.cs), [CycleCountAccess](../backend/src/SmartWMS.Application/Features/CycleCounting/CycleCountAccess.cs), [S1 historical matrix](PHASE_S1_ROLE_MATRIX.md). Matrix S1 trước inbound-create fix không được dùng để cho Staff tạo receipt.
 
 ## Stock and transactions
 
@@ -34,7 +34,7 @@ Inventory identity gồm bin/product/normalized lot/status cùng metadata constr
 
 SaveChanges atomic cho write batch không tự bảo vệ read/check trước đó. Hardened stock flows dùng coordinator/explicit transaction, SQL locks/range locks và rowversion; direct B3 còn locks/reloads order/items/reservations. Audit đi cùng SaveChanges; inventory ledger giữ stock/workflow references riêng. Notification không thay ledger hoặc transaction receipt; receiving catch/log lỗi notification sau commit vẫn trả success. Không có distributed outbox guarantee.
 
-Không bỏ transaction boundaries, capacity/overflow bounds, locks, constraints, rowversion, audit/ledger hoặc conflict handling để đơn giản hóa. Source: [InventoryMutationCoordinator](../SmartWMS.Infrastructure/Services/InventoryMutationCoordinator.cs), [CycleCountCoordinator](../SmartWMS.Infrastructure/Services/CycleCountCoordinator.cs), [inventory rules](../SmartWMS.Application/Common/Inventory/InventoryMutationRules.cs).
+Không bỏ transaction boundaries, capacity/overflow bounds, locks, constraints, rowversion, audit/ledger hoặc conflict handling để đơn giản hóa. Source: [InventoryMutationCoordinator](../backend/src/SmartWMS.Infrastructure/Services/InventoryMutationCoordinator.cs), [CycleCountCoordinator](../backend/src/SmartWMS.Infrastructure/Services/CycleCountCoordinator.cs), [inventory rules](../backend/src/SmartWMS.Application/Common/Inventory/InventoryMutationRules.cs).
 
 ## Inbound
 
@@ -53,7 +53,7 @@ Sau 409 không tự refresh expected rồi gửi lại delta cũ. Sau timeout/lo
 
 `ConfirmInboundReceiptCommandHandler` cũ không phải handler của confirm-receipt route. Crossdock route là legacy partial line-match/split/TRANSFER ledger, không receipt/stock-backed fulfillment; direct B3 lines bị chặn. OCR chỉ trích invoice, damage chỉ advisory, không tạo receipt hoặc đổi stock thành Damaged.
 
-Nguồn: [Receive handler](../SmartWMS.Application/Features/InboundReceipts/Commands/ReceiveInboundReceipt/ReceiveInboundReceiptCommandHandler.cs), [Inbound DTOs](../SmartWMS.Application/Features/InboundReceipts/DTOs), [B1 evidence](PHASE_B1_INBOUND.md). Chi tiết vision validation/response và list/detail projections ở FE catalogue.
+Nguồn: [Receive handler](../backend/src/SmartWMS.Application/Features/InboundReceipts/Commands/ReceiveInboundReceipt/ReceiveInboundReceiptCommandHandler.cs), [Inbound DTOs](../backend/src/SmartWMS.Application/Features/InboundReceipts/DTOs), [B1 evidence](PHASE_B1_INBOUND.md). Chi tiết vision validation/response và list/detail projections ở FE catalogue.
 
 ## Transfer
 
@@ -61,7 +61,7 @@ Nguồn: [Receive handler](../SmartWMS.Application/Features/InboundReceipts/Comm
 
 Một transaction: source physical -=qty, destination +=qty; reserved giữ nguyên; hai bin occupancy -/+qty; TRANSFER ledger source/destination IDs/codes + audit. Copy source lot/expiry nếu tạo destination. Trả **InventoryTransaction.Id**, không phải transfer document/task ID. GET transfer routes đọc ledger; không có Draft/Approved/InTransit/Complete workflow.
 
-Không request-id dedup: gửi lại có thể move lần nữa. Reconcile source/destination/history trước retry. [Transfer handler](../SmartWMS.Application/Features/InventoryTransfers/Commands/CreateInventoryTransfer/CreateInventoryTransferCommandHandler.cs).
+Không request-id dedup: gửi lại có thể move lần nữa. Reconcile source/destination/history trước retry. [Transfer handler](../backend/src/SmartWMS.Application/Features/InventoryTransfers/Commands/CreateInventoryTransfer/CreateInventoryTransferCommandHandler.cs).
 
 ## Outbound
 
@@ -80,7 +80,7 @@ Pack/Ship same-target có thể success no-op khi persisted evidence còn consis
 
 Reservation.Quantity giữ original allocation; outstanding trước Pick = Quantity - PickedQuantity - ReleasedQuantity. Lot/expiry snapshot ở reservation, tracking mode ở line; IsDirectPick/mode FKs tách legacy staged path. Pending update chỉ khi zero progress/no workflow/history refs; replace line IDs, không sửa mode của persisted legacy line. Wave/serial/weight advisory không bypass direct state guards; weight validation không tự Packed.
 
-Nguồn: [OutboundLifecycle](../SmartWMS.Application/Features/OutboundOrders/OutboundLifecycle.cs), [DTOs](../SmartWMS.Application/Features/OutboundOrders/DTOs), [B3 schema/verification history](PHASE_B3.md).
+Nguồn: [OutboundLifecycle](../backend/src/SmartWMS.Application/Features/OutboundOrders/OutboundLifecycle.cs), [DTOs](../backend/src/SmartWMS.Application/Features/OutboundOrders/DTOs), [B3 schema/verification history](PHASE_B3.md).
 
 ## Cycle Counting
 
@@ -94,7 +94,7 @@ Confirm body {countSheetId,notes?,countedItems:[{itemId,countedQuantity}]}; item
 
 Validate toàn batch rồi áp delta=counted-system, aggregate occupancy theo bin; ADJUSTMENT ledger cho từng nonzero variance, ReasonCode gắn sheet ID; zero variance không ledger. Items Matched/Discrepancy và sheet Completed cùng audit/stock commit. Completed/Cancelled replay→409; không tự đổi snapshot để correction lại.
 
-Nguồn: [Create command](../SmartWMS.Application/Features/CycleCounting/Commands/CreateCountSheet/CreateCountSheetCommand.cs), [Confirm handler](../SmartWMS.Application/Features/CycleCounting/Commands/ConfirmCycleCount/ConfirmCycleCountCommandHandler.cs), [access rules](../SmartWMS.Application/Features/CycleCounting/CycleCountAccess.cs).
+Nguồn: [Create command](../backend/src/SmartWMS.Application/Features/CycleCounting/Commands/CreateCountSheet/CreateCountSheetCommand.cs), [Confirm handler](../backend/src/SmartWMS.Application/Features/CycleCounting/Commands/ConfirmCycleCount/ConfirmCycleCountCommandHandler.cs), [access rules](../backend/src/SmartWMS.Application/Features/CycleCounting/CycleCountAccess.cs).
 
 ## Kitting and replenishment
 
@@ -104,7 +104,7 @@ Nguồn: [Create command](../SmartWMS.Application/Features/CycleCounting/Command
 
 Cả hai khác các P0 findings trước K1/R1 trong backend handoff cũ. Request lặp Kitting có thể assemble batch khác; replenishment re-evaluate state không tạo immutable idempotency guarantee.
 
-Nguồn: [Kitting handler](../SmartWMS.Application/Features/Kitting/Commands/AssembleKit/AssembleKitCommandHandler.cs), [Replenishment handler](../SmartWMS.Application/Features/InventoryManagement/Commands/AutoReplenish/AutoReplenishCommandHandler.cs), [K1 history](PHASE_K1.md), [R1 history](PHASE_R1.md).
+Nguồn: [Kitting handler](../backend/src/SmartWMS.Application/Features/Kitting/Commands/AssembleKit/AssembleKitCommandHandler.cs), [Replenishment handler](../backend/src/SmartWMS.Application/Features/InventoryManagement/Commands/AutoReplenish/AutoReplenishCommandHandler.cs), [K1 history](PHASE_K1.md), [R1 history](PHASE_R1.md).
 
 ## Other contracts and integration boundaries
 

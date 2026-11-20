@@ -8,7 +8,7 @@ foreach ($relative in $files) {
     if ($relative -match '(^|/)(obj|bin)/' -or $relative -match '\.user$' -or $relative -notmatch '\.(cs|csproj|json|slnx|resx)$') { continue }
     $destination = Join-Path $mirror $relative
     New-Item -ItemType Directory -Force -Path (Split-Path $destination) | Out-Null
-    if ($relative -eq 'SmartWMS.Infrastructure/Services/PasswordHasher.cs') {
+    if ($relative -eq 'backend/src/SmartWMS.Infrastructure/Services/PasswordHasher.cs') {
         # Use the committed dependency; do not depend on or rewrite the dirty baseline.
         $content = git show "HEAD:$relative"
         [System.IO.File]::WriteAllLines($destination, [string[]]$content, [System.Text.UTF8Encoding]::new($false))

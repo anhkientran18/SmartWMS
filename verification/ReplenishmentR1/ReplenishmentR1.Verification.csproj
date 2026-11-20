@@ -6,6 +6,6 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../../SmartWMS.Infrastructure/SmartWMS.Infrastructure.csproj" />
+    <ProjectReference Include="../../backend/src/SmartWMS.Infrastructure/SmartWMS.Infrastructure.csproj" />
   </ItemGroup>
 </Project>

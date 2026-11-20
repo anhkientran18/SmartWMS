@@ -11,7 +11,7 @@ static class RegressionSmoke
         await using (var db = new ApplicationDbContext(new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlServer(anchor.Connection).Options, new FixtureUser()))
             await db.Database.MigrateAsync();
         var before = await FixtureDatabase.Snapshot(anchor.Connection);
-        var api = Path.Combine(mirror, "SmartWMS.Api/bin/Debug/net10.0/SmartWMS.Api.dll");
+        var api = Path.Combine(mirror, "backend/src/SmartWMS.Api/bin/Debug/net10.0/SmartWMS.Api.dll");
         foreach (var (suite, mode) in new[] { ("Phase4A", "--verify-localdb"), ("Phase4B", "--verify-localdb"), ("InboundB1", "--verify-localdb"), ("OutboundB3", "--schema"), ("OutboundB3", "--focused"), ("OutboundB3", "--cached-context"), ("OutboundB3", "--http"), ("KittingK1", "--focused"), ("KittingK1", "--http") })
         {
             var label = suite + mode.Replace("--", "-"); var output = Path.Combine(report, label); Directory.CreateDirectory(output);

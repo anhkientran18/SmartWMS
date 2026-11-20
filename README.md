@@ -24,7 +24,7 @@ npm --prefix frontend run typecheck
 npm --prefix frontend run build
 ~~~
 
-Solution có bốn production projects ở root: `SmartWMS.Api`, `SmartWMS.Application`, `SmartWMS.Domain`, `SmartWMS.Infrastructure`. Frontend ở `frontend/`; console harnesses ở `verification/`; orchestration ở `scripts/`. Backend chưa được chuyển sang `backend/src/`.
+Solution có bốn production projects ở `backend/src/`: `backend/src/SmartWMS.Api`, `backend/src/SmartWMS.Application`, `backend/src/SmartWMS.Domain`, `backend/src/SmartWMS.Infrastructure`. Frontend ở `frontend/`; console harnesses ở `verification/`; orchestration ở `scripts/`.
 
 Restore/build ghi `bin/obj`; npm cài dependencies/chạy lifecycle hooks; Vite ghi `frontend/dist`. Có generated files đã tracked: không stage chúng hoặc reset/clean checkout đang có work. Không dùng `npm ci` trên dependencies dùng chung với checkout khác.
 
@@ -32,7 +32,7 @@ Restore/build ghi `bin/obj`; npm cài dependencies/chạy lifecycle hooks; Vite 
 
 Chuẩn bị SQL Server/database riêng trước khi chạy API. Database migration/provisioning/seed là bước có write riêng; không chạy mặc định trên database shared/demo. Startup kiểm kết nối, model và migrations; thiếu schema phù hợp có thể làm API dừng dù build thành công.
 
-Dùng environment hoặc ASP.NET User Secrets theo [Program.cs](SmartWMS.Api/Program.cs), không ghi credentials vào Git:
+Dùng environment hoặc ASP.NET User Secrets theo [Program.cs](backend/src/SmartWMS.Api/Program.cs), không ghi credentials vào Git:
 
 | Setting | Mục đích |
 | --- | --- |
@@ -47,7 +47,7 @@ Kiểm cả environment/user-secret overrides. Không tự bật background AI j
 Sau khi đã xác nhận database/schema và effective settings phù hợp, mở hai terminals:
 
 ~~~powershell
-dotnet run --project SmartWMS.Api --launch-profile http
+dotnet run --project backend/src/SmartWMS.Api --launch-profile http
 ~~~
 
 Trong terminal frontend:

@@ -1,6 +1,6 @@
 <Solution>
-  <Project Path="SmartWMS.Api/SmartWMS.Api.csproj" />
-  <Project Path="SmartWMS.Application/SmartWMS.Application.csproj" />
-  <Project Path="SmartWMS.Domain/SmartWMS.Domain.csproj" />
-  <Project Path="SmartWMS.Infrastructure/SmartWMS.Infrastructure.csproj" />
+  <Project Path="backend/src/SmartWMS.Api/SmartWMS.Api.csproj" />
+  <Project Path="backend/src/SmartWMS.Application/SmartWMS.Application.csproj" />
+  <Project Path="backend/src/SmartWMS.Domain/SmartWMS.Domain.csproj" />
+  <Project Path="backend/src/SmartWMS.Infrastructure/SmartWMS.Infrastructure.csproj" />
 </Solution>
