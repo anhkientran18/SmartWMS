@@ -1873,9 +1873,27 @@
     "cancel": "Hủy",
     "submitting": "Đang xử lý…",
     "confirmAdjust": "Xác nhận điều chỉnh",
+    "exportExcel": "Xuất Excel sức chứa ô kệ",
+    "exportingExcel": "Đang xuất Excel...",
+    "exportExcelHint": "Xuất báo cáo toàn bộ ô kệ đang hoạt động (Mã ô kệ, Khu vực, Sức chứa tối đa, Đang chứa, Tỷ lệ lấp đầy %); không phải sổ cái tồn kho theo SKU/Lô.",
+    "changeStatus": "Đổi trạng thái",
+    "changeStatusTitle": "Chuyển đổi trạng thái tồn kho",
+    "currentStatus": "Trạng thái hiện tại",
+    "targetStatus": "Trạng thái mới",
+    "reservedNotice": "Không thể chuyển trực tiếp sang trạng thái Đã giữ (Reserved). Trạng thái này chỉ do phân bổ đơn xuất kho quản lý.",
+    "reasonQcInspection": "Đưa vào kiểm tra chất lượng (QC_INSPECTION)",
+    "reasonDefectFound": "Phát hiện lỗi / hư hỏng (DEFECT_FOUND)",
+    "reasonExpiryApproach": "Cận hạn sử dụng (EXPIRY_APPROACH)",
+    "reasonQcPassed": "Kiểm tra QC đạt chuẩn (QC_PASSED)",
+    "confirmChange": "Xác nhận chuyển trạng thái",
+    "statusRefreshWarning": "Đã đổi trạng thái tồn kho thành công, nhưng tải lại dữ liệu thất bại — vui lòng làm mới trang.",
     "errors": {
       "adjustFailed": "Điều chỉnh tồn kho thất bại.",
-      "invalidAdjustPayload": "Dữ liệu điều chỉnh tồn kho không hợp lệ."
+      "invalidAdjustPayload": "Dữ liệu điều chỉnh tồn kho không hợp lệ.",
+      "statusFailed": "Đổi trạng thái tồn kho thất bại.",
+      "invalidStatusPayload": "Trạng thái chuyển đổi không hợp lệ. Trạng thái mới phải khác trạng thái hiện tại và không được là Đã giữ (Reserved).",
+      "reservedLocked": "Dòng tồn kho đang ở trạng thái Đã giữ (Reserved) cho đơn xuất kho và không thể đổi trạng thái thủ công.",
+      "exportFailed": "Xuất báo cáo Excel sức chứa ô kệ thất bại."
     },
     "adjustSafety": {
       "bannerTitle": "Có giao dịch điều chỉnh tồn kho chưa xác định kết quả",
